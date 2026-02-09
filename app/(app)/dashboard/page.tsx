@@ -116,7 +116,7 @@ export default function DashboardPage() {
                     tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrency(value), "Sales"]}
+                    formatter={(value: number | undefined) => [formatCurrency(value || 0), "Sales"]}
                     contentStyle={{
                       borderRadius: "8px",
                       border: "1px solid hsl(var(--border))",
@@ -154,9 +154,9 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, name: string) => [
-                      `${value} items`,
-                      name,
+                    formatter={(value: number | undefined, name: string | undefined) => [
+                      `${value || 0} items`,
+                      name || "",
                     ]}
                     contentStyle={{
                       borderRadius: "8px",
