@@ -204,7 +204,7 @@ export default function ReportsPage() {
                     />
                     <YAxis type="category" dataKey="category" fontSize={11} width={80} />
                     <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), "Stock Value"]}
+                      formatter={(value: number | undefined) => [formatCurrency(value || 0), "Stock Value"]}
                       contentStyle={{
                         borderRadius: "8px",
                         border: "1px solid hsl(var(--border))",
