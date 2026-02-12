@@ -8,7 +8,7 @@ import { TrendingUp, FileText, IndianRupee } from "lucide-react";
 export default function SalesReportPage() {
   const { data: invoices = [] } = useQuery({
     queryKey: ["invoices"],
-    queryFn: getInvoices,
+    queryFn: () => getInvoices(),
   });
 
   const salesInvoices = invoices.filter(i => i.type === "sale");

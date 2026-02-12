@@ -11,7 +11,7 @@ import { Package, IndianRupee, TrendingUp, Boxes } from "lucide-react";
 export default function CategoriesPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
   });
 
   const categoryStats = useMemo(() => {
