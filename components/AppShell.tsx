@@ -24,6 +24,7 @@ import {
   Receipt,
   UserPlus,
   FileBarChart,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,16 @@ const NAV_MODULES: NavModule[] = [
       { href: "/reports/purchases", label: "Purchase Report", icon: TrendingDown },
       { href: "/reports/inventory", label: "Inventory Report", icon: Package },
       { href: "/reports/gst", label: "GST Report", icon: FileText },
+    ],
+  },
+  {
+    id: "ai-assistant",
+    label: "AI Assistant",
+    icon: Sparkles,
+    color: "text-fuchsia-400",
+    activeBg: "bg-fuchsia-500/20",
+    subItems: [
+      { href: "/ai-assistant", label: "Chat Assistant", icon: Sparkles },
     ],
   },
 ];
