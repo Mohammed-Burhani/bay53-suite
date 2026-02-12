@@ -10,7 +10,7 @@ import { AlertTriangle, PackageOpen, TrendingDown } from "lucide-react";
 export default function LowStockPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
   });
 
   const lowStockProducts = products.filter(p => p.stock <= p.lowStockThreshold && p.stock > 0);

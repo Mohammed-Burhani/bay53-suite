@@ -8,7 +8,7 @@ import { TrendingDown, FileText, IndianRupee } from "lucide-react";
 export default function PurchaseReportPage() {
   const { data: invoices = [] } = useQuery({
     queryKey: ["invoices"],
-    queryFn: getInvoices,
+    queryFn: () => getInvoices(),
   });
 
   const purchaseInvoices = invoices.filter(i => i.type === "purchase");

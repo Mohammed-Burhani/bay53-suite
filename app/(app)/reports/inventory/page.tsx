@@ -8,7 +8,7 @@ import { Package, IndianRupee, AlertTriangle, FileText } from "lucide-react";
 export default function InventoryReportPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
   });
 
   const totalProducts = products.length;

@@ -10,7 +10,7 @@ import { Users, TrendingUp } from "lucide-react";
 export default function CustomersPage() {
   const { data: parties = [] } = useQuery({
     queryKey: ["parties"],
-    queryFn: getParties,
+    queryFn: () => getParties(),
   });
 
   const customers = parties.filter(p => p.type === "customer");

@@ -10,7 +10,7 @@ import { Users, TrendingDown } from "lucide-react";
 export default function SuppliersPage() {
   const { data: parties = [] } = useQuery({
     queryKey: ["parties"],
-    queryFn: getParties,
+    queryFn: () => getParties(),
   });
 
   const suppliers = parties.filter(p => p.type === "supplier");
