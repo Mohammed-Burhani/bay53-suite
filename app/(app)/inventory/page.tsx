@@ -85,6 +85,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "Electronics": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
@@ -310,6 +311,12 @@ export default function InventoryPage() {
   const totalCostValue = products.reduce((sum, p) => sum + p.stock * p.costPrice, 0);
   const activeCategories = [...new Set(products.map((p) => p.category))].length;
   const activeFilters = (categoryFilter !== "all" ? 1 : 0) + (stockFilter !== "all" ? 1 : 0) + (search ? 1 : 0);
+
+  const handleAgenticAction = async (action: string, params: Record<string, unknown>) => {
+    // Handle agentic actions like updating stock, marking inactive, etc.
+    console.log("Agentic action:", action, params);
+    toast.info("Agentic action received: " + action);
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -916,6 +923,13 @@ export default function InventoryPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* AI Assistant */}
+        <ModuleAIAssistant
+          moduleName="Inventory"
+          moduleData={{ products }}
+          onAgenticAction={handleAgenticAction}
+        />
       </div>
     </TooltipProvider>
   );
