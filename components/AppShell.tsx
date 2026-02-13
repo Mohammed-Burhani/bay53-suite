@@ -25,6 +25,7 @@ import {
   UserPlus,
   FileBarChart,
   Sparkles,
+  Rocket,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,16 @@ interface NavModule {
 }
 
 const NAV_MODULES: NavModule[] = [
+  {
+    id: "onboarding",
+    label: "Get Started",
+    icon: Rocket,
+    color: "text-purple-400",
+    activeBg: "bg-purple-500/20",
+    subItems: [
+      { href: "/onboarding", label: "Onboarding Tour", icon: Rocket },
+    ],
+  },
   {
     id: "dashboard",
     label: "Dashboard",

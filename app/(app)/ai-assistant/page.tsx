@@ -319,9 +319,9 @@ export default function AIAssistantPage() {
       </aside>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="border-b border-border bg-card/80 backdrop-blur-sm shrink-0">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25">
@@ -352,7 +352,7 @@ export default function AIAssistantPage() {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 px-6 py-6">
+        <ScrollArea className="flex-1 overflow-y-auto px-6 py-6">
           <div className="mx-auto max-w-4xl space-y-6">
             {/* Quick Actions - Show only at start */}
             {messages.length === 1 && (
@@ -413,7 +413,7 @@ export default function AIAssistantPage() {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t border-border bg-card/80 backdrop-blur-sm px-6 py-4">
+        <div className="border-t border-border bg-card/80 backdrop-blur-sm px-6 py-4 shrink-0">
           <div className="mx-auto max-w-4xl">
             <div className="flex items-end gap-2">
               <div className="flex-1 relative">
