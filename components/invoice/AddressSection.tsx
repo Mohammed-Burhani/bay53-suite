@@ -29,6 +29,15 @@ interface CustomerAddressProps {
   customerGstin: string;
   onCustomerSelect: (value: string) => void;
   onCustomerGstinChange: (value: string) => void;
+  // Manual input props
+  buyerName?: string;
+  buyerAddress?: string;
+  buyerCity?: string;
+  buyerState?: string;
+  onBuyerNameChange?: (value: string) => void;
+  onBuyerAddressChange?: (value: string) => void;
+  onBuyerCityChange?: (value: string) => void;
+  onBuyerStateChange?: (value: string) => void;
 }
 
 export function BusinessAddress({
@@ -114,7 +123,18 @@ export function CustomerAddress({
   customerGstin,
   onCustomerSelect,
   onCustomerGstinChange,
+  buyerName,
+  buyerAddress,
+  buyerCity,
+  buyerState,
+  onBuyerNameChange,
+  onBuyerAddressChange,
+  onBuyerCityChange,
+  onBuyerStateChange,
 }: CustomerAddressProps) {
+  // Use manual input mode if handlers are provided
+  const isManualMode = !!onBuyerNameChange;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -122,53 +142,102 @@ export function CustomerAddress({
         To (Buyer Details)
       </div>
       <div className="space-y-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Customer *</Label>
-          <Select value={selectedPartyId} onValueChange={onCustomerSelect}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name} - {c.phone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {selectedCustomer && (
+        {isManualMode ? (
           <>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Customer Name *</Label>
+              <Input
+                value={buyerName || ''}
+                onChange={(e) => onBuyerNameChange?.(e.target.value)}
+                placeholder="Customer name"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">GSTIN</Label>
               <Input
-                value={customerGstin || selectedCustomer.gstin || ""}
+                value={customerGstin}
                 onChange={(e) => onCustomerGstinChange(e.target.value)}
-                placeholder="Customer GSTIN (if available)"
+                placeholder="27BBBBB1111B1Z5"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Address</Label>
               <Input
-                value={selectedCustomer.address || ""}
-                disabled
-                placeholder="Customer address"
+                value={buyerAddress || ''}
+                onChange={(e) => onBuyerAddressChange?.(e.target.value)}
+                placeholder="Street address"
               />
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">City</Label>
-                <Input value={selectedCustomer.city || ""} disabled />
+                <Input
+                  value={buyerCity || ''}
+                  onChange={(e) => onBuyerCityChange?.(e.target.value)}
+                  placeholder="City"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">State</Label>
-                <Input value={selectedCustomer.state || ""} disabled />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Pincode</Label>
-                <Input value={selectedCustomer.pincode || ""} disabled />
+                <Input
+                  value={buyerState || ''}
+                  onChange={(e) => onBuyerStateChange?.(e.target.value)}
+                  placeholder="State"
+                />
               </div>
             </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Customer *</Label>
+              <Select value={selectedPartyId} onValueChange={onCustomerSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} - {c.phone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedCustomer && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">GSTIN</Label>
+                  <Input
+                    value={customerGstin || selectedCustomer.gstin || ""}
+                    onChange={(e) => onCustomerGstinChange(e.target.value)}
+                    placeholder="Customer GSTIN (if available)"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Address</Label>
+                  <Input
+                    value={selectedCustomer.address || ""}
+                    disabled
+                    placeholder="Customer address"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">City</Label>
+                    <Input value={selectedCustomer.city || ""} disabled />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">State</Label>
+                    <Input value={selectedCustomer.state || ""} disabled />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pincode</Label>
+                    <Input value={selectedCustomer.pincode || ""} disabled />
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -179,16 +248,42 @@ export function CustomerAddress({
 export function AddressSection({
   businessProps,
   customerProps,
+  buyerName,
+  buyerAddress,
+  buyerCity,
+  buyerState,
+  onBuyerNameChange,
+  onBuyerAddressChange,
+  onBuyerCityChange,
+  onBuyerStateChange,
 }: {
   businessProps: BusinessAddressProps;
   customerProps: CustomerAddressProps;
+  buyerName?: string;
+  buyerAddress?: string;
+  buyerCity?: string;
+  buyerState?: string;
+  onBuyerNameChange?: (value: string) => void;
+  onBuyerAddressChange?: (value: string) => void;
+  onBuyerCityChange?: (value: string) => void;
+  onBuyerStateChange?: (value: string) => void;
 }) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="grid gap-6 md:grid-cols-2">
           <BusinessAddress {...businessProps} />
-          <CustomerAddress {...customerProps} />
+          <CustomerAddress 
+            {...customerProps} 
+            buyerName={buyerName}
+            buyerAddress={buyerAddress}
+            buyerCity={buyerCity}
+            buyerState={buyerState}
+            onBuyerNameChange={onBuyerNameChange}
+            onBuyerAddressChange={onBuyerAddressChange}
+            onBuyerCityChange={onBuyerCityChange}
+            onBuyerStateChange={onBuyerStateChange}
+          />
         </div>
       </CardContent>
     </Card>

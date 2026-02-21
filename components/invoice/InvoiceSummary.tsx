@@ -24,9 +24,11 @@ interface InvoiceSummaryProps {
   discount: number;
   paymentMode: "cash" | "upi" | "card" | "bank_transfer" | "credit";
   amountPaid: number;
+  gstRate: number;
   onDiscountChange: (value: number) => void;
   onPaymentModeChange: (value: "cash" | "upi" | "card" | "bank_transfer" | "credit") => void;
   onAmountPaidChange: (value: number) => void;
+  onGstRateChange: (value: number) => void;
 }
 
 export function InvoiceSummary({
@@ -34,9 +36,11 @@ export function InvoiceSummary({
   discount,
   paymentMode,
   amountPaid,
+  gstRate,
   onDiscountChange,
   onPaymentModeChange,
   onAmountPaidChange,
+  onGstRateChange,
 }: InvoiceSummaryProps) {
   return (
     <div className="space-y-6">
@@ -72,21 +76,43 @@ export function InvoiceSummary({
               <span>{formatCurrency(totals.taxableAmount)}</span>
             </div>
             <Separator />
+            
+            {/* GST Rate Selector */}
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">GST Rate</span>
+              <Select 
+                value={String(gstRate)} 
+                onValueChange={(val) => onGstRateChange(Number(val))}
+              >
+                <SelectTrigger className="h-7 w-24 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0%</SelectItem>
+                  <SelectItem value="5">5%</SelectItem>
+                  <SelectItem value="12">12%</SelectItem>
+                  <SelectItem value="18">18%</SelectItem>
+                  <SelectItem value="28">28%</SelectItem>
+                  <SelectItem value="40">40%</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             {totals.cgst > 0 && (
               <>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">CGST</span>
+                  <span className="text-muted-foreground">CGST ({gstRate / 2}%)</span>
                   <span>+{formatCurrency(totals.cgst)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">SGST</span>
+                  <span className="text-muted-foreground">SGST ({gstRate / 2}%)</span>
                   <span>+{formatCurrency(totals.sgst)}</span>
                 </div>
               </>
             )}
             {totals.igst > 0 && (
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">IGST</span>
+                <span className="text-muted-foreground">IGST ({gstRate}%)</span>
                 <span>+{formatCurrency(totals.igst)}</span>
               </div>
             )}
