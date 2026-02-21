@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProducts, getParties, addInvoice } from "@/lib/store";
@@ -15,16 +15,11 @@ import { InvoiceItemsTable, InvoiceLineItem } from "@/components/invoice/Invoice
 import { ColumnSettings, CustomColumn } from "@/components/invoice/ColumnSettings";
 import { InvoiceSummary } from "@/components/invoice/InvoiceSummary";
 import { InvoiceNotes } from "@/components/invoice/InvoiceNotes";
-
-const DEFAULT_COLUMNS: CustomColumn[] = [
-  { id: "sno", label: "S.No", enabled: true, isCustom: false, type: "fixed" },
-  { id: "description", label: "Description", enabled: true, isCustom: false, type: "fixed" },
-  { id: "hsn", label: "HSN/SAC", enabled: true, isCustom: false, type: "text" },
-  { id: "quantity", label: "Quantity", enabled: true, isCustom: false, type: "number" },
-  { id: "rate", label: "Rate", enabled: true, isCustom: false, type: "number" },
-  { id: "gst", label: "GST %", enabled: false, isCustom: false, type: "number" },
-  { id: "amount", label: "Amount", enabled: true, isCustom: false, type: "fixed" },
-];
+import { 
+  initializeColumns, 
+  saveColumns as saveColumnsToStorage,
+  extractCustomData 
+} from "@/lib/invoice-columns-storage";
 
 export default function CreateSalesInvoicePage() {
   const router = useRouter();
@@ -49,9 +44,15 @@ export default function CreateSalesInvoicePage() {
 
   // Items & Columns
   const [items, setItems] = useState<InvoiceLineItem[]>([]);
-  const [columns, setColumns] = useState<CustomColumn[]>(DEFAULT_COLUMNS);
+  const [columns, setColumns] = useState<CustomColumn[]>([]);
   const [showColumnSettings, setShowColumnSettings] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Initialize columns from localStorage on mount
+  useEffect(() => {
+    const savedColumns = initializeColumns();
+    setColumns(savedColumns);
+  }, []);
 
   // Payment
   const [discount, setDiscount] = useState(0);
@@ -73,6 +74,10 @@ export default function CreateSalesInvoicePage() {
   const selectedCustomer = customers.find((c) => c.id === selectedPartyId);
 
   const addItem = () => {
+    if (items.length >= 8) {
+      toast.error("Maximum 8 items allowed per invoice");
+      return;
+    }
     setItems([
       ...items,
       {
@@ -127,18 +132,24 @@ export default function CreateSalesInvoicePage() {
     const maxColumns = 5;
 
     if (col.enabled) {
-      setColumns(columns.map((c) => (c.id === id ? { ...c, enabled: false } : c)));
+      const newColumns = columns.map((c) => (c.id === id ? { ...c, enabled: false } : c));
+      setColumns(newColumns);
+      saveColumnsToStorage(newColumns);
     } else {
       if (currentEnabled >= maxColumns) {
         toast.error(`Maximum ${maxColumns} columns allowed`);
         return;
       }
-      setColumns(columns.map((c) => (c.id === id ? { ...c, enabled: true } : c)));
+      const newColumns = columns.map((c) => (c.id === id ? { ...c, enabled: true } : c));
+      setColumns(newColumns);
+      saveColumnsToStorage(newColumns);
     }
   };
 
   const updateColumnLabel = (id: string, label: string) => {
-    setColumns(columns.map((c) => (c.id === id ? { ...c, label } : c)));
+    const newColumns = columns.map((c) => (c.id === id ? { ...c, label } : c));
+    setColumns(newColumns);
+    saveColumnsToStorage(newColumns);
   };
 
   const addCustomColumn = (label: string, type: "text" | "number") => {
@@ -149,7 +160,9 @@ export default function CreateSalesInvoicePage() {
       isCustom: true,
       type,
     };
-    setColumns([...columns, newCol]);
+    const newColumns = [...columns, newCol];
+    setColumns(newColumns);
+    saveColumnsToStorage(newColumns);
     toast.success("Custom column added");
   };
 
@@ -159,7 +172,9 @@ export default function CreateSalesInvoicePage() {
       toast.error("Cannot delete default columns");
       return;
     }
-    setColumns(columns.filter((c) => c.id !== id));
+    const newColumns = columns.filter((c) => c.id !== id);
+    setColumns(newColumns);
+    saveColumnsToStorage(newColumns);
     toast.success("Column deleted");
   };
 
