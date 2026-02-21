@@ -167,7 +167,16 @@ export function InvoiceFormLayout({
           const totalGst = cgst + sgst + igst;
           const grandTotal = taxableAmount + totalGst;
           
-          return { subtotal, discount, taxableAmount, cgst, sgst, igst, totalGst, grandTotal };
+          return { 
+            subtotal, 
+            totalDiscount: discount, 
+            taxableAmount, 
+            cgst, 
+            sgst, 
+            igst, 
+            totalGst, 
+            grandTotal 
+          };
         };
         
         const totals = calculateTotals();

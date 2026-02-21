@@ -73,9 +73,58 @@ export default function CreateSalesInvoicePage() {
 
   const handleSubmit = async (values: InvoiceFormValues) => {
     try {
+      // Ensure required fields are present
+      if (!values.invoice_number) {
+        toast.error("Invoice number is required");
+        return;
+      }
+      if (!values.seller_name) {
+        toast.error("Seller name is required");
+        return;
+      }
+      if (!values.buyer_name) {
+        toast.error("Buyer name is required");
+        return;
+      }
+      
       const invoice: Invoice = {
-        ...values,
+        invoice_number: values.invoice_number,
+        tax_invoice_number: values.tax_invoice_number || '',
         type: 'sale',
+        status: values.status || 'draft',
+        invoice_date: values.invoice_date || new Date().toISOString().split('T')[0],
+        
+        seller_name: values.seller_name,
+        seller_gstin: values.seller_gstin,
+        seller_address: values.seller_address,
+        seller_city: values.seller_city,
+        seller_state: values.seller_state,
+        seller_pincode: values.seller_pincode,
+        seller_phone: values.seller_phone,
+        seller_email: values.seller_email,
+        
+        buyer_name: values.buyer_name,
+        buyer_gstin: values.buyer_gstin,
+        buyer_address: values.buyer_address,
+        buyer_city: values.buyer_city,
+        buyer_state: values.buyer_state,
+        buyer_pincode: values.buyer_pincode,
+        buyer_phone: values.buyer_phone,
+        buyer_email: values.buyer_email,
+        
+        subtotal: values.subtotal || 0,
+        discount: values.discount || 0,
+        taxable_amount: values.taxable_amount || 0,
+        cgst: values.cgst || 0,
+        sgst: values.sgst || 0,
+        igst: values.igst || 0,
+        total_gst: values.total_gst || 0,
+        grand_total: values.grand_total || 0,
+        amount_paid: values.amount_paid || 0,
+        payment_mode: values.payment_mode,
+        
+        notes: values.notes,
+        terms_conditions: values.terms_conditions,
       };
       
       const items: InvoiceItem[] = values.items.map((item, index: number) => ({

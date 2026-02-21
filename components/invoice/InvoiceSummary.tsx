@@ -22,11 +22,11 @@ interface InvoiceTotals {
 interface InvoiceSummaryProps {
   totals: InvoiceTotals;
   discount: number;
-  paymentMode: "cash" | "upi" | "card" | "bank_transfer" | "credit";
+  paymentMode: "cash" | "upi" | "card" | "bank_transfer" | "credit" | "cheque";
   amountPaid: number;
   gstRate: number;
   onDiscountChange: (value: number) => void;
-  onPaymentModeChange: (value: "cash" | "upi" | "card" | "bank_transfer" | "credit") => void;
+  onPaymentModeChange: (value: "cash" | "upi" | "card" | "bank_transfer" | "credit" | "cheque") => void;
   onAmountPaidChange: (value: number) => void;
   onGstRateChange: (value: number) => void;
 }
@@ -149,6 +149,7 @@ export function InvoiceSummary({
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                   <SelectItem value="credit">Credit</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
                 </SelectContent>
               </Select>
             </div>
