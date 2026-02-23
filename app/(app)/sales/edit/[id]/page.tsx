@@ -70,6 +70,7 @@ export default function EditSalesInvoicePage() {
         rate: item.rate,
         gst_rate: item.gst_rate,
         amount: item.quantity * item.rate,
+        weight: item.weight,
         custom_data: item.custom_data || {},
       }));
       

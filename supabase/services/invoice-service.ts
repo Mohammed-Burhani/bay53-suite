@@ -444,21 +444,29 @@ export const invoiceService = {
       throw new Error('No pending invoices found');
     }
     
-    // Group by buyer_name
-    const invoicesByBuyer = pendingInvoices.reduce((acc, invoice) => {
-      const buyerKey = invoice.buyer_name.trim().toLowerCase();
-      if (!acc[buyerKey]) {
-        acc[buyerKey] = [];
+    // Group by seller_name (the "From" field - the company sending packages)
+    // This consolidates all invoices from the same sender
+    const invoicesBySeller = pendingInvoices.reduce((acc, invoice) => {
+      // Normalize the seller name: trim whitespace and convert to lowercase for grouping
+      const sellerKey = invoice.seller_name.trim().toLowerCase();
+      if (!acc[sellerKey]) {
+        acc[sellerKey] = [];
       }
-      acc[buyerKey].push(invoice);
+      acc[sellerKey].push(invoice);
       return acc;
     }, {} as Record<string, InvoiceWithItems[]>);
     
+    console.log('Grouping invoices by seller (From):', Object.keys(invoicesBySeller));
+    console.log('Number of groups:', Object.keys(invoicesBySeller).length);
+    Object.entries(invoicesBySeller).forEach(([key, invoices]) => {
+      console.log(`Seller "${key}": ${invoices.length} invoice(s)`);
+    });
+    
     const taxInvoices: InvoiceWithItems[] = [];
     
-    // Create tax invoice for each buyer
-    for (const [buyerKey, buyerInvoices] of Object.entries(invoicesByBuyer)) {
-      const firstInvoice = buyerInvoices[0];
+    // Create tax invoice for each seller (From)
+    for (const [sellerKey, sellerInvoices] of Object.entries(invoicesBySeller)) {
+      const firstInvoice = sellerInvoices[0];
       
       // Get next tax invoice number
       const taxInvoiceNumber = await this.getNextInvoiceNumber('TAX', new Date().getFullYear());
@@ -469,7 +477,7 @@ export const invoiceService = {
       let grandTotal = 0;
       
       // Create consolidated items (one item per original invoice)
-      const consolidatedItems: InvoiceItem[] = buyerInvoices.map((invoice, index) => {
+      const consolidatedItems: InvoiceItem[] = sellerInvoices.map((invoice, index) => {
         subtotal += Number(invoice.subtotal);
         totalGst += Number(invoice.total_gst);
         grandTotal += Number(invoice.grand_total);
@@ -546,9 +554,9 @@ export const invoiceService = {
         payment_mode: undefined,
         
         // Track parent invoices
-        parent_invoice_ids: buyerInvoices.map(inv => inv.id!),
+        parent_invoice_ids: sellerInvoices.map(inv => inv.id!),
         
-        notes: `Consolidated tax invoice for ${buyerInvoices.length} courier deliveries`,
+        notes: `Consolidated tax invoice for ${sellerInvoices.length} courier deliveries`,
         terms_conditions: 'Payment due within 30 days'
       };
       
@@ -557,7 +565,7 @@ export const invoiceService = {
       taxInvoices.push(createdTaxInvoice);
       
       // Update original invoices to 'ready' status
-      const invoiceIds = buyerInvoices.map(inv => inv.id!);
+      const invoiceIds = sellerInvoices.map(inv => inv.id!);
       const { error: updateError } = await supabase
         .from('invoices')
         .update({ invoice_status: 'ready' })

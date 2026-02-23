@@ -30,22 +30,22 @@ export function GenerateTaxInvoiceButton() {
     }
   };
 
-  // Group pending invoices by buyer
-  const invoicesByBuyer = (pendingInvoices || []).reduce((acc, invoice) => {
-    const buyerKey = invoice.buyer_name.trim().toLowerCase();
-    if (!acc[buyerKey]) {
-      acc[buyerKey] = {
-        buyer_name: invoice.buyer_name,
+  // Group pending invoices by seller (From field)
+  const invoicesBySeller = (pendingInvoices || []).reduce((acc, invoice) => {
+    const sellerKey = invoice.seller_name.trim().toLowerCase();
+    if (!acc[sellerKey]) {
+      acc[sellerKey] = {
+        seller_name: invoice.seller_name,
         count: 0,
         total: 0,
       };
     }
-    acc[buyerKey].count++;
-    acc[buyerKey].total += Number(invoice.grand_total);
+    acc[sellerKey].count++;
+    acc[sellerKey].total += Number(invoice.grand_total);
     return acc;
-  }, {} as Record<string, { buyer_name: string; count: number; total: number }>);
+  }, {} as Record<string, { seller_name: string; count: number; total: number }>);
 
-  const buyerGroups = Object.values(invoicesByBuyer);
+  const sellerGroups = Object.values(invoicesBySeller);
   const totalPending = pendingInvoices?.length || 0;
 
   return (
@@ -73,7 +73,7 @@ export function GenerateTaxInvoiceButton() {
           <DialogHeader>
             <DialogTitle>Generate Tax Invoices</DialogTitle>
             <DialogDescription>
-              Consolidate pending invoices into tax invoices grouped by company
+              Consolidate pending invoices into tax invoices grouped by sender (From)
             </DialogDescription>
           </DialogHeader>
 
@@ -90,16 +90,16 @@ export function GenerateTaxInvoiceButton() {
                 <Alert>
                   <FileText className="h-4 w-4" />
                   <AlertDescription>
-                    Found {totalPending} pending invoice(s) from {buyerGroups.length} company(ies).
-                    This will create {buyerGroups.length} consolidated tax invoice(s).
+                    Found {totalPending} pending invoice(s) from {sellerGroups.length} sender(s).
+                    This will create {sellerGroups.length} consolidated tax invoice(s).
                   </AlertDescription>
                 </Alert>
 
                 <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-                  {buyerGroups.map((group, index) => (
+                  {sellerGroups.map((group, index) => (
                     <div key={index} className="p-4 flex justify-between items-center">
                       <div>
-                        <p className="font-medium">{group.buyer_name}</p>
+                        <p className="font-medium">{group.seller_name}</p>
                         <p className="text-sm text-muted-foreground">
                           {group.count} invoice{group.count > 1 ? 's' : ''}
                         </p>
@@ -118,8 +118,8 @@ export function GenerateTaxInvoiceButton() {
                   <h4 className="font-semibold mb-2">What will happen:</h4>
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li>• All pending invoices will be marked as &ldquo;ready&rdquo;</li>
-                    <li>• {buyerGroups.length} new tax invoice(s) will be created</li>
-                    <li>• Each tax invoice will consolidate all deliveries for one company</li>
+                    <li>• {sellerGroups.length} new tax invoice(s) will be created</li>
+                    <li>• Each tax invoice will consolidate all deliveries from the same sender</li>
                     <li>• Original invoice details will be preserved in the tax invoice items</li>
                   </ul>
                 </div>
@@ -143,7 +143,7 @@ export function GenerateTaxInvoiceButton() {
               ) : (
                 <>
                   <FileText className="h-4 w-4 mr-2" />
-                  Generate {buyerGroups.length} Tax Invoice{buyerGroups.length > 1 ? 's' : ''}
+                  Generate {sellerGroups.length} Tax Invoice{sellerGroups.length > 1 ? 's' : ''}
                 </>
               )}
             </Button>
