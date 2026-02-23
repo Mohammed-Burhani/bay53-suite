@@ -50,6 +50,8 @@
     "formik": "^2.4.9",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.552.0",
     "mini-svg-data-uri": "^1.4.4",
     "next": "16.1.6",

@@ -33,9 +33,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Search, FileText, Eye, Plus, Edit, Trash2, DollarSign, TrendingUp } from "lucide-react";
+import { Search, FileText, Eye, Plus, Edit, Trash2, DollarSign, TrendingUp, Printer, Download } from "lucide-react";
 import { InvoiceWithItems } from "@/supabase/services/invoice-service";
 import { toast } from "sonner";
+import { printInvoice, downloadInvoice } from "@/lib/invoice-utils";
 
 export default function SalesPage() {
   const router = useRouter();
@@ -205,7 +206,29 @@ export default function SalesPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8" 
+                          onClick={() => printInvoice(inv as InvoiceWithItems)}
+                          title="Print Invoice"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => {
+                            downloadInvoice(inv as InvoiceWithItems);
+                            toast.success("Invoice downloaded as PDF");
+                          }}
+                          title="Download Invoice"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
                           onClick={() => router.push(`/sales/edit/${inv.id}`)}
+                          title="Edit Invoice"
                         >
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
@@ -214,6 +237,7 @@ export default function SalesPage() {
                           size="icon" 
                           className="h-8 w-8" 
                           onClick={() => setViewInvoice(inv as InvoiceWithItems)}
+                          title="View Details"
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
@@ -222,6 +246,7 @@ export default function SalesPage() {
                           size="icon" 
                           className="h-8 w-8 text-destructive hover:text-destructive" 
                           onClick={() => setDeleteId(inv.id!)}
+                          title="Delete Invoice"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -239,7 +264,32 @@ export default function SalesPage() {
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Invoice {viewInvoice?.invoice_number}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Invoice {viewInvoice?.invoice_number}</span>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => viewInvoice && printInvoice(viewInvoice)}
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1" />
+                  Print
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    if (viewInvoice) {
+                      downloadInvoice(viewInvoice);
+                      toast.success("Invoice downloaded as PDF");
+                    }
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Download
+                </Button>
+              </div>
+            </DialogTitle>
             <DialogDescription>Invoice details and items</DialogDescription>
           </DialogHeader>
           {viewInvoice && <InvoiceDetail invoice={viewInvoice} formatCurrency={formatCurrency} />}

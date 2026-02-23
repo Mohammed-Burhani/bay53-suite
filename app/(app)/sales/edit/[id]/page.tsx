@@ -4,10 +4,11 @@ import { useRouter, useParams } from "next/navigation";
 import { useInvoice, useUpdateInvoiceWithItems } from "@/lib/api-services/invoice.service";
 import { InvoiceFormLayout } from "@/components/invoice/InvoiceFormLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, Printer, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Invoice, InvoiceItem } from "@/supabase/services/invoice-service";
+import { printInvoice, downloadInvoice } from "@/lib/invoice-utils";
 
 export default function EditSalesInvoicePage() {
   const router = useRouter();
@@ -125,6 +126,27 @@ export default function EditSalesInvoicePage() {
           <p className="text-sm text-muted-foreground">
             Update invoice {invoiceData.invoice_number}
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => printInvoice(invoiceData)}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              downloadInvoice(invoiceData);
+              toast.success("Invoice downloaded");
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
         </div>
         <Badge 
           variant={
