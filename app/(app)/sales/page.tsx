@@ -347,7 +347,11 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
           <p className="text-muted-foreground">{new Date(invoice.invoice_date).toLocaleDateString("en-IN")}</p>
         </div>
         <Badge
-          variant={invoice.invoice_status === "paid" ? "default" : invoice.invoice_status === "partial" ? "secondary" : "destructive"}
+          variant={
+            invoice.invoice_status === "tax-invoice" ? "default" : 
+            invoice.invoice_status === "ready" ? "secondary" : 
+            "outline"
+          }
           className="capitalize h-fit"
         >
           {invoice.invoice_status}

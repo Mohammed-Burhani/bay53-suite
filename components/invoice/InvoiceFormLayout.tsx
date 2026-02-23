@@ -243,6 +243,7 @@ export function InvoiceFormLayout({
           total: item.quantity * item.rate,
           maxStock: 0,
           hsnCode: item.hsn_sac_code || '',
+          weight: item.weight || 0,
         }));
 
         const handleItemUpdate = (index: number, field: string, value: unknown) => {
@@ -258,6 +259,8 @@ export function InvoiceFormLayout({
             setFieldValue(`items.${index}.unit`, value);
           } else if (field === 'hsnCode') {
             setFieldValue(`items.${index}.hsn_sac_code`, value);
+          } else if (field === 'weight') {
+            setFieldValue(`items.${index}.weight`, value);
           }
         };
 
@@ -277,6 +280,7 @@ export function InvoiceFormLayout({
               rate: 0,
               gst_rate: 18,
               amount: 0,
+              weight: 0,
             }
           ];
           setFieldValue('items', newItems);
