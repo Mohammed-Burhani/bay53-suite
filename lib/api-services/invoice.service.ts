@@ -6,7 +6,8 @@ import {
   InvoiceItem,
   InvoiceType,
   InvoiceStatus,
-  InvoiceSummary
+  InvoiceSummary,
+  PaymentMode
 } from '@/supabase/services/invoice-service';
 
 // =====================================================
@@ -379,7 +380,7 @@ export function useUpdatePayment() {
       amount_paid: number; 
       payment_mode?: string;
       status: InvoiceStatus;
-    }) => invoiceService.updateInvoice(id, { amount_paid, payment_mode: payment_mode as any, status }),
+    }) => invoiceService.updateInvoice(id, { amount_paid, payment_mode: payment_mode as PaymentMode, status }),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(invoiceKeys.details.byId(variables.id), data);
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists.all() });
@@ -429,4 +430,43 @@ export function usePrefetchInvoicesByType() {
       queryFn: () => invoiceService.getInvoices({ type }),
     });
   };
+}
+
+// =====================================================
+// TAX INVOICE GENERATION HOOKS
+// =====================================================
+
+// Get pending invoices
+export function usePendingInvoices() {
+  return useQuery({
+    queryKey: ['invoices', 'pending'],
+    queryFn: () => invoiceService.getPendingInvoices(),
+  });
+}
+
+// Generate tax invoices
+export function useGenerateTaxInvoices() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => invoiceService.generateTaxInvoices(),
+    onSuccess: (taxInvoices) => {
+      // Invalidate all invoice queries
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.all });
+      
+      // Invalidate pending invoices
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'pending'] });
+      
+      // Invalidate financial queries
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'totals'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'outstanding'] });
+      
+      // Cache the new tax invoices
+      taxInvoices.forEach(invoice => {
+        if (invoice.id) {
+          queryClient.setQueryData(invoiceKeys.details.byId(invoice.id), invoice);
+        }
+      });
+    },
+  });
 }

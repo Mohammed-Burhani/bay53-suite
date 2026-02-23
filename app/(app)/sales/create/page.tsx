@@ -51,8 +51,6 @@ export default function CreateSalesInvoicePage() {
     igst: 0,
     total_gst: 0,
     grand_total: 0,
-    amount_paid: 0,
-    payment_mode: 'cash',
     
     notes: '',
     terms_conditions: '',
@@ -67,6 +65,7 @@ export default function CreateSalesInvoicePage() {
         rate: 0,
         gst_rate: 18,
         amount: 0,
+        weight: 0,
       }
     ],
   };
@@ -92,6 +91,7 @@ export default function CreateSalesInvoicePage() {
         tax_invoice_number: values.tax_invoice_number || '',
         type: 'sale',
         status: values.status || 'draft',
+        invoice_status: 'pending', // Set default invoice_status to pending
         invoice_date: values.invoice_date || new Date().toISOString().split('T')[0],
         
         seller_name: values.seller_name,
@@ -120,8 +120,6 @@ export default function CreateSalesInvoicePage() {
         igst: values.igst || 0,
         total_gst: values.total_gst || 0,
         grand_total: values.grand_total || 0,
-        amount_paid: values.amount_paid || 0,
-        payment_mode: values.payment_mode,
         
         notes: values.notes,
         terms_conditions: values.terms_conditions,
@@ -155,7 +153,7 @@ export default function CreateSalesInvoicePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />

@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Formik, Form, FieldArray } from "formik";
+import { Formik, Form, useFormikContext } from "formik";
 import * as Yup from "yup";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Loader2, FileText } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import { Invoice, InvoiceItem } from "@/supabase/services/invoice-service";
 import { InvoiceHeader } from "./InvoiceHeader";
 import { AddressSection } from "./AddressSection";
@@ -16,24 +13,77 @@ import { InvoiceItemsTable, InvoiceLineItem } from "./InvoiceItemsTable";
 import { ColumnSettings, CustomColumn } from "./ColumnSettings";
 import { InvoiceSummary } from "./InvoiceSummary";
 import { InvoiceNotes } from "./InvoiceNotes";
-import { 
-  initializeColumns, 
-  saveColumns as saveColumnsToStorage 
+import {
+  initializeColumns,
+  saveColumns as saveColumnsToStorage
 } from "@/lib/invoice-columns-storage";
 import { toast } from "sonner";
+
+// Auto-update totals component
+function AutoUpdateTotals() {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+
+  useEffect(() => {
+    // Calculate totals
+    const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+    const discount = Number(values.discount) || 0;
+    const taxableAmount = subtotal - discount;
+
+    let cgst = 0, sgst = 0, igst = 0;
+    const isInterState = values.seller_state !== values.buyer_state;
+
+    values.items.forEach(item => {
+      const itemTaxable = (item.quantity * item.rate);
+      const gstAmount = (itemTaxable * item.gst_rate) / 100;
+
+      if (isInterState) {
+        igst += gstAmount;
+      } else {
+        cgst += gstAmount / 2;
+        sgst += gstAmount / 2;
+      }
+    });
+
+    const totalGst = cgst + sgst + igst;
+    const grandTotal = taxableAmount + totalGst;
+
+    // Update form values
+    setFieldValue('subtotal', subtotal);
+    setFieldValue('taxable_amount', taxableAmount);
+    setFieldValue('cgst', cgst);
+    setFieldValue('sgst', sgst);
+    setFieldValue('igst', igst);
+    setFieldValue('total_gst', totalGst);
+    setFieldValue('grand_total', grandTotal);
+
+    // Set default status
+    if (!values.status) {
+      setFieldValue('status', 'unpaid');
+    }
+  }, [
+    values.items,
+    values.discount,
+    values.seller_state,
+    values.buyer_state,
+    values.status,
+    setFieldValue
+  ]);
+
+  return null;
+}
 
 // Validation Schema
 const invoiceValidationSchema = Yup.object().shape({
   // invoice_number: Yup.string().required("Invoice number is required"),
   // tax_invoice_number: Yup.string(),
   // invoice_date: Yup.date().required("Invoice date is required"),
-  
+
   // seller_name: Yup.string().required("Seller name is required"),
   // seller_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
-  
+
   // buyer_name: Yup.string().required("Buyer name is required"),
   // buyer_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
-  
+
   // items: Yup.array()
   //   .of(
   //     Yup.object().shape({
@@ -45,7 +95,7 @@ const invoiceValidationSchema = Yup.object().shape({
   //   )
   //   .min(1, "At least one item is required")
   //   .max(8, "Maximum 8 items allowed"),
-  
+
   // payment_mode: Yup.string().oneOf(['cash', 'upi', 'card', 'bank_transfer', 'credit', 'cheque']),
   // amount_paid: Yup.number().min(0, "Amount paid must be positive"),
 });
@@ -63,13 +113,13 @@ interface InvoiceFormLayoutProps {
   status?: string;
 }
 
-export function InvoiceFormLayout({ 
-  initialValues, 
-  onSubmit, 
-  isSubmitting, 
+export function InvoiceFormLayout({
+  initialValues,
+  onSubmit,
+  isSubmitting,
   mode,
-  invoiceNumber,
-  status 
+  // invoiceNumber,
+  // status
 }: InvoiceFormLayoutProps) {
   const router = useRouter();
   const [columns, setColumns] = useState<CustomColumn[]>([]);
@@ -142,20 +192,20 @@ export function InvoiceFormLayout({
       onSubmit={onSubmit}
       enableReinitialize
     >
-      {({ values, errors, touched, setFieldValue, handleChange, handleBlur }) => {
-        // Calculate totals
+      {({ values, setFieldValue }) => {
+        // Calculate totals for display
         const calculateTotals = () => {
           const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
           const discount = Number(values.discount) || 0;
           const taxableAmount = subtotal - discount;
-          
+
           let cgst = 0, sgst = 0, igst = 0;
           const isInterState = values.seller_state !== values.buyer_state;
-          
+
           values.items.forEach(item => {
             const itemTaxable = (item.quantity * item.rate);
             const gstAmount = (itemTaxable * item.gst_rate) / 100;
-            
+
             if (isInterState) {
               igst += gstAmount;
             } else {
@@ -163,44 +213,23 @@ export function InvoiceFormLayout({
               sgst += gstAmount / 2;
             }
           });
-          
+
           const totalGst = cgst + sgst + igst;
           const grandTotal = taxableAmount + totalGst;
-          
-          return { 
-            subtotal, 
-            totalDiscount: discount, 
-            taxableAmount, 
-            cgst, 
-            sgst, 
-            igst, 
-            totalGst, 
-            grandTotal 
+
+          return {
+            subtotal,
+            totalDiscount: discount,
+            taxableAmount,
+            cgst,
+            sgst,
+            igst,
+            totalGst,
+            grandTotal
           };
         };
-        
+
         const totals = calculateTotals();
-        
-        // Update totals in form values
-        useEffect(() => {
-          setFieldValue('subtotal', totals.subtotal);
-          setFieldValue('taxable_amount', totals.taxableAmount);
-          setFieldValue('cgst', totals.cgst);
-          setFieldValue('sgst', totals.sgst);
-          setFieldValue('igst', totals.igst);
-          setFieldValue('total_gst', totals.totalGst);
-          setFieldValue('grand_total', totals.grandTotal);
-          
-          // Auto-calculate status
-          const amountPaid = Number(values.amount_paid) || 0;
-          if (amountPaid >= totals.grandTotal) {
-            setFieldValue('status', 'paid');
-          } else if (amountPaid > 0) {
-            setFieldValue('status', 'partial');
-          } else {
-            setFieldValue('status', 'unpaid');
-          }
-        }, [values.items, values.discount, values.amount_paid, values.seller_state, values.buyer_state, setFieldValue, totals.subtotal, totals.taxableAmount, totals.cgst, totals.sgst, totals.igst, totals.totalGst, totals.grandTotal]);
 
         // Convert items to InvoiceLineItem format for the table
         const lineItems: InvoiceLineItem[] = values.items.map(item => ({
@@ -264,6 +293,7 @@ export function InvoiceFormLayout({
 
         return (
           <Form>
+            <AutoUpdateTotals />
             <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
               <div className="space-y-6">
                 <InvoiceHeader
@@ -295,7 +325,7 @@ export function InvoiceFormLayout({
                     selectedPartyId: '',
                     selectedCustomer: undefined,
                     customerGstin: values.buyer_gstin || '',
-                    onCustomerSelect: () => {},
+                    onCustomerSelect: () => { },
                     onCustomerGstinChange: (val) => setFieldValue('buyer_gstin', val),
                   }}
                   buyerName={values.buyer_name || ''}
@@ -313,7 +343,7 @@ export function InvoiceFormLayout({
                   columns={columns}
                   products={[]}
                   searchTerm=""
-                  onSearchChange={() => {}}
+                  onSearchChange={() => { }}
                   onAddItem={addItem}
                   onRemoveItem={removeItem}
                   onUpdateItem={handleItemUpdate}
@@ -332,9 +362,9 @@ export function InvoiceFormLayout({
                   }
                 />
 
-                <InvoiceNotes 
-                  notes={values.notes || ''} 
-                  onNotesChange={(val) => setFieldValue('notes', val)} 
+                <InvoiceNotes
+                  notes={values.notes || ''}
+                  onNotesChange={(val) => setFieldValue('notes', val)}
                 />
               </div>
 
@@ -342,12 +372,8 @@ export function InvoiceFormLayout({
                 <InvoiceSummary
                   totals={totals}
                   discount={Number(values.discount) || 0}
-                  paymentMode={values.payment_mode || 'cash'}
-                  amountPaid={Number(values.amount_paid) || 0}
                   gstRate={values.items[0]?.gst_rate || 18}
                   onDiscountChange={(val) => setFieldValue('discount', val)}
-                  onPaymentModeChange={(val) => setFieldValue('payment_mode', val)}
-                  onAmountPaidChange={(val) => setFieldValue('amount_paid', val)}
                   onGstRateChange={(val) => {
                     // Update GST rate for all items
                     const updatedItems = values.items.map(item => ({
@@ -372,10 +398,10 @@ export function InvoiceFormLayout({
                       </>
                     )}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
                     onClick={() => router.back()}
                   >
                     Cancel

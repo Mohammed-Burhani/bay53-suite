@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useInvoicesByType, useDeleteInvoice, useSalesTotals, useSalesReceivables } from "@/lib/api-services/invoice.service";
+import { useInvoicesByType, useDeleteInvoice, useSalesTotals } from "@/lib/api-services/invoice.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,10 +33,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Search, FileText, Eye, Plus, Edit, Trash2, DollarSign, TrendingUp, Printer, Download } from "lucide-react";
-import { InvoiceWithItems } from "@/supabase/services/invoice-service";
+import { Search, FileText, Eye, Plus, Edit, Trash2, TrendingUp, Printer, Download } from "lucide-react";
+import { InvoiceWithItems, invoiceService } from "@/supabase/services/invoice-service";
 import { toast } from "sonner";
 import { printInvoice, downloadInvoice } from "@/lib/invoice-utils";
+import { GenerateTaxInvoiceButton } from "@/components/invoice/GenerateTaxInvoiceButton";
 
 export default function SalesPage() {
   const router = useRouter();
@@ -46,7 +47,6 @@ export default function SalesPage() {
 
   const { data: invoices = [], isLoading } = useInvoicesByType('sale');
   const { data: totalSales = 0 } = useSalesTotals();
-  const { data: receivables = 0 } = useSalesReceivables();
   const deleteInvoice = useDeleteInvoice();
 
   const filtered = invoices.filter(
@@ -55,7 +55,7 @@ export default function SalesPage() {
       inv.buyer_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalReceived = invoices.reduce((sum, i) => sum + Number(i.amount_paid), 0);
+  // Removed payment tracking
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -64,8 +64,46 @@ export default function SalesPage() {
       await deleteInvoice.mutateAsync(deleteId);
       toast.success("Invoice deleted successfully");
       setDeleteId(null);
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete invoice");
+    }
+  };
+
+  const handlePrint = async (invoiceId: string) => {
+    try {
+      console.log('Fetching invoice for print:', invoiceId);
+      const fullInvoice = await invoiceService.getInvoiceById(invoiceId);
+      console.log('Fetched invoice:', fullInvoice);
+      console.log('Invoice items:', fullInvoice?.items);
+      console.log('Items count:', fullInvoice?.items?.length);
+      
+      if (fullInvoice) {
+        printInvoice(fullInvoice);
+      } else {
+        toast.error("Invoice not found");
+      }
+    } catch (err) {
+      console.error('Error fetching invoice:', err);
+      toast.error("Failed to load invoice");
+    }
+  };
+
+  const handleDownload = async (invoiceId: string) => {
+    try {
+      console.log('Fetching invoice for download:', invoiceId);
+      const fullInvoice = await invoiceService.getInvoiceById(invoiceId);
+      console.log('Fetched invoice:', fullInvoice);
+      console.log('Invoice items:', fullInvoice?.items);
+      
+      if (fullInvoice) {
+        downloadInvoice(fullInvoice);
+        toast.success("Invoice downloaded as PDF");
+      } else {
+        toast.error("Invoice not found");
+      }
+    } catch (err) {
+      console.error('Error fetching invoice:', err);
+      toast.error("Failed to load invoice");
     }
   };
 
@@ -95,14 +133,17 @@ export default function SalesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Sales & Invoices</h1>
           <p className="text-sm text-muted-foreground">{invoices.length} sale invoices</p>
         </div>
-        <Button onClick={() => router.push('/sales/create')} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Invoice
-        </Button>
+        <div className="flex gap-2">
+          <GenerateTaxInvoiceButton />
+          <Button onClick={() => router.push('/sales/create')} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Invoice
+          </Button>
+        </div>
       </div>
 
       {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card className="card-hover border-l-4 border-l-indigo-500">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-indigo-100 p-2.5">
@@ -114,25 +155,14 @@ export default function SalesPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="card-hover border-l-4 border-l-emerald-500">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-emerald-100 p-2.5">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Received</p>
-              <p className="text-xl font-bold mt-1 text-emerald-600">{formatCurrency(totalReceived)}</p>
-            </div>
-          </CardContent>
-        </Card>
         <Card className="card-hover border-l-4 border-l-amber-500">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-amber-100 p-2.5">
               <FileText className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Receivables</p>
-              <p className="text-xl font-bold mt-1 text-amber-600">{formatCurrency(receivables)}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Invoices</p>
+              <p className="text-xl font-bold mt-1 text-amber-600">{invoices.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -159,7 +189,6 @@ export default function SalesPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-center">Payment</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -167,7 +196,7 @@ export default function SalesPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center">
+                  <TableCell colSpan={6} className="py-12 text-center">
                     <FileText className="mx-auto h-8 w-8 text-muted-foreground/40" />
                     <p className="mt-2 text-sm text-muted-foreground">
                       {search ? "No invoices found" : "No invoices yet. Create your first invoice!"}
@@ -186,11 +215,6 @@ export default function SalesPage() {
                       {formatCurrency(Number(inv.grand_total))}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {inv.payment_mode?.replace("_", " ") || "N/A"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
                       <Badge
                         variant={
                           inv.status === "paid" ? "default" : inv.status === "partial" ? "secondary" : "destructive"
@@ -206,7 +230,7 @@ export default function SalesPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8" 
-                          onClick={() => printInvoice(inv as InvoiceWithItems)}
+                          onClick={() => handlePrint(inv.id!)}
                           title="Print Invoice"
                         >
                           <Printer className="h-3.5 w-3.5" />
@@ -215,10 +239,7 @@ export default function SalesPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8" 
-                          onClick={() => {
-                            downloadInvoice(inv as InvoiceWithItems);
-                            toast.success("Invoice downloaded as PDF");
-                          }}
+                          onClick={() => handleDownload(inv.id!)}
                           title="Download Invoice"
                         >
                           <Download className="h-3.5 w-3.5" />
@@ -367,16 +388,6 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
           <span>Grand Total</span>
           <span>{formatCurrency(Number(invoice.grand_total))}</span>
         </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>Paid ({invoice.payment_mode?.replace("_", " ") || "N/A"})</span>
-          <span>{formatCurrency(Number(invoice.amount_paid))}</span>
-        </div>
-        {Number(invoice.grand_total) - Number(invoice.amount_paid) > 0 && (
-          <div className="flex justify-between text-amber-600 font-medium">
-            <span>Balance Due</span>
-            <span>{formatCurrency(Number(invoice.grand_total) - Number(invoice.amount_paid))}</span>
-          </div>
-        )}
       </div>
     </div>
   );

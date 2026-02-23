@@ -68,20 +68,32 @@ export function getDefaultColumns(): ColumnConfig[] {
   return [
     { id: "sno", label: "S.No", enabled: true, isCustom: false, type: "fixed" },
     { id: "description", label: "Description", enabled: true, isCustom: false, type: "fixed" },
-    { id: "hsn", label: "HSN/SAC", enabled: true, isCustom: false, type: "text" },
+    // { id: "hsn", label: "HSN/SAC", enabled: false, isCustom: false, type: "text" },
     { id: "quantity", label: "Quantity", enabled: true, isCustom: false, type: "number" },
+    { id: "weight", label: "Weight (kg)", enabled: true, isCustom: false, type: "number" },
     { id: "rate", label: "Rate", enabled: true, isCustom: false, type: "number" },
-    { id: "gst", label: "GST %", enabled: false, isCustom: false, type: "number" },
+    // { id: "gst", label: "GST %", enabled: false, isCustom: false, type: "number" },
     { id: "amount", label: "Amount", enabled: true, isCustom: false, type: "fixed" },
   ];
 }
 
 /**
  * Initialize columns - use saved if available, otherwise use defaults
+ * Merges new default columns with saved columns to ensure new columns appear
  */
 export function initializeColumns(): ColumnConfig[] {
   const saved = getSavedColumns();
-  return saved || getDefaultColumns();
+  const defaults = getDefaultColumns();
+  
+  if (!saved) {
+    return defaults;
+  }
+  
+  // Merge: keep saved columns but add any new default columns that don't exist
+  const savedIds = new Set(saved.map(col => col.id));
+  const newColumns = defaults.filter(col => !savedIds.has(col.id));
+  
+  return [...saved, ...newColumns];
 }
 
 /**

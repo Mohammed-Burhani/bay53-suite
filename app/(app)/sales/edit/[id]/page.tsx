@@ -55,8 +55,6 @@ export default function EditSalesInvoicePage() {
         igst: values.igst,
         total_gst: values.total_gst,
         grand_total: values.grand_total,
-        amount_paid: values.amount_paid,
-        payment_mode: values.payment_mode,
         status: values.status,
         
         notes: values.notes,

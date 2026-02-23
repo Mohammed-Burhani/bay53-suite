@@ -81,7 +81,7 @@ export function ColumnSettings({
         <p className="text-sm font-medium">
           Customize Columns ({enabledCount}/{maxColumns})
         </p>
-        <Button size="sm" variant="ghost" onClick={onClose}>
+        <Button type="button" size="sm" variant="ghost" onClick={onClose}>
           <X className="h-3 w-3" />
         </Button>
       </div>
@@ -113,10 +113,11 @@ export function ColumnSettings({
                       if (e.key === "Escape") setEditingColumnId(null);
                     }}
                   />
-                  <Button size="sm" onClick={saveLabel} className="h-7">
+                  <Button type="button" size="sm" onClick={saveLabel} className="h-7">
                     Save
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
                     onClick={() => setEditingColumnId(null)}
@@ -130,6 +131,7 @@ export function ColumnSettings({
                   <span className="flex-1 text-sm">{col.label}</span>
                   {col.type !== "fixed" && (
                     <Button
+                      type="button"
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing(col)}
@@ -140,6 +142,7 @@ export function ColumnSettings({
                   )}
                   {col.isCustom && (
                     <Button
+                      type="button"
                       size="sm"
                       variant="ghost"
                       onClick={() => onDeleteColumn(col.id)}
@@ -171,7 +174,7 @@ export function ColumnSettings({
               if (e.key === "Enter") handleAddColumn();
             }}
           />
-          <Select value={newColumnType} onValueChange={(v: any) => setNewColumnType(v)}>
+          <Select value={newColumnType} onValueChange={(v: "text" | "number") => setNewColumnType(v)}>
             <SelectTrigger className="h-9 w-[100px]">
               <SelectValue />
             </SelectTrigger>
@@ -180,7 +183,7 @@ export function ColumnSettings({
               <SelectItem value="number">Number</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={handleAddColumn} className="h-9">
+          <Button type="button" size="sm" onClick={handleAddColumn} className="h-9">
             <Plus className="h-3 w-3 mr-1" />
             Add
           </Button>

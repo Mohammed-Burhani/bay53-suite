@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Plus, Settings, Trash2, Search } from "lucide-react";
+import { FileText, Plus, Trash2, } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { Product } from "@/lib/types";
 import { CustomColumn } from "./ColumnSettings";
@@ -21,6 +22,7 @@ export interface InvoiceLineItem {
   total: number;
   maxStock: number;
   hsnCode?: string;
+  weight?: number;
   [key: string]: any;
 }
 
@@ -47,12 +49,12 @@ export function InvoiceItemsTable({
   onAddItem,
   onRemoveItem,
   onUpdateItem,
-  onToggleColumnSettings,
+  // onToggleColumnSettings,
   showColumnSettings,
   columnSettingsComponent,
 }: InvoiceItemsTableProps) {
   const enabledColumns = columns.filter((c) => c.enabled);
-  const maxColumns = 5;
+  // const maxColumns = 5;
 
   const filteredProducts = products.filter(
     (p) =>
@@ -70,7 +72,8 @@ export function InvoiceItemsTable({
             Invoice Items
           </div>
           <div className="flex gap-2">
-            <Button
+            {/* <Button
+              type="button"
               size="sm"
               variant="outline"
               onClick={onToggleColumnSettings}
@@ -78,8 +81,8 @@ export function InvoiceItemsTable({
             >
               <Settings className="h-3 w-3" />
               Columns ({enabledColumns.length}/{maxColumns})
-            </Button>
-            <Button size="sm" variant="outline" onClick={onAddItem} className="gap-2">
+            </Button> */}
+            <Button type="button" size="sm" variant="outline" onClick={onAddItem} className="gap-2">
               <Plus className="h-3 w-3" />
               Add Item
             </Button>
@@ -92,7 +95,7 @@ export function InvoiceItemsTable({
           <div className="py-12 text-center text-muted-foreground">
             <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No items added yet</p>
-            <p className="text-xs mt-1">Click "Add Item" to start</p>
+            <p className="text-xs mt-1">Click &quot;Add Item&quot; to start</p>
           </div>
         ) : (
           <div className="border rounded-lg overflow-x-auto">
@@ -106,10 +109,10 @@ export function InvoiceItemsTable({
                         col.id === "sno"
                           ? "w-[60px]"
                           : col.id === "description"
-                          ? "min-w-[250px]"
-                          : col.id === "amount"
-                          ? "w-[140px] text-right"
-                          : "w-[120px]"
+                            ? "min-w-[250px]"
+                            : col.id === "amount"
+                              ? "w-[140px] text-right"
+                              : "w-[120px]"
                       }
                     >
                       {col.label}
@@ -156,9 +159,9 @@ function InvoiceItemRow({
   item,
   index,
   columns,
-  products,
-  searchTerm,
-  onSearchChange,
+  // products,
+  // searchTerm,
+  // onSearchChange,
   onUpdate,
   onRemove,
 }: InvoiceItemRowProps) {
@@ -206,6 +209,21 @@ function InvoiceItemRow({
                 value={item.quantity}
                 onChange={(e) => onUpdate(index, "quantity", Number(e.target.value) || 0)}
                 className="h-9 text-sm"
+              />
+            </TableCell>
+          );
+        }
+        if (col.id === "weight") {
+          return (
+            <TableCell key={col.id}>
+              <Input
+                type="number"
+                min="0"
+                step="0.001"
+                value={item.weight || ""}
+                onChange={(e) => onUpdate(index, "weight", Number(e.target.value) || 0)}
+                className="h-9 text-sm"
+                placeholder="0.000"
               />
             </TableCell>
           );
@@ -267,6 +285,7 @@ function InvoiceItemRow({
       })}
       <TableCell>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-destructive"
