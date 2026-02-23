@@ -217,11 +217,11 @@ export default function SalesPage() {
                     <TableCell className="text-center">
                       <Badge
                         variant={
-                          inv.status === "paid" ? "default" : inv.status === "partial" ? "secondary" : "destructive"
+                          inv.invoice_status === "pending" ? "destructive" : inv.invoice_status === "ready" ? "secondary" : "default"
                         }
                         className="text-xs capitalize"
                       >
-                        {inv.status}
+                        {inv.invoice_status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -347,10 +347,10 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
           <p className="text-muted-foreground">{new Date(invoice.invoice_date).toLocaleDateString("en-IN")}</p>
         </div>
         <Badge
-          variant={invoice.status === "paid" ? "default" : invoice.status === "partial" ? "secondary" : "destructive"}
+          variant={invoice.invoice_status === "paid" ? "default" : invoice.invoice_status === "partial" ? "secondary" : "destructive"}
           className="capitalize h-fit"
         >
-          {invoice.status}
+          {invoice.invoice_status}
         </Badge>
       </div>
       <Separator />
