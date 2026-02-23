@@ -549,7 +549,26 @@ function generateTaxInvoicePDF(
 
   // Billed To section
   const billedToY = 80;
-  const billedToBoxHeight = 45; // Increased height for more content
+  
+  // Calculate dynamic height based on content
+  let contentHeight = 10; // Base height for title
+  doc.setFontSize(8);
+  
+  if (invoice.buyer_gstin) contentHeight += 4;
+  if (invoice.buyer_address) {
+    const addressLines = doc.splitTextToSize(invoice.buyer_address, 90);
+    contentHeight += (addressLines.length * 4);
+  }
+  const buyerLocation = [invoice.buyer_city, invoice.buyer_state, invoice.buyer_pincode]
+    .filter(Boolean)
+    .join(', ');
+  if (buyerLocation) {
+    const locationLines = doc.splitTextToSize(buyerLocation, 90);
+    contentHeight += (locationLines.length * 4);
+  }
+  if (invoice.buyer_phone) contentHeight += 4;
+  
+  const billedToBoxHeight = Math.max(35, contentHeight + 10); // Minimum 35, with 10 padding
   
   // Draw box for billed to
   doc.setDrawColor(79, 70, 229);
@@ -575,14 +594,10 @@ function generateTaxInvoicePDF(
     yPos += 4;
   }
   if (invoice.buyer_address) {
-    // Wrap address text
     const addressLines = doc.splitTextToSize(invoice.buyer_address, 90);
     doc.text(addressLines, 17, yPos);
     yPos += (addressLines.length * 4);
   }
-  const buyerLocation = [invoice.buyer_city, invoice.buyer_state, invoice.buyer_pincode]
-    .filter(Boolean)
-    .join(', ');
   if (buyerLocation) {
     const locationLines = doc.splitTextToSize(buyerLocation, 90);
     doc.text(locationLines, 17, yPos);
