@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Script from "next/script";
 import QueryProvider from "@/components/QueryProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -17,10 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </QueryProvider>
         <Toaster position="top-right" richColors />
-
       </body>
     </html>
   );

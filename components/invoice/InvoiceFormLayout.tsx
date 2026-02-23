@@ -24,30 +24,30 @@ import { toast } from "sonner";
 
 // Validation Schema
 const invoiceValidationSchema = Yup.object().shape({
-  invoice_number: Yup.string().required("Invoice number is required"),
-  tax_invoice_number: Yup.string(),
-  invoice_date: Yup.date().required("Invoice date is required"),
+  // invoice_number: Yup.string().required("Invoice number is required"),
+  // tax_invoice_number: Yup.string(),
+  // invoice_date: Yup.date().required("Invoice date is required"),
   
-  seller_name: Yup.string().required("Seller name is required"),
-  seller_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
+  // seller_name: Yup.string().required("Seller name is required"),
+  // seller_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
   
-  buyer_name: Yup.string().required("Buyer name is required"),
-  buyer_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
+  // buyer_name: Yup.string().required("Buyer name is required"),
+  // buyer_gstin: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GSTIN format").nullable(),
   
-  items: Yup.array()
-    .of(
-      Yup.object().shape({
-        description: Yup.string().required("Description is required"),
-        quantity: Yup.number().min(0.001, "Quantity must be greater than 0").required("Quantity is required"),
-        rate: Yup.number().min(0, "Rate must be positive").required("Rate is required"),
-        gst_rate: Yup.number().min(0).max(100).required("GST rate is required"),
-      })
-    )
-    .min(1, "At least one item is required")
-    .max(8, "Maximum 8 items allowed"),
+  // items: Yup.array()
+  //   .of(
+  //     Yup.object().shape({
+  //       description: Yup.string().required("Description is required"),
+  //       quantity: Yup.number().min(0.001, "Quantity must be greater than 0").required("Quantity is required"),
+  //       rate: Yup.number().min(0, "Rate must be positive").required("Rate is required"),
+  //       // gst_rate: Yup.number().min(0).max(100).required("GST rate is required"),
+  //     })
+  //   )
+  //   .min(1, "At least one item is required")
+  //   .max(8, "Maximum 8 items allowed"),
   
-  payment_mode: Yup.string().oneOf(['cash', 'upi', 'card', 'bank_transfer', 'credit', 'cheque']),
-  amount_paid: Yup.number().min(0, "Amount paid must be positive"),
+  // payment_mode: Yup.string().oneOf(['cash', 'upi', 'card', 'bank_transfer', 'credit', 'cheque']),
+  // amount_paid: Yup.number().min(0, "Amount paid must be positive"),
 });
 
 interface InvoiceFormValues extends Partial<Invoice> {

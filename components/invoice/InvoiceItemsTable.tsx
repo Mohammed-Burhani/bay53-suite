@@ -175,37 +175,12 @@ function InvoiceItemRow({
         if (col.id === "description") {
           return (
             <TableCell key={col.id}>
-              <Select
-                value={item.productId}
-                onValueChange={(value) => onUpdate(index, "productId", value)}
-              >
-                <SelectTrigger className="h-9 text-sm w-full">
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <Input
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        className="h-8 text-sm pl-7"
-                      />
-                    </div>
-                  </div>
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-sm">
-                      {p.name} (Stock: {p.stock})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {item.productId && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Stock: {item.maxStock} {item.unit}
-                </p>
-              )}
+              <Input
+                value={item.productName}
+                onChange={(e) => onUpdate(index, "productName", e.target.value)}
+                className="h-9 text-sm w-full"
+                placeholder="Enter product/service description"
+              />
             </TableCell>
           );
         }
@@ -226,10 +201,10 @@ function InvoiceItemRow({
             <TableCell key={col.id}>
               <Input
                 type="number"
-                min="1"
-                max={item.maxStock}
+                min="0.001"
+                step="0.001"
                 value={item.quantity}
-                onChange={(e) => onUpdate(index, "quantity", Number(e.target.value) || 1)}
+                onChange={(e) => onUpdate(index, "quantity", Number(e.target.value) || 0)}
                 className="h-9 text-sm"
               />
             </TableCell>
