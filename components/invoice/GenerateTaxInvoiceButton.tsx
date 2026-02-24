@@ -14,6 +14,7 @@ import { FileText, Loader2, AlertCircle } from "lucide-react";
 import { usePendingInvoices, useGenerateTaxInvoices } from "@/lib/api-services/invoice.service";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function GenerateTaxInvoiceButton() {
   const [showDialog, setShowDialog] = useState(false);
@@ -49,24 +50,35 @@ export function GenerateTaxInvoiceButton() {
   const totalPending = pendingInvoices?.length || 0;
 
   return (
-    <>
-      <Button
-        onClick={() => setShowDialog(true)}
-        disabled={loadingPending || totalPending === 0}
-        className="gap-2"
-      >
-        {loadingPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="h-4 w-4" />
-        )}
-        Generate Tax Invoice
-        {totalPending > 0 && (
-          <span className="ml-1 px-2 py-0.5 text-xs bg-primary-foreground text-primary rounded-full">
-            {totalPending}
-          </span>
-        )}
-      </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={() => setShowDialog(true)}
+            disabled={loadingPending || totalPending === 0}
+            variant="secondary"
+            className="gap-2 border border-indigo-300 text-purple-700 hover:bg-purple-200"
+          >
+            {loadingPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            Generate Tax Invoice
+            {totalPending > 0 && (
+              <span className="ml-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full font-medium">
+                {totalPending}
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p className="text-xs">
+            Consolidate multiple pending invoices from the same sender into one tax invoice. 
+            Perfect for courier/logistics businesses.
+          </p>
+        </TooltipContent>
+      </Tooltip>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-2xl">
@@ -150,6 +162,6 @@ export function GenerateTaxInvoiceButton() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   );
 }

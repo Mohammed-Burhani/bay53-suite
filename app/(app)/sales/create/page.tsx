@@ -4,10 +4,13 @@ import { useRouter } from "next/navigation";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/lib/api-services/invoice.service";
 import { InvoiceFormLayout } from "@/components/invoice/InvoiceFormLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Invoice, InvoiceItem } from "@/supabase/services/invoice-service";
+import { InvoiceGuide } from "@/components/invoice/InvoiceGuide";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function CreateSalesInvoicePage() {
   const router = useRouter();
@@ -154,21 +157,40 @@ export default function CreateSalesInvoicePage() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center gap-4">
-        <Button variant="secondary" size="icon" onClick={() => router.back()} className="border border-indigo-300">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">Create Sales Invoice</h1>
-          <p className="text-sm text-muted-foreground">
-            GST compliant sales invoice for Indian businesses
-          </p>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => router.back()} 
+            className="border-indigo-200 hover:bg-indigo-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold tracking-tight">Create Sales Invoice</h1>
+              <Badge variant="secondary" className="gap-1 border border-indigo-200 bg-indigo-50 text-indigo-700">
+                <Sparkles className="h-3 w-3" />
+                New
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              GST compliant sales invoice for Indian businesses
+            </p>
+          </div>
         </div>
-        <Badge variant="secondary" className="gap-1 border border-indigo-300">
-          <FileText className="h-3 w-3" />
-          New
-        </Badge>
+        <InvoiceGuide mode="create" />
       </div>
+
+      {/* Info Alert */}
+      <Alert className="border-blue-200 bg-blue-50/50">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-sm text-blue-900">
+          <span className="font-medium">Quick Tip:</span> Use the autocomplete feature in &ldquo;From&rdquo; and &ldquo;To&rdquo; fields to quickly fill in details from previous invoices.
+        </AlertDescription>
+      </Alert>
 
       <InvoiceFormLayout
         initialValues={initialValues}

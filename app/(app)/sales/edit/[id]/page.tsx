@@ -115,7 +115,7 @@ export default function EditSalesInvoicePage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
@@ -149,14 +149,14 @@ export default function EditSalesInvoicePage() {
         </div>
         <Badge 
           variant={
-            invoiceData.status === "paid" ? "default" : 
-            invoiceData.status === "partial" ? "secondary" : 
+            invoiceData.invoice_status === "tax-invoice" ? "default" : 
+            invoiceData.invoice_status === "ready" ? "secondary" : 
             "destructive"
           } 
           className="gap-1 capitalize"
         >
           <FileText className="h-3 w-3" />
-          {invoiceData.status}
+          {invoiceData.invoice_status}
         </Badge>
       </div>
 
@@ -166,7 +166,7 @@ export default function EditSalesInvoicePage() {
         isSubmitting={updateInvoice.isPending}
         mode="edit"
         invoiceNumber={invoiceData.invoice_number}
-        status={invoiceData.status}
+        status={invoiceData.invoice_status}
       />
     </div>
   );

@@ -33,11 +33,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Search, FileText, Eye, Plus, Edit, Trash2, TrendingUp, Printer, Download } from "lucide-react";
+import { Search, FileText, Eye, Plus, Edit, Trash2, TrendingUp, Printer, Download, Info } from "lucide-react";
 import { InvoiceWithItems, invoiceService } from "@/supabase/services/invoice-service";
 import { toast } from "sonner";
 import { printInvoice, downloadInvoice } from "@/lib/invoice-utils";
 import { GenerateTaxInvoiceButton } from "@/components/invoice/GenerateTaxInvoiceButton";
+import { InvoiceGuide } from "@/components/invoice/InvoiceGuide";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SalesPage() {
   const router = useRouter();
@@ -145,20 +148,33 @@ export default function SalesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sales & Invoices</h1>
-          <p className="text-sm text-muted-foreground">{invoices.length} sale invoices</p>
+    <TooltipProvider>
+      <div className="flex flex-col gap-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Sales & Invoices</h1>
+            <p className="text-sm text-muted-foreground">{invoices.length} sale invoices</p>
+          </div>
+          <div className="flex gap-2 items-end">
+            <InvoiceGuide mode="list" />
+            <GenerateTaxInvoiceButton />
+            <Button onClick={() => router.push('/sales/create')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Invoice
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <GenerateTaxInvoiceButton />
-          <Button onClick={() => router.push('/sales/create')} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Invoice
-          </Button>
-        </div>
-      </div>
+
+        {/* Info Alert */}
+        {invoices.length === 0 && (
+          <Alert className="border-indigo-200 bg-indigo-50/50">
+            <Info className="h-4 w-4 text-indigo-600" />
+            <AlertDescription className="text-sm text-indigo-900">
+              <span className="font-medium">Get Started:</span> Create your first invoice to start tracking sales. All invoices are GST compliant and can be printed or downloaded as PDF.
+            </AlertDescription>
+          </Alert>
+        )}
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -205,8 +221,8 @@ export default function SalesPage() {
               <TableRow>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>To</TableHead>
                 <TableHead>From</TableHead>
+                <TableHead>To</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -229,8 +245,8 @@ export default function SalesPage() {
                     <TableCell className="text-sm">
                       {new Date(inv.invoice_date).toLocaleDateString("en-IN")}
                     </TableCell>
-                    <TableCell className="text-sm font-medium">{inv.buyer_name}</TableCell>
                     <TableCell className="text-sm font-medium">{inv.seller_name}</TableCell>
+                    <TableCell className="text-sm font-medium">{inv.buyer_name}</TableCell>
                     <TableCell className="text-right text-sm font-medium">
                       {formatCurrency(Number(inv.grand_total))}
                     </TableCell>
@@ -246,51 +262,85 @@ export default function SalesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => handlePrint(inv.id!)}
-                          title="Print Invoice"
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => handleDownload(inv.id!)}
-                          title="Download Invoice"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => router.push(`/sales/edit/${inv.id}`)}
-                          title="Edit Invoice"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => handleViewInvoice(inv.id!)}
-                          title="View Details"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:text-destructive" 
-                          onClick={() => setDeleteId(inv.id!)}
-                          title="Delete Invoice"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              onClick={() => handlePrint(inv.id!)}
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Print Invoice</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              onClick={() => handleDownload(inv.id!)}
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download as PDF</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              onClick={() => router.push(`/sales/edit/${inv.id}`)}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit Invoice</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              onClick={() => handleViewInvoice(inv.id!)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View Details</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive" 
+                              onClick={() => setDeleteId(inv.id!)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete Invoice</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -370,6 +420,7 @@ export default function SalesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  </TooltipProvider>
   );
 }
 
