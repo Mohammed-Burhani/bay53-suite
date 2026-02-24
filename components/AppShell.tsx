@@ -48,16 +48,16 @@ interface NavModule {
 }
 
 const NAV_MODULES: NavModule[] = [
-  {
-    id: "onboarding",
-    label: "Get Started",
-    icon: Rocket,
-    color: "text-purple-400",
-    activeBg: "bg-purple-500/20",
-    subItems: [
-      { href: "/onboarding", label: "Onboarding Tour", icon: Rocket },
-    ],
-  },
+  // {
+  //   id: "onboarding",
+  //   label: "Get Started",
+  //   icon: Rocket,
+  //   color: "text-purple-400",
+  //   activeBg: "bg-purple-500/20",
+  //   subItems: [
+  //     { href: "/onboarding", label: "Onboarding Tour", icon: Rocket },
+  //   ],
+  // },
   {
     id: "dashboard",
     label: "Dashboard",
@@ -68,19 +68,19 @@ const NAV_MODULES: NavModule[] = [
       { href: "/dashboard", label: "Overview", icon: Eye },
     ],
   },
-  {
-    id: "inventory",
-    label: "Inventory",
-    icon: Package,
-    color: "text-emerald-400",
-    activeBg: "bg-emerald-500/20",
-    subItems: [
-      { href: "/inventory", label: "All Products", icon: List },
-      { href: "/inventory/add", label: "Add Product", icon: Plus },
-      { href: "/inventory/categories", label: "Categories", icon: FileText },
-      { href: "/inventory/low-stock", label: "Low Stock Alert", icon: TrendingDown },
-    ],
-  },
+  // {
+  //   id: "inventory",
+  //   label: "Inventory",
+  //   icon: Package,
+  //   color: "text-emerald-400",
+  //   activeBg: "bg-emerald-500/20",
+  //   subItems: [
+  //     { href: "/inventory", label: "All Products", icon: List },
+  //     { href: "/inventory/add", label: "Add Product", icon: Plus },
+  //     { href: "/inventory/categories", label: "Categories", icon: FileText },
+  //     { href: "/inventory/low-stock", label: "Low Stock Alert", icon: TrendingDown },
+  //   ],
+  // },
   {
     id: "sales",
     label: "Sales",
@@ -88,62 +88,62 @@ const NAV_MODULES: NavModule[] = [
     color: "text-cyan-400",
     activeBg: "bg-cyan-500/20",
     subItems: [
-      { href: "/pos", label: "POS (Billing)", icon: ShoppingCart },
+      // { href: "/pos", label: "POS (Billing)", icon: ShoppingCart },
       { href: "/sales", label: "All Invoices", icon: Receipt },
       { href: "/sales/create", label: "Create Invoice", icon: Plus },
-      { href: "/sales/returns", label: "Sales Returns", icon: Trash2 },
+      // { href: "/sales/returns", label: "Sales Returns", icon: Trash2 },
     ],
   },
-  {
-    id: "purchases",
-    label: "Purchases",
-    icon: IndianRupee,
-    color: "text-violet-400",
-    activeBg: "bg-violet-500/20",
-    subItems: [
-      { href: "/purchases", label: "All Purchases", icon: List },
-      { href: "/purchases/create", label: "New Purchase", icon: Plus },
-      { href: "/purchases/orders", label: "Purchase Orders", icon: FileText },
-      { href: "/purchases/returns", label: "Purchase Returns", icon: Trash2 },
-    ],
-  },
-  {
-    id: "parties",
-    label: "Parties",
-    icon: Users,
-    color: "text-pink-400",
-    activeBg: "bg-pink-500/20",
-    subItems: [
-      { href: "/parties", label: "All Parties", icon: List },
-      { href: "/parties/customers", label: "Customers", icon: Users },
-      { href: "/parties/suppliers", label: "Suppliers", icon: Users },
-      { href: "/parties/add", label: "Add Party", icon: UserPlus },
-    ],
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: BarChart3,
-    color: "text-orange-400",
-    activeBg: "bg-orange-500/20",
-    subItems: [
-      { href: "/reports", label: "All Reports", icon: FileBarChart },
-      { href: "/reports/sales", label: "Sales Report", icon: TrendingUp },
-      { href: "/reports/purchases", label: "Purchase Report", icon: TrendingDown },
-      { href: "/reports/inventory", label: "Inventory Report", icon: Package },
-      { href: "/reports/gst", label: "GST Report", icon: FileText },
-    ],
-  },
-  {
-    id: "ai-assistant",
-    label: "AI Assistant",
-    icon: Sparkles,
-    color: "text-fuchsia-400",
-    activeBg: "bg-fuchsia-500/20",
-    subItems: [
-      { href: "/ai-assistant", label: "Chat Assistant", icon: Sparkles },
-    ],
-  },
+  // {
+  //   id: "purchases",
+  //   label: "Purchases",
+  //   icon: IndianRupee,
+  //   color: "text-violet-400",
+  //   activeBg: "bg-violet-500/20",
+  //   subItems: [
+  //     { href: "/purchases", label: "All Purchases", icon: List },
+  //     { href: "/purchases/create", label: "New Purchase", icon: Plus },
+  //     { href: "/purchases/orders", label: "Purchase Orders", icon: FileText },
+  //     { href: "/purchases/returns", label: "Purchase Returns", icon: Trash2 },
+  //   ],
+  // },
+  // {
+  //   id: "parties",
+  //   label: "Parties",
+  //   icon: Users,
+  //   color: "text-pink-400",
+  //   activeBg: "bg-pink-500/20",
+  //   subItems: [
+  //     { href: "/parties", label: "All Parties", icon: List },
+  //     { href: "/parties/customers", label: "Customers", icon: Users },
+  //     { href: "/parties/suppliers", label: "Suppliers", icon: Users },
+  //     { href: "/parties/add", label: "Add Party", icon: UserPlus },
+  //   ],
+  // },
+  // {
+  //   id: "reports",
+  //   label: "Reports",
+  //   icon: BarChart3,
+  //   color: "text-orange-400",
+  //   activeBg: "bg-orange-500/20",
+  //   subItems: [
+  //     { href: "/reports", label: "All Reports", icon: FileBarChart },
+  //     { href: "/reports/sales", label: "Sales Report", icon: TrendingUp },
+  //     { href: "/reports/purchases", label: "Purchase Report", icon: TrendingDown },
+  //     { href: "/reports/inventory", label: "Inventory Report", icon: Package },
+  //     { href: "/reports/gst", label: "GST Report", icon: FileText },
+  //   ],
+  // },
+  // {
+  //   id: "ai-assistant",
+  //   label: "AI Assistant",
+  //   icon: Sparkles,
+  //   color: "text-fuchsia-400",
+  //   activeBg: "bg-fuchsia-500/20",
+  //   subItems: [
+  //     { href: "/ai-assistant", label: "Chat Assistant", icon: Sparkles },
+  //   ],
+  // },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
