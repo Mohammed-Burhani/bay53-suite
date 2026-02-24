@@ -155,7 +155,7 @@ export default function CreateSalesInvoicePage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="secondary" size="icon" onClick={() => router.back()} className="border border-indigo-300">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
@@ -164,10 +164,10 @@ export default function CreateSalesInvoicePage() {
             GST compliant sales invoice for Indian businesses
           </p>
         </div>
-        <Badge variant="outline" className="gap-1">
+        {/* <Badge variant="outline" className="gap-1">
           <FileText className="h-3 w-3" />
           Draft
-        </Badge>
+        </Badge> */}
       </div>
 
       <InvoiceFormLayout
