@@ -323,6 +323,17 @@ export function InvoiceFormLayout({
                     onBusinessCityChange: (val) => setFieldValue('seller_city', val),
                     onBusinessStateChange: (val) => setFieldValue('seller_state', val),
                     onBusinessPincodeChange: (val) => setFieldValue('seller_pincode', val),
+                    onBusinessPartySelect: (party) => {
+                      // Auto-fill all seller fields when a party is selected
+                      setFieldValue('seller_name', party.name);
+                      if (party.gstin) setFieldValue('seller_gstin', party.gstin);
+                      if (party.address) setFieldValue('seller_address', party.address);
+                      if (party.city) setFieldValue('seller_city', party.city);
+                      if (party.state) setFieldValue('seller_state', party.state);
+                      if (party.pincode) setFieldValue('seller_pincode', party.pincode);
+                      if (party.phone) setFieldValue('seller_phone', party.phone);
+                      if (party.email) setFieldValue('seller_email', party.email);
+                    },
                   }}
                   customerProps={{
                     customers: [],
@@ -331,6 +342,17 @@ export function InvoiceFormLayout({
                     customerGstin: values.buyer_gstin || '',
                     onCustomerSelect: () => { },
                     onCustomerGstinChange: (val) => setFieldValue('buyer_gstin', val),
+                    onBuyerPartySelect: (party) => {
+                      // Auto-fill all buyer fields when a party is selected
+                      setFieldValue('buyer_name', party.name);
+                      if (party.gstin) setFieldValue('buyer_gstin', party.gstin);
+                      if (party.address) setFieldValue('buyer_address', party.address);
+                      if (party.city) setFieldValue('buyer_city', party.city);
+                      if (party.state) setFieldValue('buyer_state', party.state);
+                      if (party.pincode) setFieldValue('buyer_pincode', party.pincode);
+                      if (party.phone) setFieldValue('buyer_phone', party.phone);
+                      if (party.email) setFieldValue('buyer_email', party.email);
+                    },
                   }}
                   buyerName={values.buyer_name || ''}
                   buyerAddress={values.buyer_address || ''}

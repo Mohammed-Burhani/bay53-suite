@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 import { Party } from "@/lib/types";
+import { PartyAutocompleteInput } from "./PartyAutocompleteInput";
+import { PartyAutocomplete } from "@/supabase/services/party-autocomplete-service";
 
 interface BusinessAddressProps {
   businessName: string;
@@ -20,6 +22,7 @@ interface BusinessAddressProps {
   onBusinessCityChange: (value: string) => void;
   onBusinessStateChange: (value: string) => void;
   onBusinessPincodeChange: (value: string) => void;
+  onBusinessPartySelect?: (party: PartyAutocomplete) => void;
 }
 
 interface CustomerAddressProps {
@@ -38,6 +41,7 @@ interface CustomerAddressProps {
   onBuyerAddressChange?: (value: string) => void;
   onBuyerCityChange?: (value: string) => void;
   onBuyerStateChange?: (value: string) => void;
+  onBuyerPartySelect?: (party: PartyAutocomplete) => void;
 }
 
 export function BusinessAddress({
@@ -53,6 +57,7 @@ export function BusinessAddress({
   onBusinessCityChange,
   onBusinessStateChange,
   onBusinessPincodeChange,
+  onBusinessPartySelect,
 }: BusinessAddressProps) {
   return (
     <div className="space-y-4">
@@ -63,10 +68,20 @@ export function BusinessAddress({
       <div className="space-y-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Business Name</Label>
-          <Input
+          <PartyAutocompleteInput
+            type="seller"
             value={businessName}
-            onChange={(e) => onBusinessNameChange(e.target.value)}
-            placeholder="Your Business Name"
+            onChange={onBusinessNameChange}
+            onPartySelect={(party) => {
+              onBusinessNameChange(party.name);
+              if (party.gstin) onBusinessGstinChange(party.gstin);
+              if (party.address) onBusinessAddressChange(party.address);
+              if (party.city) onBusinessCityChange(party.city);
+              if (party.state) onBusinessStateChange(party.state);
+              if (party.pincode) onBusinessPincodeChange(party.pincode);
+              if (onBusinessPartySelect) onBusinessPartySelect(party);
+            }}
+            placeholder="Enter or select business name"
           />
         </div>
         <div className="space-y-1.5">
@@ -131,6 +146,7 @@ export function CustomerAddress({
   onBuyerAddressChange,
   onBuyerCityChange,
   onBuyerStateChange,
+  onBuyerPartySelect,
 }: CustomerAddressProps) {
   // Use manual input mode if handlers are provided
   const isManualMode = !!onBuyerNameChange;
@@ -146,10 +162,19 @@ export function CustomerAddress({
           <>
             <div className="space-y-1.5">
               <Label className="text-xs">Customer Name *</Label>
-              <Input
+              <PartyAutocompleteInput
+                type="buyer"
                 value={buyerName || ''}
-                onChange={(e) => onBuyerNameChange?.(e.target.value)}
-                placeholder="Customer name"
+                onChange={(value) => onBuyerNameChange?.(value)}
+                onPartySelect={(party) => {
+                  onBuyerNameChange?.(party.name);
+                  if (party.gstin) onCustomerGstinChange(party.gstin);
+                  if (party.address) onBuyerAddressChange?.(party.address);
+                  if (party.city) onBuyerCityChange?.(party.city);
+                  if (party.state) onBuyerStateChange?.(party.state);
+                  if (onBuyerPartySelect) onBuyerPartySelect(party);
+                }}
+                placeholder="Enter or select customer name"
               />
             </div>
             <div className="space-y-1.5">

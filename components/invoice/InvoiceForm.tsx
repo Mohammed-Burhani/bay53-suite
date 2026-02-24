@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { Formik, Form, FieldArray } from "formik";
+import * as React from "react";
+import { Formik, Form, FieldArray, FormikErrors, FormikTouched } from "formik";
 import * as Yup from "yup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { Invoice, InvoiceItem } from "@/supabase/services/invoice-service";
 import { INDIAN_STATES } from "@/lib/types";
+import { PartyAutocompleteInput } from "./PartyAutocompleteInput";
+import { PartyAutocomplete } from "@/supabase/services/party-autocomplete-service";
 
 // Validation Schema
 const invoiceValidationSchema = Yup.object().shape({
@@ -62,76 +64,87 @@ interface InvoiceFormProps {
   mode: 'create' | 'edit';
 }
 
-export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: InvoiceFormProps) {
+// Inner component to handle the form rendering with hooks
+function InvoiceFormContent({ 
+  values, 
+  errors, 
+  touched, 
+  setFieldValue, 
+  handleChange, 
+  handleBlur,
+  isSubmitting,
+  mode 
+}: {
+  values: InvoiceFormValues;
+  errors: FormikErrors<InvoiceFormValues>;
+  touched: FormikTouched<InvoiceFormValues>;
+  setFieldValue: (field: string, value: unknown) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  isSubmitting: boolean;
+  mode: 'create' | 'edit';
+}) {
+  // Calculate totals
+  const calculateTotals = React.useCallback(() => {
+    const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+    const discount = Number(values.discount) || 0;
+    const taxableAmount = subtotal - discount;
+    
+    let cgst = 0, sgst = 0, igst = 0;
+    const isInterState = values.seller_state !== values.buyer_state;
+    
+    values.items.forEach(item => {
+      const itemTaxable = (item.quantity * item.rate);
+      const gstAmount = (itemTaxable * item.gst_rate) / 100;
+      
+      if (isInterState) {
+        igst += gstAmount;
+      } else {
+        cgst += gstAmount / 2;
+        sgst += gstAmount / 2;
+      }
+    });
+    
+    const totalGst = cgst + sgst + igst;
+    const grandTotal = taxableAmount + totalGst;
+    
+    return { subtotal, discount, taxableAmount, cgst, sgst, igst, totalGst, grandTotal };
+  }, [values.items, values.discount, values.seller_state, values.buyer_state]);
+  
+  const totals = calculateTotals();
+  
+  // Update totals in form values
+  React.useEffect(() => {
+    setFieldValue('subtotal', totals.subtotal);
+    setFieldValue('taxable_amount', totals.taxableAmount);
+    setFieldValue('cgst', totals.cgst);
+    setFieldValue('sgst', totals.sgst);
+    setFieldValue('igst', totals.igst);
+    setFieldValue('total_gst', totals.totalGst);
+    setFieldValue('grand_total', totals.grandTotal);
+    
+    // Auto-calculate status
+    const amountPaid = Number(values.amount_paid) || 0;
+    if (amountPaid >= totals.grandTotal) {
+      setFieldValue('status', 'paid');
+    } else if (amountPaid > 0) {
+      setFieldValue('status', 'partial');
+    } else {
+      setFieldValue('status', 'unpaid');
+    }
+  }, [totals, values.amount_paid, setFieldValue]);
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+  
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={invoiceValidationSchema}
-      onSubmit={onSubmit}
-      enableReinitialize
-    >
-      {({ values, errors, touched, setFieldValue, handleChange, handleBlur }) => {
-        // Calculate totals
-        const calculateTotals = () => {
-          const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-          const discount = Number(values.discount) || 0;
-          const taxableAmount = subtotal - discount;
-          
-          let cgst = 0, sgst = 0, igst = 0;
-          const isInterState = values.seller_state !== values.buyer_state;
-          
-          values.items.forEach(item => {
-            const itemTaxable = (item.quantity * item.rate);
-            const gstAmount = (itemTaxable * item.gst_rate) / 100;
-            
-            if (isInterState) {
-              igst += gstAmount;
-            } else {
-              cgst += gstAmount / 2;
-              sgst += gstAmount / 2;
-            }
-          });
-          
-          const totalGst = cgst + sgst + igst;
-          const grandTotal = taxableAmount + totalGst;
-          
-          return { subtotal, discount, taxableAmount, cgst, sgst, igst, totalGst, grandTotal };
-        };
-        
-        const totals = calculateTotals();
-        
-        // Update totals in form values
-        useEffect(() => {
-          setFieldValue('subtotal', totals.subtotal);
-          setFieldValue('taxable_amount', totals.taxableAmount);
-          setFieldValue('cgst', totals.cgst);
-          setFieldValue('sgst', totals.sgst);
-          setFieldValue('igst', totals.igst);
-          setFieldValue('total_gst', totals.totalGst);
-          setFieldValue('grand_total', totals.grandTotal);
-          
-          // Auto-calculate status
-          const amountPaid = Number(values.amount_paid) || 0;
-          if (amountPaid >= totals.grandTotal) {
-            setFieldValue('status', 'paid');
-          } else if (amountPaid > 0) {
-            setFieldValue('status', 'partial');
-          } else {
-            setFieldValue('status', 'unpaid');
-          }
-        }, [values.items, values.discount, values.amount_paid, values.seller_state, values.buyer_state, setFieldValue, totals.subtotal, totals.taxableAmount, totals.cgst, totals.sgst, totals.igst, totals.totalGst, totals.grandTotal]);
-        
-        const formatCurrency = (amount: number) => {
-          return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 2,
-          }).format(amount);
-        };
-        
-        return (
-          <Form className="space-y-6 pb-20">
-            {/* Invoice Header */}
+    <Form className="space-y-6 pb-20">
+      {/* Invoice Header */}
             <Card>
               <CardHeader>
                 <CardTitle>Invoice Details</CardTitle>
@@ -187,12 +200,21 @@ export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: Inv
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="seller_name">Business Name *</Label>
-                  <Input
-                    id="seller_name"
-                    name="seller_name"
-                    value={values.seller_name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
+                  <PartyAutocompleteInput
+                    type="seller"
+                    value={values.seller_name || ''}
+                    onChange={(value) => setFieldValue('seller_name', value)}
+                    onPartySelect={(party: PartyAutocomplete) => {
+                      setFieldValue('seller_name', party.name);
+                      if (party.gstin) setFieldValue('seller_gstin', party.gstin);
+                      if (party.address) setFieldValue('seller_address', party.address);
+                      if (party.city) setFieldValue('seller_city', party.city);
+                      if (party.state) setFieldValue('seller_state', party.state);
+                      if (party.pincode) setFieldValue('seller_pincode', party.pincode);
+                      if (party.phone) setFieldValue('seller_phone', party.phone);
+                      if (party.email) setFieldValue('seller_email', party.email);
+                    }}
+                    placeholder="Enter or select business name"
                   />
                   {errors.seller_name && touched.seller_name && (
                     <p className="text-xs text-destructive mt-1">{errors.seller_name}</p>
@@ -254,6 +276,43 @@ export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: Inv
                     </SelectContent>
                   </Select>
                 </div>
+                
+                <div>
+                  <Label htmlFor="seller_pincode">Pincode</Label>
+                  <Input
+                    id="seller_pincode"
+                    name="seller_pincode"
+                    value={values.seller_pincode || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="000000"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="seller_phone">Phone</Label>
+                  <Input
+                    id="seller_phone"
+                    name="seller_phone"
+                    value={values.seller_phone || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="+91 XXXXXXXXXX"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="seller_email">Email</Label>
+                  <Input
+                    id="seller_email"
+                    name="seller_email"
+                    type="email"
+                    value={values.seller_email || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="email@example.com"
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -265,12 +324,21 @@ export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: Inv
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="buyer_name">Customer Name *</Label>
-                  <Input
-                    id="buyer_name"
-                    name="buyer_name"
-                    value={values.buyer_name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
+                  <PartyAutocompleteInput
+                    type="buyer"
+                    value={values.buyer_name || ''}
+                    onChange={(value) => setFieldValue('buyer_name', value)}
+                    onPartySelect={(party: PartyAutocomplete) => {
+                      setFieldValue('buyer_name', party.name);
+                      if (party.gstin) setFieldValue('buyer_gstin', party.gstin);
+                      if (party.address) setFieldValue('buyer_address', party.address);
+                      if (party.city) setFieldValue('buyer_city', party.city);
+                      if (party.state) setFieldValue('buyer_state', party.state);
+                      if (party.pincode) setFieldValue('buyer_pincode', party.pincode);
+                      if (party.phone) setFieldValue('buyer_phone', party.phone);
+                      if (party.email) setFieldValue('buyer_email', party.email);
+                    }}
+                    placeholder="Enter or select customer name"
                   />
                   {errors.buyer_name && touched.buyer_name && (
                     <p className="text-xs text-destructive mt-1">{errors.buyer_name}</p>
@@ -331,6 +399,43 @@ export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: Inv
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="buyer_pincode">Pincode</Label>
+                  <Input
+                    id="buyer_pincode"
+                    name="buyer_pincode"
+                    value={values.buyer_pincode || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="000000"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="buyer_phone">Phone</Label>
+                  <Input
+                    id="buyer_phone"
+                    name="buyer_phone"
+                    value={values.buyer_phone || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="+91 XXXXXXXXXX"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="buyer_email">Email</Label>
+                  <Input
+                    id="buyer_email"
+                    name="buyer_email"
+                    type="email"
+                    value={values.buyer_email || ''}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="email@example.com"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -635,8 +740,29 @@ export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: Inv
               </Button>
             </div>
           </Form>
-        );
-      }}
+  );
+}
+
+export function InvoiceForm({ initialValues, onSubmit, isSubmitting, mode }: InvoiceFormProps) {
+  return (
+    <Formik
+      initialValues={initialValues}
+      validationSchema={invoiceValidationSchema}
+      onSubmit={onSubmit}
+      enableReinitialize
+    >
+      {({ values, errors, touched, setFieldValue, handleChange, handleBlur }) => (
+        <InvoiceFormContent
+          values={values}
+          errors={errors}
+          touched={touched}
+          setFieldValue={setFieldValue}
+          handleChange={handleChange}
+          handleBlur={handleBlur}
+          isSubmitting={isSubmitting}
+          mode={mode}
+        />
+      )}
     </Formik>
   );
 }
