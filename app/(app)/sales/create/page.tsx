@@ -164,10 +164,10 @@ export default function CreateSalesInvoicePage() {
             GST compliant sales invoice for Indian businesses
           </p>
         </div>
-        {/* <Badge variant="outline" className="gap-1">
+        <Badge variant="secondary" className="gap-1 border border-indigo-300">
           <FileText className="h-3 w-3" />
-          Draft
-        </Badge> */}
+          New
+        </Badge>
       </div>
 
       <InvoiceFormLayout
