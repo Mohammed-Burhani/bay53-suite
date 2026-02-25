@@ -430,7 +430,7 @@ export const invoiceService = {
   },
 
   // Generate tax invoices (consolidate pending invoices by buyer)
-  async generateTaxInvoices(): Promise<InvoiceWithItems[]> {
+  async generateTaxInvoices(excludedSellers?: string[]): Promise<InvoiceWithItems[]> {
     const supabase = createClient();
     
     // Get current user
@@ -444,17 +444,32 @@ export const invoiceService = {
       throw new Error('No pending invoices found');
     }
     
+    // Normalize excluded sellers for comparison
+    const excludedSet = new Set(
+      (excludedSellers || []).map(name => name.trim().toLowerCase())
+    );
+    
     // Group by seller_name (the "From" field - the company sending packages)
     // This consolidates all invoices from the same sender
     const invoicesBySeller = pendingInvoices.reduce((acc, invoice) => {
       // Normalize the seller name: trim whitespace and convert to lowercase for grouping
       const sellerKey = invoice.seller_name.trim().toLowerCase();
+      
+      // Skip excluded sellers
+      if (excludedSet.has(sellerKey)) {
+        return acc;
+      }
+      
       if (!acc[sellerKey]) {
         acc[sellerKey] = [];
       }
       acc[sellerKey].push(invoice);
       return acc;
     }, {} as Record<string, InvoiceWithItems[]>);
+    
+    if (Object.keys(invoicesBySeller).length === 0) {
+      throw new Error('No sellers selected for tax invoice generation');
+    }
     
     console.log('Grouping invoices by seller (From):', Object.keys(invoicesBySeller));
     console.log('Number of groups:', Object.keys(invoicesBySeller).length);

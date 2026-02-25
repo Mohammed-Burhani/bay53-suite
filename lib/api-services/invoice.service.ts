@@ -449,7 +449,7 @@ export function useGenerateTaxInvoices() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => invoiceService.generateTaxInvoices(),
+    mutationFn: (excludedSellers?: string[]) => invoiceService.generateTaxInvoices(excludedSellers),
     onSuccess: (taxInvoices) => {
       // Invalidate all invoice queries
       queryClient.invalidateQueries({ queryKey: invoiceKeys.all });
