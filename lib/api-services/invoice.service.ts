@@ -470,3 +470,28 @@ export function useGenerateTaxInvoices() {
     },
   });
 }
+
+// Generate tax invoice for a specific seller
+export function useGenerateTaxInvoiceForSeller() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (sellerName: string) => invoiceService.generateTaxInvoiceForSeller(sellerName),
+    onSuccess: (taxInvoice) => {
+      // Invalidate all invoice queries
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.all });
+      
+      // Invalidate pending invoices
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'pending'] });
+      
+      // Invalidate financial queries
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'totals'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'outstanding'] });
+      
+      // Cache the new tax invoice
+      if (taxInvoice.id) {
+        queryClient.setQueryData(invoiceKeys.details.byId(taxInvoice.id), taxInvoice);
+      }
+    },
+  });
+}

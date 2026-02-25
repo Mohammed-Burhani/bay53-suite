@@ -575,5 +575,133 @@ export const invoiceService = {
     }
     
     return taxInvoices;
+  },
+
+  // Generate tax invoice for a specific seller
+  async generateTaxInvoiceForSeller(sellerName: string): Promise<InvoiceWithItems> {
+    const supabase = createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
+    // Get all pending invoices for this seller
+    const allPendingInvoices = await this.getPendingInvoices();
+    const sellerKey = sellerName.trim().toLowerCase();
+    const sellerInvoices = allPendingInvoices.filter(
+      inv => inv.seller_name.trim().toLowerCase() === sellerKey
+    );
+    
+    if (sellerInvoices.length === 0) {
+      throw new Error(`No pending invoices found for seller: ${sellerName}`);
+    }
+    
+    const firstInvoice = sellerInvoices[0];
+    
+    // Get next tax invoice number
+    const taxInvoiceNumber = await this.getNextInvoiceNumber('TAX', new Date().getFullYear());
+    
+    // Calculate totals
+    let subtotal = 0;
+    let totalGst = 0;
+    let grandTotal = 0;
+    
+    // Create consolidated items (one item per original invoice)
+    const consolidatedItems: InvoiceItem[] = sellerInvoices.map((invoice, index) => {
+      subtotal += Number(invoice.subtotal);
+      totalGst += Number(invoice.total_gst);
+      grandTotal += Number(invoice.grand_total);
+      
+      // Calculate total weight for this invoice
+      const totalWeight = invoice.items.reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
+      
+      return {
+        item_order: index + 1,
+        description: `Invoice ${invoice.invoice_number} - ${invoice.invoice_date}`,
+        hsn_sac_code: '996511', // HSN for courier services
+        quantity: invoice.items.length,
+        unit: 'Nos',
+        rate: Number(invoice.subtotal),
+        gst_rate: invoice.items[0]?.gst_rate || 18,
+        amount: Number(invoice.subtotal),
+        weight: totalWeight,
+        custom_data: {
+          original_invoice_id: invoice.id,
+          original_invoice_number: invoice.invoice_number,
+          original_invoice_date: invoice.invoice_date,
+          from: invoice.seller_name,
+          to: invoice.buyer_name
+        }
+      };
+    });
+    
+    // Determine if intra-state or inter-state
+    const isIntraState = firstInvoice.seller_state === firstInvoice.buyer_state;
+    const cgst = isIntraState ? totalGst / 2 : 0;
+    const sgst = isIntraState ? totalGst / 2 : 0;
+    const igst = isIntraState ? 0 : totalGst;
+    
+    // Create tax invoice
+    const taxInvoice: Invoice = {
+      user_id: user.id,
+      invoice_number: taxInvoiceNumber,
+      tax_invoice_number: taxInvoiceNumber,
+      type: 'sale',
+      status: 'unpaid',
+      invoice_status: 'tax-invoice',
+      invoice_date: new Date().toISOString().split('T')[0],
+      
+      // Seller (courier company - from first invoice)
+      seller_name: firstInvoice.seller_name,
+      seller_gstin: firstInvoice.seller_gstin,
+      seller_address: firstInvoice.seller_address,
+      seller_city: firstInvoice.seller_city,
+      seller_state: firstInvoice.seller_state,
+      seller_pincode: firstInvoice.seller_pincode,
+      seller_phone: firstInvoice.seller_phone,
+      seller_email: firstInvoice.seller_email,
+      
+      // Buyer (company that used courier services)
+      buyer_name: firstInvoice.buyer_name,
+      buyer_gstin: firstInvoice.buyer_gstin,
+      buyer_address: firstInvoice.buyer_address,
+      buyer_city: firstInvoice.buyer_city,
+      buyer_state: firstInvoice.buyer_state,
+      buyer_pincode: firstInvoice.buyer_pincode,
+      buyer_phone: firstInvoice.buyer_phone,
+      buyer_email: firstInvoice.buyer_email,
+      
+      // Financials
+      subtotal,
+      discount: 0,
+      taxable_amount: subtotal,
+      cgst,
+      sgst,
+      igst,
+      total_gst: totalGst,
+      grand_total: grandTotal,
+      amount_paid: 0,
+      payment_mode: undefined,
+      
+      // Track parent invoices
+      parent_invoice_ids: sellerInvoices.map(inv => inv.id!),
+      
+      notes: `Consolidated tax invoice for ${sellerInvoices.length} courier deliveries`,
+      terms_conditions: 'Payment due within 30 days'
+    };
+    
+    // Create the tax invoice
+    const createdTaxInvoice = await this.createInvoice(taxInvoice, consolidatedItems);
+    
+    // Update original invoices to 'ready' status
+    const invoiceIds = sellerInvoices.map(inv => inv.id!);
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ invoice_status: 'ready' })
+      .in('id', invoiceIds);
+    
+    if (updateError) throw updateError;
+    
+    return createdTaxInvoice;
   }
 };

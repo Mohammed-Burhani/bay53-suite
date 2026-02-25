@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { FileText, Eye, Edit, Trash2, Printer, Download } from "lucide-react";
 import { Invoice } from "@/supabase/services/invoice-service";
+import { GenerateTaxInvoiceRowButton } from "./GenerateTaxInvoiceRowButton";
 
 interface SalesTableProps {
   invoices: Invoice[];
@@ -99,6 +100,10 @@ export function SalesTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
+                  {inv.invoice_status === "pending" && (
+                    <GenerateTaxInvoiceRowButton sellerName={inv.seller_name} />
+                  )}
+                  
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
