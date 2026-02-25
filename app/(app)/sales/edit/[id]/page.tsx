@@ -14,7 +14,7 @@ export default function EditSalesInvoicePage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  
+
   const { data: invoiceData, isLoading } = useInvoice(id);
   const updateInvoice = useUpdateInvoiceWithItems();
 
@@ -28,7 +28,7 @@ export default function EditSalesInvoicePage() {
         invoice_number: values.invoice_number,
         tax_invoice_number: values.tax_invoice_number,
         invoice_date: values.invoice_date,
-        
+
         seller_name: values.seller_name,
         seller_gstin: values.seller_gstin,
         seller_address: values.seller_address,
@@ -37,7 +37,7 @@ export default function EditSalesInvoicePage() {
         seller_pincode: values.seller_pincode,
         seller_phone: values.seller_phone,
         seller_email: values.seller_email,
-        
+
         buyer_name: values.buyer_name,
         buyer_gstin: values.buyer_gstin,
         buyer_address: values.buyer_address,
@@ -46,7 +46,7 @@ export default function EditSalesInvoicePage() {
         buyer_pincode: values.buyer_pincode,
         buyer_phone: values.buyer_phone,
         buyer_email: values.buyer_email,
-        
+
         subtotal: values.subtotal,
         discount: values.discount,
         taxable_amount: values.taxable_amount,
@@ -56,11 +56,11 @@ export default function EditSalesInvoicePage() {
         total_gst: values.total_gst,
         grand_total: values.grand_total,
         status: values.status,
-        
+
         notes: values.notes,
         terms_conditions: values.terms_conditions,
       };
-      
+
       const items: InvoiceItem[] = values.items.map((item, index: number) => ({
         item_order: index + 1,
         description: item.description,
@@ -73,9 +73,9 @@ export default function EditSalesInvoicePage() {
         weight: item.weight,
         custom_data: item.custom_data || {},
       }));
-      
+
       await updateInvoice.mutateAsync({ id, invoice, items });
-      
+
       toast.success("Invoice updated successfully!");
       router.push('/sales');
     } catch (error) {
@@ -117,7 +117,9 @@ export default function EditSalesInvoicePage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="secondary" size="icon" onClick={() => router.back()}
+          className="border border-indigo-200 hover:bg-indigo-50"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
@@ -127,16 +129,16 @@ export default function EditSalesInvoicePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => printInvoice(invoiceData)}
           >
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               downloadInvoice(invoiceData);
@@ -147,12 +149,12 @@ export default function EditSalesInvoicePage() {
             Download
           </Button>
         </div>
-        <Badge 
+        <Badge
           variant={
-            invoiceData.invoice_status === "tax-invoice" ? "default" : 
-            invoiceData.invoice_status === "ready" ? "secondary" : 
-            "destructive"
-          } 
+            invoiceData.invoice_status === "tax-invoice" ? "default" :
+              invoiceData.invoice_status === "ready" ? "secondary" :
+                "destructive"
+          }
           className="gap-1 capitalize"
         >
           <FileText className="h-3 w-3" />

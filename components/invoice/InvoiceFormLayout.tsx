@@ -307,6 +307,8 @@ export function InvoiceFormLayout({
                   onInvoiceNumberChange={(val) => setFieldValue('invoice_number', val)}
                   onTaxInvoiceNumberChange={(val) => setFieldValue('tax_invoice_number', val)}
                   onInvoiceDateChange={(val) => setFieldValue('invoice_date', val)}
+                  mode={mode}
+                  invoiceType={values.invoice_status}
                 />
 
                 <AddressSection

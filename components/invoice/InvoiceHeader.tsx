@@ -9,6 +9,8 @@ interface InvoiceHeaderProps {
   invoiceNumber: string;
   taxInvoiceNumber: string;
   invoiceDate: string;
+  mode?: string;
+  invoiceType?: string;
   onInvoiceNumberChange: (value: string) => void;
   onTaxInvoiceNumberChange: (value: string) => void;
   onInvoiceDateChange: (value: string) => void;
@@ -21,27 +23,33 @@ export function InvoiceHeader({
   onInvoiceNumberChange,
   onTaxInvoiceNumberChange,
   onInvoiceDateChange,
+  mode,
+  invoiceType
 }: InvoiceHeaderProps) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Invoice Number *</Label>
-            <Input
-              value={invoiceNumber}
-              onChange={(e) => onInvoiceNumberChange(e.target.value)}
-              placeholder="INV-2025-001"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Tax Invoice Number *</Label>
-            <Input
-              value={taxInvoiceNumber}
-              onChange={(e) => onTaxInvoiceNumberChange(e.target.value)}
-              placeholder="TAX-2025-001"
-            />
-          </div>
+          {invoiceType !== "tax-invoice" &&
+            <div className="space-y-2">
+              <Label>Invoice Number *</Label>
+              <Input
+                value={invoiceNumber}
+                onChange={(e) => onInvoiceNumberChange(e.target.value)}
+                placeholder="INV-2025-001"
+              />
+            </div>
+          }
+          {(mode === "edit" && invoiceType === "tax-invoice") &&
+            <div className="space-y-2">
+              <Label>Tax Invoice Number *</Label>
+              <Input
+                value={taxInvoiceNumber}
+                onChange={(e) => onTaxInvoiceNumberChange(e.target.value)}
+                placeholder="TAX-2025-001"
+              />
+            </div>
+          }
           <div className="space-y-2">
             <Label>Invoice Date *</Label>
             <div className="relative">
