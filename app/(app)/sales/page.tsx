@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useInvoicesByType, useDeleteInvoice, useSalesTotals } from "@/lib/api-services/invoice.service";
+import {
+  useInvoicesByType,
+  useDeleteInvoice,
+} from "@/lib/api-services/invoice.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -33,13 +37,32 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Search, FileText, Eye, Plus, Edit, Trash2, TrendingUp, Printer, Download, Info } from "lucide-react";
-import { InvoiceWithItems, invoiceService } from "@/supabase/services/invoice-service";
+import {
+  Search,
+  FileText,
+  Eye,
+  Plus,
+  Edit,
+  Trash2,
+  TrendingUp,
+  Printer,
+  Download,
+  Info,
+} from "lucide-react";
+import {
+  InvoiceWithItems,
+  invoiceService,
+} from "@/supabase/services/invoice-service";
 import { toast } from "sonner";
 import { printInvoice, downloadInvoice } from "@/lib/invoice-utils";
 import { GenerateTaxInvoiceButton } from "@/components/invoice/GenerateTaxInvoiceButton";
 import { InvoiceGuide } from "@/components/invoice/InvoiceGuide";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SalesPage() {
@@ -48,22 +71,50 @@ export default function SalesPage() {
   const [viewInvoice, setViewInvoice] = useState<InvoiceWithItems | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const { data: invoices = [], isLoading } = useInvoicesByType('sale');
-  const { data: totalSales = 0 } = useSalesTotals();
+  const { data: invoices = [], isLoading } = useInvoicesByType("sale");
   const deleteInvoice = useDeleteInvoice();
 
-  const filtered = invoices.filter(
+  // Filter by tab
+  const getFilteredByTab = (invs: typeof invoices) => {
+    if (activeTab === "pending-ready") {
+      return invs.filter((inv) => inv.invoice_status !== "tax-invoice");
+    }
+    if (activeTab === "tax-invoice") {
+      return invs.filter((inv) => inv.invoice_status === "tax-invoice");
+    }
+    // "all" tab - show all invoices
+    return invs;
+  };
+
+  const tabFilteredInvoices = getFilteredByTab(invoices);
+
+  // Calculate totals - for "all" tab, exclude tax-invoice from sales total
+  const filteredTotalSales =
+    activeTab === "all"
+      ? tabFilteredInvoices
+        .filter((inv) => inv.invoice_status !== "tax-invoice")
+        .reduce((sum, inv) => sum + Number(inv.grand_total), 0)
+      : tabFilteredInvoices.reduce(
+        (sum, inv) => sum + Number(inv.grand_total),
+        0,
+      );
+
+  const filteredInvoiceCount = tabFilteredInvoices.length;
+
+  // Filter by search
+  const filtered = tabFilteredInvoices.filter(
     (inv) =>
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      inv.buyer_name.toLowerCase().includes(search.toLowerCase())
+      inv.buyer_name.toLowerCase().includes(search.toLowerCase()),
   );
 
   // Removed payment tracking
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    
+
     try {
       await deleteInvoice.mutateAsync(deleteId);
       toast.success("Invoice deleted successfully");
@@ -83,7 +134,7 @@ export default function SalesPage() {
         toast.error("Invoice not found");
       }
     } catch (err) {
-      console.error('Error fetching invoice:', err);
+      console.error("Error fetching invoice:", err);
       toast.error("Failed to load invoice");
     } finally {
       setLoadingPreview(false);
@@ -92,30 +143,30 @@ export default function SalesPage() {
 
   const handlePrint = async (invoiceId: string) => {
     try {
-      console.log('Fetching invoice for print:', invoiceId);
+      console.log("Fetching invoice for print:", invoiceId);
       const fullInvoice = await invoiceService.getInvoiceById(invoiceId);
-      console.log('Fetched invoice:', fullInvoice);
-      console.log('Invoice items:', fullInvoice?.items);
-      console.log('Items count:', fullInvoice?.items?.length);
-      
+      console.log("Fetched invoice:", fullInvoice);
+      console.log("Invoice items:", fullInvoice?.items);
+      console.log("Items count:", fullInvoice?.items?.length);
+
       if (fullInvoice) {
         printInvoice(fullInvoice);
       } else {
         toast.error("Invoice not found");
       }
     } catch (err) {
-      console.error('Error fetching invoice:', err);
+      console.error("Error fetching invoice:", err);
       toast.error("Failed to load invoice");
     }
   };
 
   const handleDownload = async (invoiceId: string) => {
     try {
-      console.log('Fetching invoice for download:', invoiceId);
+      console.log("Fetching invoice for download:", invoiceId);
       const fullInvoice = await invoiceService.getInvoiceById(invoiceId);
-      console.log('Fetched invoice:', fullInvoice);
-      console.log('Invoice items:', fullInvoice?.items);
-      
+      console.log("Fetched invoice:", fullInvoice);
+      console.log("Invoice items:", fullInvoice?.items);
+
       if (fullInvoice) {
         downloadInvoice(fullInvoice);
         toast.success("Invoice downloaded as PDF");
@@ -123,7 +174,7 @@ export default function SalesPage() {
         toast.error("Invoice not found");
       }
     } catch (err) {
-      console.error('Error fetching invoice:', err);
+      console.error("Error fetching invoice:", err);
       toast.error("Failed to load invoice");
     }
   };
@@ -153,13 +204,20 @@ export default function SalesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sales & Invoices</h1>
-            <p className="text-sm text-muted-foreground">{invoices.length} sale invoices</p>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Sales & Invoices
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {filteredInvoiceCount} sale invoices
+            </p>
           </div>
           <div className="flex gap-2 items-end">
             <InvoiceGuide mode="list" />
             <GenerateTaxInvoiceButton />
-            <Button onClick={() => router.push('/sales/create')} className="gap-2">
+            <Button
+              onClick={() => router.push("/sales/create")}
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               Create Invoice
             </Button>
@@ -171,260 +229,338 @@ export default function SalesPage() {
           <Alert className="border-indigo-200 bg-indigo-50/50">
             <Info className="h-4 w-4 text-indigo-600" />
             <AlertDescription className="text-sm text-indigo-900">
-              <span className="font-medium">Get Started:</span> Create your first invoice to start tracking sales. All invoices are GST compliant and can be printed or downloaded as PDF.
+              <span className="font-medium">Get Started:</span> Create your
+              first invoice to start tracking sales. All invoices are GST
+              compliant and can be printed or downloaded as PDF.
             </AlertDescription>
           </Alert>
         )}
 
-      {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="card-hover border-l-4 border-l-indigo-500">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-indigo-100 p-2.5">
-              <TrendingUp className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Sales</p>
-              <p className="text-xl font-bold mt-1">{formatCurrency(totalSales)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover border-l-4 border-l-amber-500">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-amber-100 p-2.5">
-              <FileText className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Invoices</p>
-              <p className="text-xl font-bold mt-1 text-amber-600">{invoices.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Summary */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card className="card-hover border-l-4 border-l-indigo-500">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-indigo-100 p-2.5">
+                <TrendingUp className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Total Sales
+                </p>
+                <p className="text-xl font-bold mt-1">
+                  {formatCurrency(filteredTotalSales)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="card-hover border-l-4 border-l-amber-500">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-amber-100 p-2.5">
+                <FileText className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Total Invoices
+                </p>
+                <p className="text-xl font-bold mt-1 text-amber-600">
+                  {filteredInvoiceCount}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by invoice no. or customer..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+        {/* Search and Tabs */}
+        <div className="space-y-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by invoice no. or customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="flex w-full max-w-sm rounded-xl bg-slate-100 p-1 gap-0.5 border border-slate-200">
+              {[
+                { value: "all", label: "All" },
+                { value: "pending-ready", label: "Pending / Ready" },
+                { value: "tax-invoice", label: "Tax Invoice" },
+              ].map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={`
+          relative flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ease-out
+          text-slate-500 hover:text-slate-700 hover:bg-white/60
+          data-[state=active]:bg-white
+          data-[state=active]:text-indigo-600
+          data-[state=active]:shadow-sm
+          data-[state=active]:shadow-slate-200
+          data-[state=active]:border
+          data-[state=active]:border-indigo-100
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
+        `}
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center">
-                    <FileText className="mx-auto h-8 w-8 text-muted-foreground/40" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {search ? "No invoices found" : "No invoices yet. Create your first invoice!"}
-                    </p>
-                  </TableCell>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filtered.map((inv) => (
-                  <TableRow key={inv.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-xs">{inv.invoice_number}</TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(inv.invoice_date).toLocaleDateString("en-IN")}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">{inv.seller_name}</TableCell>
-                    <TableCell className="text-sm font-medium">{inv.buyer_name}</TableCell>
-                    <TableCell className="text-right text-sm font-medium">
-                      {formatCurrency(Number(inv.grand_total))}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={
-                          inv.invoice_status === "pending" ? "destructive" : inv.invoice_status === "ready" ? "secondary" : "default"
-                        }
-                        className="text-xs capitalize"
-                      >
-                        {inv.invoice_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8" 
-                              onClick={() => handlePrint(inv.id!)}
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Print Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8" 
-                              onClick={() => handleDownload(inv.id!)}
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Download as PDF</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8" 
-                              onClick={() => router.push(`/sales/edit/${inv.id}`)}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8" 
-                              onClick={() => handleViewInvoice(inv.id!)}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View Details</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive hover:text-destructive" 
-                              onClick={() => setDeleteId(inv.id!)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Delete Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center">
+                      <FileText className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {search
+                          ? "No invoices found"
+                          : "No invoices yet. Create your first invoice!"}
+                      </p>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : (
+                  filtered.map((inv) => (
+                    <TableRow
+                      key={inv.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <TableCell className="font-mono text-xs">
+                        {inv.invoice_number}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(inv.invoice_date).toLocaleDateString("en-IN")}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {inv.seller_name}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {inv.buyer_name}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">
+                        {formatCurrency(Number(inv.grand_total))}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={
+                            inv.invoice_status === "pending"
+                              ? "destructive"
+                              : inv.invoice_status === "ready"
+                                ? "secondary"
+                                : "default"
+                          }
+                          className="text-xs capitalize"
+                        >
+                          {inv.invoice_status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handlePrint(inv.id!)}
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Print Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-      {/* Invoice Detail Dialog */}
-      <Dialog open={!!viewInvoice || loadingPreview} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          {loadingPreview ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-3 text-sm text-muted-foreground">Loading invoice...</p>
-              </div>
-            </div>
-          ) : viewInvoice ? (
-            <>
-              <DialogHeader className="space-y-2 pb-2">
-                <DialogTitle className="text-xl font-bold">
-                  Invoice Preview
-                </DialogTitle>
-                <DialogDescription>
-                  {viewInvoice.invoice_number}
-                </DialogDescription>
-              </DialogHeader>
-              <InvoiceDetail invoice={viewInvoice} formatCurrency={formatCurrency} />
-              <div className="flex gap-2 pt-2 border-t">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="gap-1.5 flex-1"
-                  onClick={() => viewInvoice && printInvoice(viewInvoice)}
-                >
-                  <Printer className="h-4 w-4" />
-                  Print
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="gap-1.5 flex-1"
-                  onClick={() => {
-                    if (viewInvoice) {
-                      downloadInvoice(viewInvoice);
-                      toast.success("Invoice downloaded as PDF");
-                    }
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                  Download
-                </Button>
-              </div>
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleDownload(inv.id!)}
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download as PDF</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this invoice? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  router.push(`/sales/edit/${inv.id}`)
+                                }
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleViewInvoice(inv.id!)}
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Details</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => setDeleteId(inv.id!)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Invoice Detail Dialog */}
+        <Dialog
+          open={!!viewInvoice || loadingPreview}
+          onOpenChange={(open) => !open && setViewInvoice(null)}
+        >
+          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+            {loadingPreview ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Loading invoice...
+                  </p>
+                </div>
+              </div>
+            ) : viewInvoice ? (
+              <>
+                <DialogHeader className="space-y-2 pb-2">
+                  <DialogTitle className="text-xl font-bold">
+                    Invoice Preview
+                  </DialogTitle>
+                  <DialogDescription>
+                    {viewInvoice.invoice_number}
+                  </DialogDescription>
+                </DialogHeader>
+                <InvoiceDetail
+                  invoice={viewInvoice}
+                  formatCurrency={formatCurrency}
+                />
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => viewInvoice && printInvoice(viewInvoice)}
+                  >
+                    <Printer className="h-4 w-4" />
+                    Print
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => {
+                      if (viewInvoice) {
+                        downloadInvoice(viewInvoice);
+                        toast.success("Invoice downloaded as PDF");
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog
+          open={!!deleteId}
+          onOpenChange={(open) => !open && setDeleteId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this invoice? This action cannot
+                be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </TooltipProvider>
   );
 }
 
-function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems; formatCurrency: (n: number) => string }) {
+function InvoiceDetail({
+  invoice,
+  formatCurrency,
+}: {
+  invoice: InvoiceWithItems;
+  formatCurrency: (n: number) => string;
+}) {
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -434,21 +570,26 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-base font-semibold text-foreground">{invoice.buyer_name}</h3>
+                <h3 className="text-base font-semibold text-foreground">
+                  {invoice.buyer_name}
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Date: {new Date(invoice.invoice_date).toLocaleDateString("en-IN", { 
-                  day: 'numeric', 
-                  month: 'short', 
-                  year: 'numeric' 
+                Date:{" "}
+                {new Date(invoice.invoice_date).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
                 })}
               </p>
             </div>
             <Badge
               variant={
-                invoice.invoice_status === "tax-invoice" ? "default" : 
-                invoice.invoice_status === "ready" ? "secondary" : 
-                "outline"
+                invoice.invoice_status === "tax-invoice"
+                  ? "default"
+                  : invoice.invoice_status === "ready"
+                    ? "secondary"
+                    : "outline"
               }
               className="capitalize text-xs"
             >
@@ -460,23 +601,42 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
 
       {/* Items Section */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Invoice Items</h4>
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Invoice Items
+        </h4>
         <Card>
           <CardContent className="p-0">
             {invoice.items && invoice.items.length > 0 ? (
               <div className="divide-y divide-border">
                 {invoice.items.map((item, i) => (
-                  <div key={item.id || i} className="p-3 hover:bg-muted/30 transition-colors">
+                  <div
+                    key={item.id || i}
+                    className="p-3 hover:bg-muted/30 transition-colors"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium text-foreground">{item.description}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {item.description}
+                        </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Qty: <span className="text-foreground font-medium">{item.quantity} {item.unit}</span></span>
+                          <span>
+                            Qty:{" "}
+                            <span className="text-foreground font-medium">
+                              {item.quantity} {item.unit}
+                            </span>
+                          </span>
                           <span className="text-border">•</span>
-                          <span>Rate: <span className="text-foreground font-medium">{formatCurrency(Number(item.rate))}</span></span>
+                          <span>
+                            Rate:{" "}
+                            <span className="text-foreground font-medium">
+                              {formatCurrency(Number(item.rate))}
+                            </span>
+                          </span>
                         </div>
                       </div>
-                      <p className="text-sm font-semibold text-foreground">{formatCurrency(Number(item.amount))}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {formatCurrency(Number(item.amount))}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -493,32 +653,42 @@ function InvoiceDetail({ invoice, formatCurrency }: { invoice: InvoiceWithItems;
       {/* Summary Section */}
       <Card className="border-t-2 border-t-indigo-500">
         <CardContent className="p-4 space-y-2.5">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment Summary</h4>
-          
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Payment Summary
+          </h4>
+
           <div className="space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium text-foreground">{formatCurrency(Number(invoice.subtotal))}</span>
+              <span className="font-medium text-foreground">
+                {formatCurrency(Number(invoice.subtotal))}
+              </span>
             </div>
-            
+
             {Number(invoice.discount) > 0 && (
               <div className="flex justify-between items-center text-sm">
-                <span className="text-emerald-600 dark:text-emerald-400">Discount</span>
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Discount
+                </span>
                 <span className="font-medium text-emerald-600 dark:text-emerald-400">
                   -{formatCurrency(Number(invoice.discount))}
                 </span>
               </div>
             )}
-            
+
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">GST</span>
-              <span className="font-medium text-foreground">+{formatCurrency(Number(invoice.total_gst))}</span>
+              <span className="font-medium text-foreground">
+                +{formatCurrency(Number(invoice.total_gst))}
+              </span>
             </div>
-            
+
             <Separator className="my-2" />
-            
+
             <div className="flex justify-between items-center pt-1">
-              <span className="text-base font-bold text-foreground">Grand Total</span>
+              <span className="text-base font-bold text-foreground">
+                Grand Total
+              </span>
               <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                 {formatCurrency(Number(invoice.grand_total))}
               </span>
