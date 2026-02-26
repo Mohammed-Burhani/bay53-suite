@@ -52,7 +52,8 @@ export function SalesPageClient() {
   const filtered = tabFilteredInvoices.filter(
     (inv) =>
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      inv.buyer_name.toLowerCase().includes(search.toLowerCase())
+      inv.buyer_name.toLowerCase().includes(search.toLowerCase()) ||
+      inv.seller_name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDelete = async () => {
