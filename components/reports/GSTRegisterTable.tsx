@@ -15,16 +15,16 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
     {
       key: "invoiceDate",
       label: "Date",
-      render: (value: string) => (
-        <span className="font-medium">{format(new Date(value), "dd MMM yyyy")}</span>
+      render: (value: unknown) => (
+        <span className="font-medium">{format(new Date(value as string), "dd MMM yyyy")}</span>
       ),
     },
     {
       key: "invoiceNumber",
       label: "Invoice No.",
-      render: (value: string) => (
+      render: (value: unknown) => (
         <span className="font-mono text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
-          {value}
+          {value as string}
         </span>
       ),
     },
@@ -36,9 +36,9 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
     {
       key: "partyGstin",
       label: "GSTIN",
-      render: (value: string) => (
+      render: (value: unknown) => (
         <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-          {value || "N/A"}
+          {(value as string) || "N/A"}
         </span>
       ),
     },
@@ -47,35 +47,35 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
       label: "Taxable Value",
       align: "right" as const,
       className: "tabular-nums",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "cgst",
       label: "CGST",
       align: "right" as const,
       className: "tabular-nums text-blue-600 dark:text-blue-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "sgst",
       label: "SGST",
       align: "right" as const,
       className: "tabular-nums text-blue-600 dark:text-blue-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "igst",
       label: "IGST",
       align: "right" as const,
       className: "tabular-nums text-purple-600 dark:text-purple-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "totalGst",
       label: "Total GST",
       align: "right" as const,
       className: "font-semibold tabular-nums",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
   ];
 
@@ -105,7 +105,7 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
       headerGradient="bg-linear-to-r from-purple-50 to-purple-100/50 dark:from-purple-950 dark:to-purple-900/50"
       hoverColor="hover:bg-purple-50/50 dark:hover:bg-purple-950/20"
       columns={columns}
-      data={invoices}
+      data={invoices as unknown as Record<string, unknown>[]}
       emptyMessage="No GST records found"
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-950/20 border-purple-200 dark:border-purple-800"

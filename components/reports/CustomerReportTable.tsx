@@ -10,6 +10,14 @@ interface CustomerReportTableProps {
   invoices: Invoice[];
 }
 
+interface CustomerSummary {
+  id: string;
+  name: string;
+  totalSales: number;
+  totalPaid: number;
+  invoiceCount: number;
+}
+
 export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
   const customerSummary = useMemo(() => {
     const summary = new Map();
@@ -44,9 +52,9 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
       key: "invoiceCount",
       label: "Total Invoices",
       align: "right" as const,
-      render: (value: number) => (
+      render: (value: unknown) => (
         <span className="inline-flex items-center justify-center min-w-8 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold text-sm px-2">
-          {value}
+          {value as number}
         </span>
       ),
     },
@@ -55,22 +63,23 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
       label: "Total Sales",
       align: "right" as const,
       className: "font-semibold tabular-nums",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "totalPaid",
       label: "Amount Paid",
       align: "right" as const,
       className: "tabular-nums text-green-600 dark:text-green-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "outstanding",
       label: "Outstanding",
       align: "right" as const,
       className: "tabular-nums",
-      render: (_: any, row: any) => {
-        const outstanding = row.totalSales - row.totalPaid;
+      render: (_: unknown, row: unknown) => {
+        const customer = row as CustomerSummary;
+        const outstanding = customer.totalSales - customer.totalPaid;
         return (
           <span className={outstanding > 0 ? "font-semibold text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
             {formatCurrency(outstanding)}
@@ -88,7 +97,7 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
       headerGradient="bg-linear-to-r from-blue-50 to-blue-100/50 dark:from-blue-950 dark:to-blue-900/50"
       hoverColor="hover:bg-blue-50/50 dark:hover:bg-blue-950/20"
       columns={columns}
-      data={customerSummary}
+      data={customerSummary as unknown as Record<string, unknown>[]}
       emptyMessage="No customer data found"
     />
   );
