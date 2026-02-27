@@ -11,6 +11,12 @@ interface LedgerRegisterTableProps {
   invoices: Invoice[];
 }
 
+interface LedgerEntry extends Invoice {
+  debit: number;
+  credit: number;
+  balance: number;
+}
+
 export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
   const ledgerEntries = useMemo(() => {
     return invoices.map((inv) => ({
@@ -25,8 +31,8 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
     {
       key: "invoiceDate",
       label: "Date",
-      render: (value: string) => (
-        <span className="font-medium">{format(new Date(value), "dd MMM yyyy")}</span>
+      render: (value: unknown) => (
+        <span className="font-medium">{format(new Date(value as string), "dd MMM yyyy")}</span>
       ),
     },
     {
@@ -37,9 +43,9 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
     {
       key: "invoiceNumber",
       label: "Invoice No.",
-      render: (value: string) => (
+      render: (value: unknown) => (
         <span className="font-mono text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded">
-          {value}
+          {value as string}
         </span>
       ),
     },
@@ -48,23 +54,23 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
       label: "Debit",
       align: "right" as const,
       className: "tabular-nums text-red-600 dark:text-red-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "credit",
       label: "Credit",
       align: "right" as const,
       className: "tabular-nums text-green-600 dark:text-green-400",
-      render: (value: number) => formatCurrency(value),
+      render: (value: unknown) => formatCurrency(value as number),
     },
     {
       key: "balance",
       label: "Balance",
       align: "right" as const,
       className: "font-semibold tabular-nums",
-      render: (value: number) => (
-        <span className={value > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
-          {formatCurrency(value)}
+      render: (value: unknown) => (
+        <span className={(value as number) > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
+          {formatCurrency(value as number)}
         </span>
       ),
     },
@@ -96,7 +102,7 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
       headerGradient="bg-linear-to-r from-amber-50 to-amber-100/50 dark:from-amber-950 dark:to-amber-900/50"
       hoverColor="hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
       columns={columns}
-      data={ledgerEntries}
+      data={ledgerEntries as unknown as Record<string, unknown>[]}
       emptyMessage="No ledger entries found"
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-950/20 border-amber-200 dark:border-amber-800"
