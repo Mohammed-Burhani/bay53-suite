@@ -54,15 +54,21 @@ export interface Invoice {
   type: "sale" | "purchase";
   partyId: string;
   partyName: string;
+  partyGstin?: string;
   items: InvoiceItem[];
   subtotal: number;
   totalDiscount: number;
+  taxableAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
   totalGst: number;
   grandTotal: number;
   amountPaid: number;
   paymentMode: "cash" | "upi" | "card" | "bank_transfer" | "credit";
   status: "paid" | "partial" | "unpaid";
   date: string;
+  invoiceDate: string;
   createdAt: string;
 }
 
