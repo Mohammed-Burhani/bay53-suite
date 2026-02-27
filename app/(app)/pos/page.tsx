@@ -156,19 +156,30 @@ export default function POSPage() {
     }
 
     const party = customers.find((c) => c.id === selectedPartyId);
+    
+    // Calculate GST breakdown (assuming intra-state for CGST+SGST)
+    const cgst = totals.totalGst / 2;
+    const sgst = totals.totalGst / 2;
+    
     addInvoice({
       type: "sale",
       partyId: selectedPartyId === "walk-in" ? "walk-in" : selectedPartyId,
       partyName: party ? party.name : "Walk-in Customer",
+      partyGstin: party?.gstin,
       items: cart.map(({ maxStock, ...item }) => item),
       subtotal: totals.subtotal,
       totalDiscount: totals.totalDiscount,
+      taxableAmount: totals.subtotal - totals.totalDiscount,
+      cgst,
+      sgst,
+      igst: 0,
       totalGst: totals.totalGst,
       grandTotal: totals.grandTotal,
       amountPaid: totals.grandTotal,
       paymentMode,
       status: "paid",
       date: new Date().toISOString(),
+      invoiceDate: new Date().toISOString(),
     });
 
     toast.success(`Sale of ${formatCurrency(totals.grandTotal)} completed!`);

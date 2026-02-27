@@ -237,19 +237,29 @@ export default function CreateSalesInvoicePage() {
     const party = customers.find((c) => c.id === selectedPartyId);
     const status = amountPaid >= totals.grandTotal ? "paid" : amountPaid > 0 ? "partial" : "unpaid";
 
+    // Calculate GST breakdown (assuming intra-state for CGST+SGST)
+    const cgst = totals.totalGst / 2;
+    const sgst = totals.totalGst / 2;
+
     addInvoice({
       type: "sale",
       partyId: selectedPartyId,
       partyName: party?.name || "",
+      partyGstin: party?.gstin,
       items: items.map(({ maxStock, hsnCode, ...item }) => item),
       subtotal: totals.subtotal,
       totalDiscount: totals.totalDiscount,
+      taxableAmount: totals.subtotal - totals.totalDiscount,
+      cgst,
+      sgst,
+      igst: 0,
       totalGst: totals.totalGst,
       grandTotal: totals.grandTotal,
       amountPaid,
       paymentMode,
       status,
       date: new Date(invoiceDate).toISOString(),
+      invoiceDate: new Date(invoiceDate).toISOString(),
     });
 
     toast.success("Invoice created successfully!");
