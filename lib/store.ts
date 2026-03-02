@@ -408,6 +408,73 @@ const MOCK_INVOICES: Invoice[] = [
     invoiceDate: "2025-02-04T10:00:00Z",
     createdAt: "2025-02-04T10:00:00Z",
   },
+  {
+    id: "quot1",
+    invoiceNumber: "QUOT-2025-001",
+    type: "quotation",
+    partyId: "c2",
+    partyName: "Priya Sharma",
+    partyGstin: "27BBBBB1111B1Z5",
+    items: [
+      {
+        productId: "p1",
+        productName: "Samsung Galaxy M14 5G",
+        quantity: 5,
+        unit: "Pcs",
+        price: 13490,
+        discount: 500,
+        gstRate: 18,
+        total: 64950,
+      },
+    ],
+    subtotal: 64950,
+    totalDiscount: 500,
+    taxableAmount: 64450,
+    cgst: 5800.5,
+    sgst: 5800.5,
+    igst: 0,
+    totalGst: 11601,
+    grandTotal: 76051,
+    amountPaid: 0,
+    paymentMode: "credit",
+    status: "draft",
+    date: "2025-02-08T10:00:00Z",
+    invoiceDate: "2025-02-08T10:00:00Z",
+    createdAt: "2025-02-08T10:00:00Z",
+  },
+  {
+    id: "quot2",
+    invoiceNumber: "QUOT-2025-002",
+    type: "quotation",
+    partyId: "c3",
+    partyName: "Ankit Patel",
+    items: [
+      {
+        productId: "p8",
+        productName: "Bosch Drill Machine 13mm",
+        quantity: 10,
+        unit: "Pcs",
+        price: 3499,
+        discount: 1000,
+        gstRate: 18,
+        total: 33990,
+      },
+    ],
+    subtotal: 33990,
+    totalDiscount: 1000,
+    taxableAmount: 32990,
+    cgst: 2969.1,
+    sgst: 2969.1,
+    igst: 0,
+    totalGst: 5938.2,
+    grandTotal: 38928.2,
+    amountPaid: 0,
+    paymentMode: "credit",
+    status: "unpaid",
+    date: "2025-02-07T10:00:00Z",
+    invoiceDate: "2025-02-07T10:00:00Z",
+    createdAt: "2025-02-07T10:00:00Z",
+  },
 ];
 
 // ==================== In-memory Store ====================
@@ -415,7 +482,7 @@ const MOCK_INVOICES: Invoice[] = [
 let products = [...MOCK_PRODUCTS];
 let parties = [...MOCK_PARTIES];
 let invoices = [...MOCK_INVOICES];
-let invoiceCounter = 4;
+let invoiceCounter = 6;
 
 function generateId() {
   return Math.random().toString(36).substring(2, 11);
