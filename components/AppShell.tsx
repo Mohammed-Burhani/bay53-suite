@@ -31,6 +31,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 interface SubMenuItem {
   href: string;
@@ -129,6 +132,7 @@ const NAV_MODULES: NavModule[] = [
     subItems: [
       { href: "/reports", label: "All Reports", icon: FileBarChart },
       { href: "/reports/sales", label: "Sales Report", icon: TrendingUp },
+      { href: "/reports/quotations", label: "Quotations", icon: FileText },
       { href: "/reports/purchases", label: "Purchase Report", icon: TrendingDown },
       { href: "/reports/inventory", label: "Inventory Report", icon: Package },
       { href: "/reports/gst", label: "GST Report", icon: FileText },
@@ -148,13 +152,22 @@ const NAV_MODULES: NavModule[] = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const rawPathname = usePathname();
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [openModules, setOpenModules] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-close mobile sidebar on route change
+  useEffect(() => {
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  }, [rawPathname, isMobile]);
 
   useEffect(() => {
     // Auto-open the module that matches current path
@@ -178,35 +191,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   };
 
-  return (
-    <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen overflow-hidden bg-background">
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            "flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out relative",
-            collapsed ? "w-[68px]" : "w-[260px]"
-          )}
-        >
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/10 via-transparent to-violet-600/10 pointer-events-none" />
+  const sidebarContent = (
+    <>
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-linear-to-b from-indigo-600/10 via-transparent to-violet-600/10 pointer-events-none" />
 
-          {/* Logo */}
-          <div className="relative flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-              <Store className="h-5 w-5" />
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
-                <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
-              </div>
-            )}
+      {/* Logo */}
+      <div className="relative flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+          <Store className="h-5 w-5" />
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
+            <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
           </div>
+        )}
+      </div>
 
-          {/* Nav */}
-          <nav className="relative flex-1 space-y-1 overflow-y-auto px-2 py-4">
-            {NAV_MODULES.map((module) => {
+      {/* Nav */}
+      <nav className="relative flex-1 space-y-1 overflow-y-auto px-2 py-4">
+        {NAV_MODULES.map((module) => {
               const isModuleActive = module.subItems.some(item => pathname.startsWith(item.href));
               const isOpen = openModules.includes(module.id);
 
@@ -299,23 +304,79 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Collapsible>
               );
             })}
-          </nav>
+      </nav>
 
-          {/* Collapse button */}
-          <div className="relative border-t border-sidebar-border p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-center text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent"
-              onClick={() => setCollapsed(!collapsed)}
+      {/* Collapse button - only on desktop */}
+      {!isMobile && (
+        <div className="relative border-t border-sidebar-border p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div className="flex h-screen overflow-hidden bg-background">
+        {/* Mobile Sidebar - Sheet */}
+        {isMobile ? (
+          <>
+            {/* Mobile Header with Menu Button */}
+            <div className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center gap-3 border-b bg-sidebar px-4 md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+                <Store className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
+                <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
+              </div>
+            </div>
+
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetContent 
+                side="left" 
+                className="w-[260px] p-0 bg-sidebar text-sidebar-foreground"
+              >
+                <aside className="flex flex-col h-full relative">
+                  {sidebarContent}
+                </aside>
+              </SheetContent>
+            </Sheet>
+
+            {/* Main content with top padding for fixed header */}
+            <main className="flex-1 overflow-auto pt-16">{children}</main>
+          </>
+        ) : (
+          <>
+            {/* Desktop Sidebar */}
+            <aside
+              className={cn(
+                "flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out relative",
+                collapsed ? "w-[68px]" : "w-[260px]"
+              )}
             >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-          </div>
-        </aside>
+              {sidebarContent}
+            </aside>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-auto">{children}</main>
+            {/* Main content */}
+            <main className="flex-1 overflow-auto">{children}</main>
+          </>
+        )}
       </div>
     </TooltipProvider>
   );

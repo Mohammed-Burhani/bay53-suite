@@ -51,7 +51,7 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string;
   invoiceNumber: string;
-  type: "sale" | "purchase";
+  type: "sale" | "purchase" | "quotation" | "proforma";
   partyId: string;
   partyName: string;
   partyGstin?: string;
@@ -66,7 +66,7 @@ export interface Invoice {
   grandTotal: number;
   amountPaid: number;
   paymentMode: "cash" | "upi" | "card" | "bank_transfer" | "credit";
-  status: "paid" | "partial" | "unpaid";
+  status: "paid" | "partial" | "unpaid" | "draft" | "cancelled";
   date: string;
   invoiceDate: string;
   createdAt: string;

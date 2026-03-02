@@ -11,8 +11,9 @@ import { SalesReportTable } from "@/components/reports/SalesReportTable";
 import { CustomerReportTable } from "@/components/reports/CustomerReportTable";
 import { GSTRegisterTable } from "@/components/reports/GSTRegisterTable";
 import { LedgerRegisterTable } from "@/components/reports/LedgerRegisterTable";
+import { ReceivablesReportTable } from "@/components/reports/ReceivablesReportTable";
 
-type ReportType = "sales" | "customer" | "gst" | "ledger";
+type ReportType = "sales" | "customer" | "gst" | "ledger" | "receivables";
 
 const TAB_CONFIG = [
   {
@@ -21,6 +22,13 @@ const TAB_CONFIG = [
     shortLabel: "Sales",
     icon: FileText,
     gradient: "data-[state=active]:bg-linear-to-br data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600",
+  },
+  {
+    value: "receivables",
+    label: "Receivables",
+    shortLabel: "Receivables",
+    icon: IndianRupee,
+    gradient: "data-[state=active]:bg-linear-to-br data-[state=active]:from-orange-500 data-[state=active]:to-orange-600",
   },
   {
     value: "customer",
@@ -177,7 +185,7 @@ export default function SalesReportPage() {
 
       {/* Report Tabs */}
       <Tabs value={reportType} onValueChange={(v) => setReportType(v as ReportType)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-linear-to-r from-muted/80 to-muted/50">
+        <TabsList className="grid w-full grid-cols-5 h-auto p-1 bg-linear-to-r from-muted/80 to-muted/50">
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -196,6 +204,10 @@ export default function SalesReportPage() {
 
         <TabsContent value="sales" className="mt-4">
           <SalesReportTable invoices={filteredInvoices} />
+        </TabsContent>
+
+        <TabsContent value="receivables" className="mt-4">
+          <ReceivablesReportTable invoices={filteredInvoices} />
         </TabsContent>
 
         <TabsContent value="customer" className="mt-4">
