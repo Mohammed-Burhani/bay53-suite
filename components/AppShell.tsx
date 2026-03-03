@@ -131,11 +131,13 @@ const NAV_MODULES: NavModule[] = [
     activeBg: "bg-orange-500/20",
     subItems: [
       { href: "/reports", label: "All Reports", icon: FileBarChart },
-      { href: "/reports/sales", label: "Sales Report", icon: TrendingUp },
-      { href: "/reports/quotations", label: "Quotations", icon: FileText },
-      { href: "/reports/purchases", label: "Purchase Report", icon: TrendingDown },
-      { href: "/reports/inventory", label: "Inventory Report", icon: Package },
-      { href: "/reports/gst", label: "GST Report", icon: FileText },
+      { href: "/reports/current-stock", label: "Current Stock", icon: Package },
+      { href: "/reports/inventory-report", label: "Inventory Report", icon: FileText },
+      { href: "/reports/item-register", label: "Item Register", icon: FileText },
+      { href: "/reports/pending-items", label: "Pending Items", icon: TrendingDown },
+      { href: "/reports/ledger-outstanding", label: "Ledger Outstanding", icon: Receipt },
+      { href: "/reports/day-book", label: "Day Book", icon: FileText },
+      { href: "/reports/gst-filing", label: "GST Filing", icon: FileText },
     ],
   },
   {
