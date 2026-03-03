@@ -185,22 +185,24 @@ export default function SalesReportPage() {
 
       {/* Report Tabs */}
       <Tabs value={reportType} onValueChange={(v) => setReportType(v as ReportType)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 h-auto p-1 bg-linear-to-r from-muted/80 to-muted/50">
-          {TAB_CONFIG.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className={`${tab.gradient} data-[state=active]:text-white data-[state=active]:shadow-md py-2.5 transition-all`}
-              >
-                <Icon className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.shortLabel}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="inline-flex w-full md:grid md:grid-cols-5 h-auto p-1 bg-linear-to-r from-muted/80 to-muted/50 min-w-max md:min-w-0">
+            {TAB_CONFIG.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={`${tab.gradient} data-[state=active]:text-white data-[state=active]:shadow-md py-2.5 px-4 transition-all whitespace-nowrap`}
+                >
+                  <Icon className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
         <TabsContent value="sales" className="mt-4">
           <SalesReportTable invoices={filteredInvoices} />

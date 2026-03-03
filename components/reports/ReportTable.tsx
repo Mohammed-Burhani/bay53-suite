@@ -47,7 +47,7 @@ export function ReportTable<T extends Record<string, unknown> = Record<string, u
   const EmptyIconComponent = EmptyIcon || Icon;
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm pt-0!">
       <CardHeader className={`border-b ${headerGradient} py-0!`}>
         <CardTitle className="text-lg font-semibold flex items-center gap-2 pt-4 pb-2">
           <div className={`h-8 w-8 rounded-lg ${iconColor} flex items-center justify-center`}>
