@@ -20,7 +20,7 @@ export default function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <div>
+      <div className="">
         <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
         <p className="text-sm text-muted-foreground">Access all business reports and analytics</p>
       </div>
