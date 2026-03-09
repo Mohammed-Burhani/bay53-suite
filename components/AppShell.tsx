@@ -26,6 +26,7 @@ import {
   FileBarChart,
   Sparkles,
   Rocket,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,16 @@ const NAV_MODULES: NavModule[] = [
     activeBg: "bg-fuchsia-500/20",
     subItems: [
       { href: "/ai-assistant", label: "Chat Assistant", icon: Sparkles },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    color: "text-slate-400",
+    activeBg: "bg-slate-500/20",
+    subItems: [
+      { href: "/settings", label: "All Settings", icon: Settings },
     ],
   },
 ];
