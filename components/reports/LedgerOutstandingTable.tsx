@@ -28,6 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface LedgerOutstandingRow {
   party: string;
@@ -259,6 +260,12 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Ledger Outstanding"
+        moduleData={{ data, detailed, totalOutstanding }}
+      />
     </TooltipProvider>
   );
 }

@@ -24,6 +24,7 @@ import { Search, FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 export default function SalesPage() {
   const [search, setSearch] = useState("");
@@ -172,6 +173,12 @@ export default function SalesPage() {
           {viewInvoice && <InvoiceDetail invoice={viewInvoice} />}
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Sales"
+        moduleData={{ invoices }}
+      />
     </div>
   );
 }

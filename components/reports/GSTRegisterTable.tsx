@@ -5,6 +5,7 @@ import { IndianRupee } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface GSTRegisterTableProps {
   invoices: Invoice[];
@@ -98,6 +99,7 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
   } : undefined;
 
   return (
+    <>
     <ReportTable
       title="GST Register"
       icon={IndianRupee}
@@ -110,5 +112,12 @@ export function GSTRegisterTable({ invoices }: GSTRegisterTableProps) {
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-950/20 border-purple-200 dark:border-purple-800"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="GST Register"
+      moduleData={{ invoices }}
+    />
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { ReportTable } from "./ReportTable";
 import { TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface CustomerReportTableProps {
   invoices: Invoice[];
@@ -90,6 +91,7 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
   ];
 
   return (
+    <>
     <ReportTable
       title="Customer-wise Sales Summary"
       icon={TrendingUp}
@@ -100,5 +102,12 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
       data={customerSummary as unknown as Record<string, unknown>[]}
       emptyMessage="No customer data found"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="Customer Report"
+      moduleData={{ invoices, customerSummary }}
+    />
+    </>
   );
 }

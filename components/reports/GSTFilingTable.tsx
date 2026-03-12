@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3 } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface GSTFilingRow {
   [key: string]: string | number;
@@ -327,6 +328,12 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="GST Filing"
+        moduleData={{ data, reportType, dateType, totalInvoices, totalTaxableValue, totalCGST, totalSGST, totalIGST }}
+      />
     </TooltipProvider>
   );
 }

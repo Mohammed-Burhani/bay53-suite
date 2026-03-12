@@ -43,6 +43,7 @@ import {
   BarChart3,
   Layers
 } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface StockItem {
   bound: string;
@@ -526,6 +527,12 @@ export default function CurrentStockReport({ initialData = [] }: CurrentStockRep
           </Card>
         )}
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Current Stock Report"
+        moduleData={{ data, showReorderDetails, rackWise }}
+      />
     </TooltipProvider>
   );
 }

@@ -6,6 +6,7 @@ import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface LedgerRegisterTableProps {
   invoices: Invoice[];
@@ -95,6 +96,7 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
   } : undefined;
 
   return (
+    <>
     <ReportTable
       title="Sales Ledger Register"
       icon={FileText}
@@ -107,5 +109,12 @@ export function LedgerRegisterTable({ invoices }: LedgerRegisterTableProps) {
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-950/20 border-amber-200 dark:border-amber-800"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="Ledger Register"
+      moduleData={{ invoices, ledgerEntries }}
+    />
+    </>
   );
 }

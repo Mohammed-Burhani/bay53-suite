@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Search, FileText, IndianRupee } from "lucide-react";
 import { useState } from "react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 export default function PurchasesPage() {
   const [search, setSearch] = useState("");
@@ -141,6 +142,12 @@ export default function PurchasesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Purchases"
+        moduleData={{ invoices }}
+      />
     </div>
   );
 }

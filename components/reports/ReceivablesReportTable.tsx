@@ -6,6 +6,7 @@ import { IndianRupee } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface ReceivablesReportTableProps {
   invoices: Invoice[];
@@ -125,6 +126,7 @@ export function ReceivablesReportTable({ invoices }: ReceivablesReportTableProps
   } : undefined;
 
   return (
+    <>
     <ReportTable
       title="Receivables Report"
       icon={IndianRupee}
@@ -137,5 +139,12 @@ export function ReceivablesReportTable({ invoices }: ReceivablesReportTableProps
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-orange-100 to-orange-50 dark:from-orange-900/30 dark:to-orange-950/20 border-orange-200 dark:border-orange-800"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="Receivables Report"
+      moduleData={{ invoices, receivableEntries }}
+    />
+    </>
   );
 }

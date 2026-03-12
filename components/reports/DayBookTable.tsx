@@ -28,6 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Calendar, TrendingUp, TrendingDown } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface DayBookRow {
   billNo: string;
@@ -288,6 +289,12 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Day Book"
+        moduleData={{ data, transactionType, totalDebit, totalCredit }}
+      />
     </TooltipProvider>
   );
 }

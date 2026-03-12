@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface PendingItemsTableProps {
   initialData?: Array<{
@@ -454,6 +455,12 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Pending Items"
+        moduleData={{ data, itemWise, partyWise, billDetail, dateWise, totalPending, totalOrders }}
+      />
     </TooltipProvider>
   );
 }

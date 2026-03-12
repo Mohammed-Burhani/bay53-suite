@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface QuotationsReportTableProps {
   invoices: Invoice[];
@@ -103,6 +104,7 @@ export function QuotationsReportTable({ invoices }: QuotationsReportTableProps) 
   } : undefined;
 
   return (
+    <>
     <ReportTable
       title="Quotations / Estimates Report"
       icon={FileText}
@@ -115,5 +117,12 @@ export function QuotationsReportTable({ invoices }: QuotationsReportTableProps) 
       summaryRow={summaryRow}
       summaryGradient="bg-linear-to-r from-cyan-100 to-cyan-50 dark:from-cyan-900/30 dark:to-cyan-950/20 border-cyan-200 dark:border-cyan-800"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="Quotations Report"
+      moduleData={{ invoices }}
+    />
+    </>
   );
 }
