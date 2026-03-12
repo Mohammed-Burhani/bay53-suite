@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Building2, 
   Globe, 
@@ -19,7 +20,8 @@ import {
   Printer,
   ChevronRight,
   Settings2,
-  Search
+  Search,
+  Menu
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -120,6 +122,7 @@ const settingsCategories: SettingCategory[] = [
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("business");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const filteredCategories = settingsCategories.filter(
     (category) =>
@@ -135,128 +138,151 @@ export default function SettingsPage() {
 
   const activeCategory = settingsCategories.find((c) => c.id === activeTab);
 
+  const handleCategorySelect = (categoryId: string) => {
+    setActiveTab(categoryId);
+    setMobileMenuOpen(false);
+  };
+
+  const sidebarContent = (
+    <Card className="border-2 shadow-lg py-4 h-full lg:h-auto">
+      <CardHeader className="pb-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search settings..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-10"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[calc(100vh-200px)] lg:h-[calc(100vh-280px)] px-3 pb-3">
+          <div className="space-y-6">
+            {/* General Settings */}
+            {groupedCategories.general.length > 0 && (
+              <div>
+                <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  General
+                </h3>
+                <nav className="space-y-1">
+                  {groupedCategories.general.map((category) => (
+                    <SettingNavItem
+                      key={category.id}
+                      category={category}
+                      isActive={activeTab === category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                    />
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* Documents Settings */}
+            {groupedCategories.documents.length > 0 && (
+              <div>
+                <Separator className="mb-3" />
+                <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Documents
+                </h3>
+                <nav className="space-y-1">
+                  {groupedCategories.documents.map((category) => (
+                    <SettingNavItem
+                      key={category.id}
+                      category={category}
+                      isActive={activeTab === category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                    />
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* System Settings */}
+            {groupedCategories.system.length > 0 && (
+              <div>
+                <Separator className="mb-3" />
+                <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  System
+                </h3>
+                <nav className="space-y-1">
+                  {groupedCategories.system.map((category) => (
+                    <SettingNavItem
+                      key={category.id}
+                      category={category}
+                      isActive={activeTab === category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                    />
+                  ))}
+                </nav>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative!">
-      <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-[1600px] ">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-[1600px]">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Settings2 className="h-6 w-6 text-primary" />
+        <div className="mb-4 md:mb-6 lg:mb-8">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Settings2 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">Settings</h1>
+                <p className="text-muted-foreground text-xs md:text-sm lg:text-base mt-1 hidden sm:block">
+                  Customize your workspace and manage preferences
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Settings</h1>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">
-                Customize your workspace and manage preferences
-              </p>
-            </div>
+            
+            {/* Mobile Menu Toggle */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] p-0">
+                {sidebarContent}
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
         {/* Main Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-          {/* Sidebar Navigation */}
-          <aside className="space-y-4 sticky! top-0!">
-            <Card className="border-2 shadow-lg py-4">
-              <CardHeader className="pb-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search settings..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-10"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-280px)] px-3 pb-3">
-                  <div className="space-y-6">
-                    {/* General Settings */}
-                    {groupedCategories.general.length > 0 && (
-                      <div>
-                        <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          General
-                        </h3>
-                        <nav className="space-y-1">
-                          {groupedCategories.general.map((category) => (
-                            <SettingNavItem
-                              key={category.id}
-                              category={category}
-                              isActive={activeTab === category.id}
-                              onClick={() => setActiveTab(category.id)}
-                            />
-                          ))}
-                        </nav>
-                      </div>
-                    )}
-
-                    {/* Documents Settings */}
-                    {groupedCategories.documents.length > 0 && (
-                      <div>
-                        <Separator className="mb-3" />
-                        <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          Documents
-                        </h3>
-                        <nav className="space-y-1">
-                          {groupedCategories.documents.map((category) => (
-                            <SettingNavItem
-                              key={category.id}
-                              category={category}
-                              isActive={activeTab === category.id}
-                              onClick={() => setActiveTab(category.id)}
-                            />
-                          ))}
-                        </nav>
-                      </div>
-                    )}
-
-                    {/* System Settings */}
-                    {groupedCategories.system.length > 0 && (
-                      <div>
-                        <Separator className="mb-3" />
-                        <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          System
-                        </h3>
-                        <nav className="space-y-1">
-                          {groupedCategories.system.map((category) => (
-                            <SettingNavItem
-                              key={category.id}
-                              category={category}
-                              isActive={activeTab === category.id}
-                              onClick={() => setActiveTab(category.id)}
-                            />
-                          ))}
-                        </nav>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+          {/* Desktop Sidebar Navigation */}
+          <aside className="hidden lg:block space-y-4">
+            {sidebarContent}
           </aside>
 
           {/* Content Area */}
-          <main className="space-y-6">
+          <main className="space-y-4 md:space-y-6">
             {/* Active Section Header */}
             {activeCategory && (
-              <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/50 py-4">
-                <CardHeader>
+              <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/50 py-3 md:py-4">
+                <CardHeader className="p-4 md:p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-primary/10">
-                        <activeCategory.icon className="h-6 w-6 text-primary" />
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="p-2 md:p-3 rounded-xl bg-primary/10">
+                        <activeCategory.icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-2xl">{activeCategory.label}</CardTitle>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg md:text-xl lg:text-2xl">{activeCategory.label}</CardTitle>
                           {activeCategory.badge && (
                             <Badge variant="secondary" className="text-xs">
                               {activeCategory.badge}
                             </Badge>
                           )}
                         </div>
-                        <CardDescription className="mt-1 text-base">
+                        <CardDescription className="mt-1 text-sm md:text-base">
                           {activeCategory.description}
                         </CardDescription>
                       </div>
@@ -267,7 +293,7 @@ export default function SettingsPage() {
             )}
 
             {/* Settings Content */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {activeTab === "business" && <BusinessSettings />}
               {activeTab === "localization" && <LocalizationSettings />}
               {activeTab === "invoice" && <InvoiceSettings />}
