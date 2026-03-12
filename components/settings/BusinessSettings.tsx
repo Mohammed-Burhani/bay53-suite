@@ -12,7 +12,7 @@ import { Save, Upload } from "lucide-react";
 export default function BusinessSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Business Information</CardTitle>
           <CardDescription>
@@ -130,7 +130,7 @@ export default function BusinessSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Bank Details</CardTitle>
           <CardDescription>

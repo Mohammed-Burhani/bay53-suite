@@ -13,7 +13,7 @@ export default function AppearanceSettings() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Theme</CardTitle>
           <CardDescription>
@@ -78,7 +78,7 @@ export default function AppearanceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Layout</CardTitle>
           <CardDescription>
@@ -142,7 +142,7 @@ export default function AppearanceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Display</CardTitle>
           <CardDescription>
@@ -224,7 +224,7 @@ export default function AppearanceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Dashboard Customization</CardTitle>
           <CardDescription>

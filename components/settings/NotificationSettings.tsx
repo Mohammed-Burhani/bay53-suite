@@ -11,7 +11,7 @@ import { Save } from "lucide-react";
 export default function NotificationSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Email Notifications</CardTitle>
           <CardDescription>
@@ -85,7 +85,7 @@ export default function NotificationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>SMS Notifications</CardTitle>
           <CardDescription>
@@ -166,7 +166,7 @@ export default function NotificationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>In-App Notifications</CardTitle>
           <CardDescription>
@@ -230,7 +230,7 @@ export default function NotificationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Alert Thresholds</CardTitle>
           <CardDescription>

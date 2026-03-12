@@ -99,8 +99,8 @@ export default function DashboardPage() {
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
         {/* Sales Chart */}
-        <Card className="lg:col-span-4">
-          <CardHeader className="pb-2">
+        <Card className="lg:col-span-4 py-4">
+          <CardHeader className="">
             <CardTitle className="text-base font-semibold">Sales (Last 7 Days)</CardTitle>
           </CardHeader>
           <CardContent>
@@ -131,8 +131,8 @@ export default function DashboardPage() {
         </Card>
 
         {/* Category Breakdown */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="pb-2">
+        <Card className="lg:col-span-3 py-4">
+          <CardHeader className="">
             <CardTitle className="text-base font-semibold">Inventory by Category</CardTitle>
           </CardHeader>
           <CardContent>
@@ -186,8 +186,8 @@ export default function DashboardPage() {
       {/* Bottom Row */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Recent Sales */}
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="py-4!">
+          <CardHeader className="">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <div className="rounded-lg bg-cyan-100 p-1.5">
                 <ShoppingCart className="h-3.5 w-3.5 text-cyan-600" />
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="flex flex-col gap-4">
               {recentSales.map((sale) => (
                 <div
                   key={sale.id}
@@ -229,8 +229,8 @@ export default function DashboardPage() {
 
         {/* Top Products + Low Stock */}
         <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader className="pb-2">
+          <Card className="py-4!">
+            <CardHeader className="">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <div className="rounded-lg bg-violet-100 p-1.5">
                   <TrendingUp className="h-3.5 w-3.5 text-violet-600" />
@@ -258,8 +258,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/50 dark:border-amber-800 dark:bg-amber-950/20 dark:from-amber-950/20 dark:to-transparent">
-            <CardHeader className="pb-2">
+          <Card className="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50/50 dark:border-amber-800 dark:bg-amber-950/20 dark:from-amber-950/20 dark:to-transparent py-4">
+            <CardHeader className="pb-0!">
               <CardTitle className="text-base font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
                 <div className="rounded-lg bg-amber-200/60 p-1.5">
                   <AlertTriangle className="h-3.5 w-3.5" />
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                 Low Stock Alert ({metrics.lowStockCount} items)
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="">
               <p className="text-xs text-amber-600 dark:text-amber-500">
                 {metrics.lowStockCount} products are below their minimum stock threshold.
                 Visit Inventory to review and reorder.
@@ -336,8 +336,8 @@ function MetricCard({
   borderColor: string;
 }) {
   return (
-    <Card className={`card-hover border-l-4 ${borderColor}`}>
-      <CardContent className="p-5">
+    <Card className={`card-hover border-l-4 ${borderColor} p-4!`}>
+      <CardContent className="">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {title}
@@ -378,8 +378,8 @@ function QuickStat({
   color: string;
 }) {
   return (
-    <Card className="card-hover">
-      <CardContent className="flex items-center gap-3 p-4">
+    <Card className="card-hover p-4">
+      <CardContent className="flex items-center gap-3">
         <div className={`rounded-xl ${bg} p-2.5 ${color}`}>{icon}</div>
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
