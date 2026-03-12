@@ -12,7 +12,7 @@ import { Save } from "lucide-react";
 export default function InvoiceSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Invoice Numbering</CardTitle>
           <CardDescription>
@@ -82,7 +82,7 @@ export default function InvoiceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Invoice Display</CardTitle>
           <CardDescription>
@@ -177,7 +177,7 @@ export default function InvoiceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Default Terms & Conditions</CardTitle>
           <CardDescription>
@@ -214,7 +214,7 @@ export default function InvoiceSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Payment Settings</CardTitle>
           <CardDescription>

@@ -11,7 +11,7 @@ import { Save, Plus, Trash2 } from "lucide-react";
 export default function TaxSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Tax Configuration</CardTitle>
           <CardDescription>
@@ -78,7 +78,7 @@ export default function TaxSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>GST Rates</CardTitle>
           <CardDescription>
@@ -113,7 +113,7 @@ export default function TaxSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Inter-State vs Intra-State</CardTitle>
           <CardDescription>
@@ -150,7 +150,7 @@ export default function TaxSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Tax Exemptions</CardTitle>
           <CardDescription>
@@ -203,7 +203,7 @@ export default function TaxSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Tax Reports & Filing</CardTitle>
           <CardDescription>

@@ -11,7 +11,7 @@ import { Save, Shield, Key, Lock } from "lucide-react";
 export default function SecuritySettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Password & Authentication</CardTitle>
           <CardDescription>
@@ -89,7 +89,7 @@ export default function SecuritySettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Access Control</CardTitle>
           <CardDescription>
@@ -169,7 +169,7 @@ export default function SecuritySettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Data Security</CardTitle>
           <CardDescription>
@@ -243,7 +243,7 @@ export default function SecuritySettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>API & Integration Security</CardTitle>
           <CardDescription>

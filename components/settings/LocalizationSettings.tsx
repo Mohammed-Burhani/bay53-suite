@@ -10,7 +10,7 @@ import { Save } from "lucide-react";
 export default function LocalizationSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Regional Settings</CardTitle>
           <CardDescription>
@@ -108,7 +108,7 @@ export default function LocalizationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Currency Settings</CardTitle>
           <CardDescription>
@@ -201,7 +201,7 @@ export default function LocalizationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Fiscal Year Settings</CardTitle>
           <CardDescription>

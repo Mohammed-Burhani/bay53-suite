@@ -11,7 +11,7 @@ import { Save } from "lucide-react";
 export default function PrintSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Print Layout</CardTitle>
           <CardDescription>
@@ -89,7 +89,7 @@ export default function PrintSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Print Options</CardTitle>
           <CardDescription>
@@ -189,7 +189,7 @@ export default function PrintSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Thermal Printer Settings</CardTitle>
           <CardDescription>

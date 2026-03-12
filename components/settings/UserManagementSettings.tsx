@@ -17,7 +17,7 @@ export default function UserManagementSettings() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -67,7 +67,7 @@ export default function UserManagementSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Roles & Permissions</CardTitle>
           <CardDescription>
@@ -194,7 +194,7 @@ export default function UserManagementSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Invite Users</CardTitle>
           <CardDescription>
@@ -232,7 +232,7 @@ export default function UserManagementSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Activity Log</CardTitle>
           <CardDescription>

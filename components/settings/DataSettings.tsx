@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 export default function DataSettings() {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Backup & Restore</CardTitle>
           <CardDescription>
@@ -116,7 +116,7 @@ export default function DataSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Import & Export</CardTitle>
           <CardDescription>
@@ -187,7 +187,7 @@ export default function DataSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Data Cleanup</CardTitle>
           <CardDescription>
@@ -254,7 +254,7 @@ export default function DataSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle>Database Maintenance</CardTitle>
           <CardDescription>
