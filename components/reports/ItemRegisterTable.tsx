@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, TrendingUp, TrendingDown } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface ItemRegisterTableProps {
   initialData?: any[];
@@ -398,6 +399,12 @@ export default function ItemRegisterTable({ initialData = [] }: ItemRegisterTabl
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Item Register"
+        moduleData={{ data, itemWise, dateWise, partyWise, billDetail }}
+      />
     </TooltipProvider>
   );
 }

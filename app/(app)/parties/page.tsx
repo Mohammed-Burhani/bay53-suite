@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Search, Edit, Trash2, Users, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 const partySchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
@@ -370,6 +371,12 @@ export default function PartiesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName={`${tab === "customer" ? "Customers" : "Suppliers"}`}
+        moduleData={{ parties, tab }}
+      />
     </div>
   );
 }

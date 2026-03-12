@@ -35,6 +35,7 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface CartItem extends InvoiceItem {
   maxStock: number;
@@ -420,6 +421,12 @@ export default function POSPage() {
           </div>
         )}
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="POS"
+        moduleData={{ products: filteredProducts, cart, customers }}
+      />
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, BarChart3, TrendingUp } from "lucide-react";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface InventoryReportTableProps {
   initialData?: any[];
@@ -516,6 +517,12 @@ export default function InventoryReportTable({ initialData = [] }: InventoryRepo
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Assistant */}
+      <ModuleAIAssistant
+        moduleName="Inventory Report"
+        moduleData={{ data, itemWise, partyWise, billDetail, dateWise }}
+      />
     </TooltipProvider>
   );
 }

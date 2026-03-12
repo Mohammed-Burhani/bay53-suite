@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { Invoice } from "@/lib/types";
+import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 
 interface SalesReportTableProps {
   invoices: Invoice[];
@@ -96,6 +97,7 @@ export function SalesReportTable({ invoices }: SalesReportTableProps) {
   ];
 
   return (
+    <>
     <ReportTable
       title="Sales Transactions"
       icon={FileText}
@@ -106,5 +108,12 @@ export function SalesReportTable({ invoices }: SalesReportTableProps) {
       data={invoices as unknown as Record<string, unknown>[]}
       emptyMessage="No sales records found"
     />
+
+    {/* AI Assistant */}
+    <ModuleAIAssistant
+      moduleName="Sales Report"
+      moduleData={{ invoices }}
+    />
+    </>
   );
 }
