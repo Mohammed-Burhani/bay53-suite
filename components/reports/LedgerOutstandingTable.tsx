@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,47 +28,85 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { useLedgerOutstanding } from "@/lib/hooks/useReports";
+import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
+import { format, subMonths } from "date-fns";
 
-interface LedgerOutstandingRow {
-  party: string;
-  contact: string;
-  gstNo: string;
-  billNo: string;
-  date: string;
-  refNo: string;
-  refDate: string;
-  orderNo: string;
-  orderDate: string;
-  voucher: string;
-  amount: number;
-  amountDrCr: string;
-  pending: number;
-  pendingDrCr: string;
-  dueOn: string;
-  remarks: string;
+// Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
+function toApiDate(date: Date) {
+  return format(date, "dd/MM/yyyy HH:mm:ss");
 }
 
-interface LedgerOutstandingTableProps {
-  initialData?: LedgerOutstandingRow[];
+// Preset date ranges
+type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
+
+function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
+  const now = new Date();
+  switch (preset) {
+    case "today":
+      return { from: new Date(now.setHours(0, 0, 0, 0)), to: new Date() };
+    case "current_month":
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
+    case "monthly":
+      return { from: subMonths(new Date(), 1), to: new Date() };
+    case "quarterly":
+      return { from: subMonths(new Date(), 3), to: new Date() };
+    case "half_yearly":
+      return { from: subMonths(new Date(), 6), to: new Date() };
+    case "yearly":
+      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
+    default:
+      // "none" / "range" — use wide default
+      return { from: new Date("2022-01-01"), to: new Date() };
+  }
 }
 
-export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutstandingTableProps) {
+export default function LedgerOutstandingTable() {
   const [detailed, setDetailed] = useState(false);
-  const [data] = useState<LedgerOutstandingRow[]>(initialData);
-  const [isLoading, setIsLoading] = useState(false);
+  const [datePreset, setDatePreset] = useState<DatePreset>("none");
+  // ledgerIds: comma-separated input until master API is available
+  const [ledgerInput, setLedgerInput] = useState("");
+  // Custom date range (only used when preset === "range")
+  const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
+  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const totalOutstanding = data.reduce((sum, row) => sum + row.pending, 0);
-  const overdueCount = data.filter(row => new Date(row.dueOn) < new Date()).length;
+  const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
+
+  const handleSearch = () => {
+    const ledgerIds = ledgerInput
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n));
+
+    if (ledgerIds.length === 0) return;
+
+    const range =
+      datePreset === "range"
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : resolveDateRange(datePreset);
+
+    fetchOutstanding({
+      ledgers: ledgerIds,
+      detailed,
+      salesman: null,
+      fromDate: toApiDate(range.from),
+      toDate: toApiDate(range.to),
+    });
+  };
+
+  const rows: LedgerOutstandingItem[] = data ?? [];
+  const totalOutstanding = rows.reduce((sum, r) => sum + r.pending, 0);
+  const overdueCount = rows.filter((r) => r.overDue > 0).length;
 
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
         {/* Stats Cards */}
-        {data.length > 0 && (
+        {rows.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Receipt className="h-8 w-8 opacity-80 mb-2" />
@@ -76,16 +115,16 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <TrendingUp className="h-8 w-8 opacity-80 mb-2" />
                 <p className="text-sm font-medium opacity-90">Total Entries</p>
-                <p className="text-3xl font-bold mt-1">{data.length}</p>
+                <p className="text-3xl font-bold mt-1">{rows.length}</p>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-red-500 to-red-600 text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <AlertTriangle className="h-8 w-8 opacity-80 mb-2" />
@@ -98,9 +137,9 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
+          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+              <div className="p-2 rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 text-white">
                 <Filter className="h-4 w-4" />
               </div>
               <div>
@@ -112,28 +151,31 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
 
           <CardContent className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
+              {/* Ledger ID input — placeholder until master API is ready */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Ledger <span className="text-red-500">*</span>
+                  Ledger ID(s) <span className="text-red-500">*</span>
                 </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="Search and select ledger" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ledger1">Ledger 1</SelectItem>
-                    <SelectItem value="ledger2">Ledger 2</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  className="h-9"
+                  placeholder="e.g. 1096, 1097"
+                  value={ledgerInput}
+                  onChange={(e) => setLedgerInput(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">Comma-separated ledger IDs</p>
               </div>
 
+              {/* Date preset */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                   Date
                 </Label>
-                <Select defaultValue="none">
+                <Select
+                  value={datePreset}
+                  onValueChange={(v) => setDatePreset(v as DatePreset)}
+                >
                   <SelectTrigger className="h-9 w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -150,10 +192,11 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
                 </Select>
               </div>
 
+              {/* Detailed checkbox */}
               <div className="space-y-1.5 flex items-end">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="detailed" 
+                  <Checkbox
+                    id="detailed"
                     checked={detailed}
                     onCheckedChange={(c) => setDetailed(c as boolean)}
                   />
@@ -162,26 +205,62 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
               </div>
             </div>
 
+            {/* Custom date range inputs — only shown when preset is "range" */}
+            {datePreset === "range" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">From Date</Label>
+                  <Input
+                    type="date"
+                    className="h-9"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">To Date</Label>
+                  <Input
+                    type="date"
+                    className="h-9"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
-              <Button 
-                disabled={isLoading}
+              <Button
+                onClick={handleSearch}
+                disabled={isPending || !ledgerInput.trim()}
                 size="sm"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
+                className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
               >
-                <Search className="h-3.5 w-3.5 mr-1.5" />
-                {isLoading ? "Loading..." : "Outstanding"}
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Search className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {isPending ? "Loading..." : "Outstanding"}
               </Button>
               <div className="flex-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9">
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()}>
                     <Printer className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Print</TooltipContent>
               </Tooltip>
             </div>
+
+            {/* API Error */}
+            {error && (
+              <p className="text-sm text-destructive">
+                Failed to fetch data. Please check the ledger IDs and try again.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -195,61 +274,74 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                  <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
                     <TableHead className="font-semibold">Party</TableHead>
-                    <TableHead className="font-semibold">Contact</TableHead>
-                    <TableHead className="font-semibold">GST No</TableHead>
+                    <TableHead className="font-semibold">Group</TableHead>
                     <TableHead className="font-semibold">Bill No</TableHead>
                     <TableHead className="font-semibold">Date</TableHead>
-                    <TableHead className="font-semibold">Ref No</TableHead>
-                    <TableHead className="font-semibold">Ref Date</TableHead>
-                    <TableHead className="font-semibold">Order No</TableHead>
-                    <TableHead className="font-semibold">Order Date</TableHead>
-                    <TableHead className="font-semibold">Voucher</TableHead>
-                    <TableHead className="text-right font-semibold">Amount</TableHead>
+                    <TableHead className="font-semibold">Phone</TableHead>
+                    <TableHead className="font-semibold">Address</TableHead>
+                    <TableHead className="text-right font-semibold">Opening</TableHead>
                     <TableHead className="font-semibold">Dr/Cr</TableHead>
                     <TableHead className="text-right font-semibold">Pending</TableHead>
                     <TableHead className="font-semibold">Dr/Cr</TableHead>
                     <TableHead className="font-semibold">Due On</TableHead>
-                    <TableHead className="font-semibold">Remarks</TableHead>
+                    <TableHead className="text-right font-semibold">Overdue (days)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.length === 0 ? (
+                  {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={16} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                         <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
                         <p className="text-lg font-medium">Select a ledger to view outstanding</p>
-                        <p className="text-sm">Choose a ledger from the dropdown above</p>
+                        <p className="text-sm">Enter ledger ID(s) above and click Outstanding</p>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.map((row, idx) => {
-                      const isOverdue = new Date(row.dueOn) < new Date();
+                    rows.map((row, idx) => {
+                      const isOverdue = row.overDue > 0;
                       return (
-                        <TableRow key={idx} className={`hover:bg-muted/50 ${isOverdue ? 'bg-red-50/50 dark:bg-red-950/10' : ''}`}>
+                        <TableRow
+                          key={idx}
+                          className={`hover:bg-muted/50 ${isOverdue ? "bg-red-50/50 dark:bg-red-950/10" : ""}`}
+                        >
                           <TableCell className="font-medium">{row.party}</TableCell>
-                          <TableCell>{row.contact}</TableCell>
-                          <TableCell className="font-mono text-sm">{row.gstNo}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.group}</TableCell>
                           <TableCell className="font-mono text-sm">{row.billNo}</TableCell>
-                          <TableCell>{row.date}</TableCell>
-                          <TableCell>{row.refNo}</TableCell>
-                          <TableCell>{row.refDate}</TableCell>
-                          <TableCell>{row.orderNo}</TableCell>
-                          <TableCell>{row.orderDate}</TableCell>
-                          <TableCell><Badge variant="outline">{row.voucher}</Badge></TableCell>
-                          <TableCell className="text-right font-medium">₹{row.amount.toLocaleString()}</TableCell>
-                          <TableCell><Badge variant={row.amountDrCr === 'Dr' ? 'destructive' : 'default'}>{row.amountDrCr}</Badge></TableCell>
-                          <TableCell className="text-right font-bold text-blue-600">₹{row.pending.toLocaleString()}</TableCell>
-                          <TableCell><Badge variant={row.pendingDrCr === 'Dr' ? 'destructive' : 'default'}>{row.pendingDrCr}</Badge></TableCell>
+                          <TableCell>{new Date(row.date).toLocaleDateString("en-IN")}</TableCell>
+                          <TableCell className="text-sm">
+                            {[row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / ")}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={row.address}>
+                            {row.address}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">₹{row.opening.toLocaleString()}</TableCell>
                           <TableCell>
+                            <Badge variant={row.openingDrCr === "Dr" ? "destructive" : "default"}>
+                              {row.openingDrCr}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-blue-600">
+                            ₹{row.pending.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={row.pendingDrCr === "Dr" ? "destructive" : "default"}>
+                              {row.pendingDrCr}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className={isOverdue ? "text-red-600 font-medium" : ""}>
+                              {new Date(row.dueOn).toLocaleDateString("en-IN")}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
                             {isOverdue ? (
-                              <span className="text-red-600 font-medium">{row.dueOn}</span>
+                              <Badge variant="destructive">{row.overDue}d</Badge>
                             ) : (
-                              row.dueOn
+                              <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{row.remarks}</TableCell>
                         </TableRow>
                       );
                     })
@@ -264,7 +356,7 @@ export default function LedgerOutstandingTable({ initialData = [] }: LedgerOutst
       {/* AI Assistant */}
       <ModuleAIAssistant
         moduleName="Ledger Outstanding"
-        moduleData={{ data, detailed, totalOutstanding }}
+        moduleData={{ data: rows, detailed, totalOutstanding }}
       />
     </TooltipProvider>
   );
