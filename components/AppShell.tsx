@@ -27,6 +27,7 @@ import {
   Sparkles,
   Rocket,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import { useSession, useLogout } from "@/lib/hooks/useAuth";
 
 interface SubMenuItem {
   href: string;
@@ -170,6 +172,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [openModules, setOpenModules] = useState<string[]>([]);
+  const session = useSession();
+  const logout = useLogout();
 
   useEffect(() => {
     setMounted(true);
@@ -319,19 +323,60 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
       </nav>
 
-      {/* Collapse button - only on desktop */}
-      {!isMobile && (
-        <div className="relative border-t border-sidebar-border p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-center text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+      {/* User info + Logout + Collapse */}
+      <div className="relative border-t border-sidebar-border p-2 space-y-1">
+        {/* User info row */}
+        {!collapsed && session && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold">
+              {session.user.first_Name?.[0]?.toUpperCase() ?? "U"}
+            </div>
+            <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+              <span className="text-xs font-medium text-white truncate">
+                {session.user.first_Name} {session.user.lastname}
+              </span>
+              <span className="text-[10px] text-sidebar-foreground/50 truncate">
+                {session.company.compName}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-1">
+          {/* Logout button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-sidebar-foreground/60 hover:text-red-400 hover:bg-red-500/10",
+                  collapsed ? "w-full justify-center" : "flex-1 justify-start gap-2"
+                )}
+                onClick={logout}
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                {!collapsed && <span className="text-xs">Logout</span>}
+              </Button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" sideOffset={8}>Logout</TooltipContent>
+            )}
+          </Tooltip>
+
+          {/* Collapse toggle - desktop only */}
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent px-2"
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
-      )}
+      </div>
     </>
   );
 
