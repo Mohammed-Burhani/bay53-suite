@@ -25,7 +25,7 @@ export default function LoginForm() {
   const onSubmit = (data: LoginPayload) => login(data);
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-0">
+    <Card className="w-full max-w-md shadow-lg border-0 py-4">
       <CardHeader className="space-y-3 pb-6">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary rounded-lg">
