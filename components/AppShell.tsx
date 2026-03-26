@@ -98,6 +98,7 @@ const NAV_MODULES: NavModule[] = [
       { href: "/sales", label: "All Invoices", icon: Receipt },
       { href: "/sales/create", label: "Create Invoice", icon: Plus },
       { href: "/sales/returns", label: "Sales Returns", icon: Trash2 },
+      { href: "/sales/certificates", label: "Calibration Certificates", icon: FileText },
     ],
   },
   {
