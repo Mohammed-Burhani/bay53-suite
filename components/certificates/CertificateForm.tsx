@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { InvoiceItem } from "@/lib/types";
+import { toast } from "sonner";
 
 export interface CertificateFormData {
   // Customer Details
@@ -135,8 +136,121 @@ export function CertificateForm({
     );
   };
 
+  const isItemComplete = (item: typeof formData.items[0]): boolean => {
+    return !!(
+      item.instrumentName.trim() &&
+      item.makeSerial.trim() &&
+      item.mounting.trim() &&
+      item.range.trim() &&
+      item.accuracy.trim() &&
+      item.calibrationDueDate.trim() &&
+      item.testConditions.trim() &&
+      item.masterRange.trim() &&
+      item.masterCalibrationDue.trim() &&
+      item.masterCertificateNo.trim() &&
+      item.calibratedBy.trim() &&
+      item.approvedBy.trim() &&
+      item.testResults.length > 0 &&
+      item.testResults.every(
+        (result) =>
+          result.masterValue.trim() &&
+          result.instrumentValue.trim() &&
+          result.deviation.trim()
+      )
+    );
+  };
+
+  const validateAllItems = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    formData.items.forEach((item, index) => {
+      const itemNum = index + 1;
+
+      if (!item.instrumentName.trim()) {
+        errors.push(`Item ${itemNum}: Instrument Name is required`);
+      }
+      if (!item.makeSerial.trim()) {
+        errors.push(`Item ${itemNum}: Make & Serial No. is required`);
+      }
+      if (!item.mounting.trim()) {
+        errors.push(`Item ${itemNum}: Mounting & Connection is required`);
+      }
+      if (!item.range.trim()) {
+        errors.push(`Item ${itemNum}: Range is required`);
+      }
+      if (!item.accuracy.trim()) {
+        errors.push(`Item ${itemNum}: Accuracy is required`);
+      }
+      if (!item.calibrationDueDate.trim()) {
+        errors.push(`Item ${itemNum}: Calibration Due Date is required`);
+      }
+      if (!item.testConditions.trim()) {
+        errors.push(`Item ${itemNum}: Test Conditions is required`);
+      }
+      if (!item.masterRange.trim()) {
+        errors.push(`Item ${itemNum}: Master Range is required`);
+      }
+      if (!item.masterCalibrationDue.trim()) {
+        errors.push(`Item ${itemNum}: Master Calibration Due Date is required`);
+      }
+      if (!item.masterCertificateNo.trim()) {
+        errors.push(`Item ${itemNum}: Master Certificate No. is required`);
+      }
+      if (!item.calibratedBy.trim()) {
+        errors.push(`Item ${itemNum}: Calibrated By is required`);
+      }
+      if (!item.approvedBy.trim()) {
+        errors.push(`Item ${itemNum}: Approved By is required`);
+      }
+
+      // Validate test results
+      if (item.testResults.length === 0) {
+        errors.push(`Item ${itemNum}: At least one test result is required`);
+      } else {
+        item.testResults.forEach((result, resultIndex) => {
+          if (!result.calibratedRange.trim() && resultIndex > 0) {
+            // First row can have empty calibrated range (typically "0")
+            errors.push(`Item ${itemNum}, Test Result Row ${resultIndex + 1}: Calibrated Range is required`);
+          }
+          if (!result.masterValue.trim()) {
+            errors.push(`Item ${itemNum}, Test Result Row ${resultIndex + 1}: Master Value is required`);
+          }
+          if (!result.instrumentValue.trim()) {
+            errors.push(`Item ${itemNum}, Test Result Row ${resultIndex + 1}: Instrument Value is required`);
+          }
+          if (!result.deviation.trim()) {
+            errors.push(`Item ${itemNum}, Test Result Row ${resultIndex + 1}: Deviation is required`);
+          }
+        });
+      }
+    });
+
+    return { isValid: errors.length === 0, errors };
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate customer details
+    if (!formData.customerName.trim()) {
+      toast.error("Customer Name is required");
+      return;
+    }
+
+    // Validate all items
+    const validation = validateAllItems();
+    if (!validation.isValid) {
+      toast.error("Please fill in all required fields for all items");
+      // Show first few errors
+      validation.errors.slice(0, 3).forEach((error) => {
+        toast.error(error);
+      });
+      if (validation.errors.length > 3) {
+        toast.error(`...and ${validation.errors.length - 3} more errors`);
+      }
+      return;
+    }
+
     onSubmit(formData);
   };
 
@@ -181,17 +295,32 @@ export function CertificateForm({
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {formData.items.map((item, index) => (
-                <Button
-                  key={index}
-                  type="button"
-                  variant={currentItemIndex === index ? "default" : "outline"}
-                  onClick={() => setCurrentItemIndex(index)}
-                >
-                  Item {index + 1}: {item.productName}
-                </Button>
-              ))}
+              {formData.items.map((item, index) => {
+                const isComplete = isItemComplete(item);
+                return (
+                  <Button
+                    key={index}
+                    type="button"
+                    variant={currentItemIndex === index ? "default" : "outline"}
+                    onClick={() => setCurrentItemIndex(index)}
+                    className="relative"
+                  >
+                    <span className="flex items-center gap-2">
+                      Item {index + 1}: {item.productName}
+                      {isComplete && (
+                        <span className="text-green-500">✓</span>
+                      )}
+                      {!isComplete && currentItemIndex !== index && (
+                        <span className="text-yellow-500">⚠</span>
+                      )}
+                    </span>
+                  </Button>
+                );
+              })}
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              ✓ = Complete | ⚠ = Incomplete
+            </p>
           </CardContent>
         </Card>
       )}
@@ -408,11 +537,20 @@ export function CertificateForm({
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">Generate Certificate</Button>
+      <div className="flex justify-between items-center gap-2">
+        <div className="text-sm text-muted-foreground">
+          {formData.items.length > 1 && (
+            <span>
+              {formData.items.filter(isItemComplete).length} of {formData.items.length} items complete
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit">Generate Certificate</Button>
+        </div>
       </div>
     </form>
   );
