@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // NOTE: sessionStorage is client-only, so we can't read it in middleware.
+  // NOTE: localStorage is client-only, so we can't read it in middleware.
   // Auth guard is enforced client-side via AuthGuard component.
   // Middleware here is a lightweight pass-through; real protection is in AuthGuard.
   return NextResponse.next();

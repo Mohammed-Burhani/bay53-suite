@@ -1,7 +1,7 @@
 "use client";
 
 // ==================== Auth Hook ====================
-// Manages auth state using TanStack Query mutation + sessionStorage
+// Manages auth state using TanStack Query mutation + localStorage
 // No useEffect needed — mutation callbacks handle side effects
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,11 +12,11 @@ import type { AuthSession, LoginPayload } from "@/lib/types/auth.types";
 const AUTH_SESSION_KEY = "auth_session";
 const AUTH_QUERY_KEY = ["auth", "session"] as const;
 
-// Read session from sessionStorage (synchronous, no API call)
+// Read session from localStorage (synchronous, no API call)
 export function getStoredSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
     return raw ? (JSON.parse(raw) as AuthSession) : null;
   } catch {
     return null;
@@ -24,11 +24,11 @@ export function getStoredSession(): AuthSession | null {
 }
 
 function storeSession(session: AuthSession) {
-  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
 }
 
 function clearSession() {
-  sessionStorage.removeItem(AUTH_SESSION_KEY);
+  localStorage.removeItem(AUTH_SESSION_KEY);
 }
 
 export function useLogin() {
