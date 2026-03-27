@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,13 +20,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Loader2, FileText } from "lucide-react";
-import { useLedgerRegister, useLedgerSearch } from "@/lib/hooks/useReports";
+import { useLedgerRegister } from "@/lib/hooks/useReports";
 import { LedgerRegisterTable } from "@/components/reports/LedgerRegisterTable";
+import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { format, subMonths } from "date-fns";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
 
@@ -62,31 +59,14 @@ export default function LedgerRegisterPage() {
   const [openingBalance, setOpeningBalance] = useState(true);
   const [billDetails, setBillDetails] = useState(true);
   const [bankDetails, setBankDetails] = useState(true);
-
-  // Ledger selection
-  const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
-  const [selectedLedgerId, setSelectedLedgerId] = useState<number | null>(null);
+  const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
   const [selectedLedgerName, setSelectedLedgerName] = useState<string>("");
-  const [open, setOpen] = useState(false);
-
-  // Fetch all ledgers once (no API call on every keystroke)
-  const { data: allLedgers = [], isLoading: isSearching } = useLedgerSearch();
-  
-  // Client-side filtering by group name
-  const filteredLedgers = useMemo(() => {
-    if (!ledgerSearchTerm.trim()) return allLedgers;
-    const term = ledgerSearchTerm.toLowerCase();
-    return allLedgers.filter(
-      (ledger) =>
-        ledger.group?.toLowerCase().includes(term) ||
-        ledger.name.toLowerCase().includes(term)
-    );
-  }, [allLedgers, ledgerSearchTerm]);
 
   const { mutate: fetchLedgerRegister, data, isPending, error, reset } = useLedgerRegister();
 
   const handleSearch = () => {
-    if (!selectedLedgerId) return;
+    const ledgerId = selectedLedgerIds[0];
+    if (!ledgerId) return;
 
     const range =
       datePreset === "range"
@@ -96,7 +76,7 @@ export default function LedgerRegisterPage() {
     fetchLedgerRegister({
       from: toApiDate(range.from),
       to: toApiDate(range.to),
-      ledgerId: selectedLedgerId,
+      ledgerId,
       runningBalance,
       openingBalance,
       billDetails,
@@ -105,9 +85,8 @@ export default function LedgerRegisterPage() {
   };
 
   const handleClear = () => {
-    setSelectedLedgerId(null);
+    setSelectedLedgerIds([]);
     setSelectedLedgerName("");
-    setLedgerSearchTerm("");
     setDatePreset("yearly");
     reset();
   };
@@ -141,63 +120,16 @@ export default function LedgerRegisterPage() {
             {/* Filter Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Ledger Selection */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Ledger <span className="text-red-500">*</span>
-                </Label>
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={open}
-                      className="w-full justify-between h-9"
-                    >
-                      {selectedLedgerName || "Select ledger..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search ledger..."
-                        value={ledgerSearchTerm}
-                        onValueChange={setLedgerSearchTerm}
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          {isSearching ? "Loading ledgers..." : "No ledgers found"}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {filteredLedgers.map((ledger) => (
-                            <CommandItem
-                              key={ledger.ledger_id}
-                              value={ledger.name}
-                              onSelect={() => {
-                                setSelectedLedgerId(ledger.ledger_id);
-                                setSelectedLedgerName(ledger.name);
-                                setOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedLedgerId === ledger.ledger_id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{ledger.name}</span>
-                                <span className="text-xs text-muted-foreground">{ledger.group}</span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <LedgerSearchInput
+                selectedLedgerIds={selectedLedgerIds}
+                onLedgerIdsChange={setSelectedLedgerIds}
+                onLedgerNameChange={setSelectedLedgerName}
+                label="Ledger"
+                placeholder="Select ledger..."
+                required={true}
+                multiSelect={false}
+                groups={[16, 17]}
+              />
 
               {/* Date Preset */}
               <div className="space-y-1.5">
@@ -264,7 +196,7 @@ export default function LedgerRegisterPage() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button
                 onClick={handleSearch}
-                disabled={isPending || !selectedLedgerId}
+                disabled={isPending || selectedLedgerIds.length === 0}
                 size="sm"
                 className="bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white h-9"
               >

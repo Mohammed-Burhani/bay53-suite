@@ -3,24 +3,23 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
-import { getStoredSession } from "@/lib/hooks/useAuth";
+import { auth } from "@/lib/auth";
 
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 1000 * 60 * 5,       // 5 min — avoid redundant refetches
-          gcTime: 1000 * 60 * 10,          // 10 min cache retention
-          refetchOnWindowFocus: false,      // don't hammer the API on tab switch
+          staleTime: 1000 * 60 * 5,
+          gcTime: 1000 * 60 * 10,
+          refetchOnWindowFocus: false,
           retry: 1,
         },
       },
     });
 
-    // Hydrate auth session from sessionStorage into query cache on first render
-    // This prevents a flash of unauthenticated state on page refresh
-    const session = getStoredSession();
+    // Hydrate auth session from localStorage
+    const session = auth.getSession();
     if (session) {
       client.setQueryData(["auth", "session"], session);
     }

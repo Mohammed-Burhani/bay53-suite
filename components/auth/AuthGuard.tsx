@@ -1,23 +1,19 @@
 "use client";
 
-// AuthGuard — wraps protected routes, redirects to /login if no session
-// Uses query cache (seeded from sessionStorage in QueryProvider) — zero extra API calls
-
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/hooks/useAuth";
+import { auth } from "@/lib/auth";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const session = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!session) {
+    if (!auth.isAuthenticated()) {
       router.replace("/login");
     }
-  }, [session, router]);
+  }, [router]);
 
-  if (!session) return null;
+  if (!auth.isAuthenticated()) return null;
 
   return <>{children}</>;
 }

@@ -1,19 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
-import { ReportTable } from "./ReportTable";
+import { useMemo, useState } from "react";
+import { DataTable } from "@/components/ui/data-table";
 import { FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
 import type { LedgerRegisterItem } from "@/lib/types/reports.types";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 interface LedgerRegisterTableProps {
   data: LedgerRegisterItem[];
@@ -241,7 +235,7 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
 
   return (
     <>
-      <ReportTable
+      <DataTable
         title={ledgerName ? `Ledger Register - ${ledgerName}` : "Ledger Register"}
         icon={FileText}
         iconColor="bg-amber-500"
@@ -253,6 +247,9 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
         summaryRow={summaryRow}
         summaryGradient="bg-linear-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-950/20 border-amber-200 dark:border-amber-800"
         renderExpandedRow={renderRow}
+        pageSize={50}
+        pageSizeOptions={[25, 50, 100, 200]}
+        showPagination={true}
       />
 
       {/* AI Assistant */}
