@@ -8,18 +8,25 @@ import { reportsService } from "@/lib/api/reports.service";
 import { useSession } from "@/lib/hooks/useAuth";
 import type { LedgerOutstandingPayload, ItemRegisterPayload } from "@/lib/types/reports.types";
 
-// Fetch ledgers for dropdown/filter selection
-export function useLedgers() {
+// Fetch ledgers for dropdown/filter selection with search
+export function useLedgerSearch(searchTerm: string) {
   const session = useSession();
 
   return useQuery({
-    queryKey: ["ledgers", session?.user.currentSessionId],
+    queryKey: ["ledgers", session?.user.currentSessionId, searchTerm],
     queryFn: () => {
       const sessionId = session?.user.currentSessionId ?? "";
-      return reportsService.searchLedgers({ sessionId });
+      return reportsService.searchLedgers({
+        sessionId,
+        pageSize: 100, // Limit to 100 results for performance
+        pageNumber: 0,
+        groups: [16, 17], // Groups for LedgerOutstanding
+        includeChildGroups: true,
+        searchTerm: searchTerm.trim(),
+      });
     },
-    enabled: !!session?.user.currentSessionId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!session?.user.currentSessionId && searchTerm.length >= 2, // Only search when 2+ chars
+    staleTime: 30 * 1000, // 30 seconds for search results
   });
 }
 
