@@ -70,7 +70,7 @@ export default function LedgerRegisterPage() {
   const [open, setOpen] = useState(false);
 
   // Fetch all ledgers once (no API call on every keystroke)
-  const { data: allLedgers = [], isLoading: isSearching } = useLedgerSearch([16, 17]);
+  const { data: allLedgers = [], isLoading: isSearching } = useLedgerSearch();
   
   // Client-side filtering by group name
   const filteredLedgers = useMemo(() => {

@@ -28,7 +28,7 @@ async function request<T>(
 
   // Attach session token if available
   if (typeof window !== "undefined") {
-    const session = sessionStorage.getItem("auth_session");
+    const session = localStorage.getItem("auth_session");
     if (session) {
       try {
         const parsed = JSON.parse(session);

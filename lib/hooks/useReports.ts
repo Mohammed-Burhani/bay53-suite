@@ -9,18 +9,18 @@ import { useSession } from "@/lib/hooks/useAuth";
 import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload } from "@/lib/types/reports.types";
 
 // Fetch ledgers for dropdown/filter selection
-export function useLedgerSearch(groups: number[] = [16, 17]) {
+export function useLedgerSearch() {
   const session = useSession();
 
   return useQuery({
-    queryKey: ["ledgers", session?.user.currentSessionId, groups],
+    queryKey: ["ledgers", session?.user.currentSessionId],
     queryFn: () => {
       const sessionId = session?.user.currentSessionId ?? "";
       return reportsService.searchLedgers({
         sessionId,
-        pageSize: 500, // Fetch more results for client-side filtering
+        pageSize: 500,
         pageNumber: 0,
-        groups,
+        groups: [16, 17], // Always fetch groups 16 and 17
         includeChildGroups: true,
       });
     },
