@@ -14,6 +14,8 @@ export default function ReportsPage() {
 
   const accountingReports = [
     { href: "/reports/ledger-outstanding", label: "Ledger Outstanding", icon: Receipt, description: "View outstanding balances by ledger" },
+    { href: "/reports/ledger-outstanding-summary", label: "Ledger Outstanding Summary", icon: FileText, description: "Summary of outstanding balances by party" },
+    { href: "/reports/ledger-register", label: "Ledger Register", icon: BookOpen, description: "Detailed ledger transactions with running balance" },
     { href: "/reports/day-book", label: "Day Book", icon: Calendar, description: "Daily transaction register" },
     { href: "/reports/gst-filing", label: "GST Filing", icon: FileSpreadsheet, description: "Generate GST-ready reports for filing" },
   ];
@@ -51,7 +53,7 @@ export default function ReportsPage() {
 
         <div>
           <h2 className="text-lg font-semibold mb-4">Accounting</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {accountingReports.map((report) => (
               <Link key={report.href} href={report.href}>
                 <Card className="card-hover h-full transition-all hover:shadow-md">
