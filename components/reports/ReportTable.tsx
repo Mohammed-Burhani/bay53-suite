@@ -29,6 +29,7 @@ interface ReportTableProps<T = Record<string, unknown>> {
     values: ReactNode[];
   };
   summaryGradient?: string;
+  renderExpandedRow?: (row: T, index: number) => ReactNode;
 }
 
 export function ReportTable<T extends Record<string, unknown> = Record<string, unknown>>({
@@ -43,6 +44,7 @@ export function ReportTable<T extends Record<string, unknown> = Record<string, u
   emptyIcon: EmptyIcon,
   summaryRow,
   summaryGradient,
+  renderExpandedRow,
 }: ReportTableProps<T>) {
   const EmptyIconComponent = EmptyIcon || Icon;
 
@@ -85,23 +87,26 @@ export function ReportTable<T extends Record<string, unknown> = Record<string, u
               ) : (
                 <>
                   {data.map((row, idx) => (
-                    <TableRow
-                      key={(row as { id?: string }).id || idx}
-                      className={`${hoverColor} transition-colors ${
-                        idx % 2 === 0 ? "bg-background" : "bg-muted/20"
-                      }`}
-                    >
-                      {columns.map((column) => (
-                        <TableCell
-                          key={column.key}
-                          className={`${column.align === "right" ? "text-right" : ""} ${column.className || ""}`}
-                        >
-                          {column.render
-                            ? column.render((row as Record<string, unknown>)[column.key], row, idx)
-                            : String((row as Record<string, unknown>)[column.key] ?? "")}
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                    <>
+                      <TableRow
+                        key={(row as { id?: string }).id || idx}
+                        className={`${hoverColor} transition-colors ${
+                          idx % 2 === 0 ? "bg-background" : "bg-muted/20"
+                        }`}
+                      >
+                        {columns.map((column) => (
+                          <TableCell
+                            key={column.key}
+                            className={`${column.align === "right" ? "text-right" : ""} ${column.className || ""}`}
+                          >
+                            {column.render
+                              ? column.render((row as Record<string, unknown>)[column.key], row, idx)
+                              : String((row as Record<string, unknown>)[column.key] ?? "")}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {renderExpandedRow && renderExpandedRow(row, idx)}
+                    </>
                   ))}
                   {summaryRow && (
                     <TableRow className={`${summaryGradient} font-semibold border-t-2`}>

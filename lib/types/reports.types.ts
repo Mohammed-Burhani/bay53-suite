@@ -23,7 +23,6 @@ export interface LedgerSearchPayload {
   pageNumber: number;
   groups: number[];
   includeChildGroups: boolean;
-  searchTerm?: string; // Optional search term for filtering
 }
 
 export interface LedgerSearchResponse {
@@ -77,6 +76,28 @@ export interface LedgerOutstandingItem {
   invType: number;
 }
 
+// --- Ledger Outstanding Summary ---
+
+export interface LedgerOutstandingSummaryPayload {
+  sessionId: string;
+  ledgers: number[];
+  toDate: string; // "DD/MM/YYYY HH:mm:ss"
+}
+
+export interface LedgerOutstandingSummaryItem {
+  Party: string;
+  Area: string;
+  City: string;
+  Phone1: string;
+  Phone2: string;
+  Mobile: string | null;
+  "Contact No.": string;
+  "Pending Amount": number;
+  DrCr: string;
+  Address: string;
+  Pin: string;
+}
+
 // --- Item Register ---
 
 export interface ItemRegisterPayload {
@@ -110,4 +131,64 @@ export interface ItemRegisterItem {
   NetRate: number | null;
   BOMCode: string | null;
   BOMName: string | null;
+}
+
+// --- Ledger Register ---
+
+export interface LedgerRegisterPayload {
+  from: string; // "DD/MM/YYYY HH:mm:ss"
+  to: string;
+  ledgerId: number;
+  runningBalance: boolean;
+  openingBalance: boolean;
+  billDetails: boolean;
+  bankDetails: boolean;
+  sessionId: string;
+}
+
+export interface BillDetail {
+  subType: string;
+  name: string;
+  amount: string;
+  iscr: string;
+}
+
+export interface BankDetail {
+  paymentMode: string | null;
+  bankName: string | null;
+  branch: string | null;
+  chequeDate: string | null;
+  chequeNumber: string | null;
+  amount: number | null;
+}
+
+export interface LedgerRegisterItem {
+  billNo: string | null;
+  billDate: string | null;
+  particular: string | null;
+  type: string;
+  billDetails: BillDetail[] | null;
+  debit: number | null;
+  credit: number | null;
+  running: number | null;
+  drCr: string;
+  bankDetails: BankDetail[] | null;
+  note: string | null;
+  invVchId: number | null;
+  invVchType: number | null;
+  madeFromInvoice: boolean | null;
+  isCr: boolean;
+  paymentMode: string | null;
+  bankName: string | null;
+  branch: string | null;
+  chequeDate: string | null;
+  chequeNumber: string | null;
+  amount: number | null;
+  againstType: string | null;
+  againstRefno: string | null;
+  projectSite: string | null;
+  compBaseCurr: number;
+  invoiceBaseCurr: number;
+  currRate: number;
+  currTotal: number;
 }
