@@ -1,6 +1,6 @@
 "use client";
 
-import { ReportTable } from "./ReportTable";
+import { DataTable } from "@/components/ui/data-table";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import { format } from "date-fns";
@@ -98,7 +98,7 @@ export function SalesReportTable({ invoices }: SalesReportTableProps) {
 
   return (
     <>
-    <ReportTable
+    <DataTable
       title="Sales Transactions"
       icon={FileText}
       iconColor="bg-emerald-500"
@@ -107,6 +107,9 @@ export function SalesReportTable({ invoices }: SalesReportTableProps) {
       columns={columns}
       data={invoices as unknown as Record<string, unknown>[]}
       emptyMessage="No sales records found"
+      pageSize={50}
+      pageSizeOptions={[25, 50, 100, 200]}
+      showPagination={true}
     />
 
     {/* AI Assistant */}

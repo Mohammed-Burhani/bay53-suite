@@ -1,6 +1,8 @@
 // ==================== API Client ====================
 // Centralized HTTP client for all .NET API calls
 
+import { auth } from "@/lib/auth";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://52.172.96.142:8352/api";
 
 export class ApiError extends Error {
@@ -26,39 +28,45 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  // Attach session token if available
-  if (typeof window !== "undefined") {
-    const session = localStorage.getItem("auth_session");
-    if (session) {
-      try {
-        const parsed = JSON.parse(session);
-        const sessionId = parsed?.user?.currentSessionId;
-        if (sessionId) {
-          headers["Authorization"] = `Bearer ${sessionId}`;
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
+  // Attach session token
+  const sessionId = auth.getSessionId();
+  if (sessionId) {
+    headers["Authorization"] = sessionId;
   }
 
   const response = await fetch(url, { ...options, headers });
 
+  // Handle response
+  const text = await response.text();
+  
+  // Check for session errors (API returns 200 with error text)
+  if (text === "Invalid Session or Session Expired") {
+    auth.clearSession();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    throw new ApiError(401, "Session expired", text);
+  }
+
+  // Handle HTTP errors
   if (!response.ok) {
-    let errorData: unknown;
+    let errorData: unknown = text;
     try {
-      errorData = await response.json();
+      errorData = JSON.parse(text);
     } catch {
-      errorData = await response.text();
+      // Keep as text
     }
     throw new ApiError(response.status, `API Error: ${response.status}`, errorData);
   }
 
-  // Handle empty responses
-  const text = await response.text();
+  // Parse successful response
   if (!text) return undefined as T;
-
-  return JSON.parse(text) as T;
+  
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as T;
+  }
 }
 
 export const apiClient = {

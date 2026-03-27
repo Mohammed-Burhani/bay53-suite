@@ -5,74 +5,65 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { reportsService } from "@/lib/api/reports.service";
-import { useSession } from "@/lib/hooks/useAuth";
+import { auth } from "@/lib/auth";
 import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload } from "@/lib/types/reports.types";
 
 // Fetch ledgers for dropdown/filter selection
-export function useLedgerSearch() {
-  const session = useSession();
+export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
+  const sessionId = auth.getSessionId();
 
   return useQuery({
-    queryKey: ["ledgers", session?.user.currentSessionId],
+    queryKey: ["ledgers", sessionId, searchTerm, groups],
     queryFn: () => {
-      const sessionId = session?.user.currentSessionId ?? "";
+      if (!sessionId) throw new Error("No session");
       return reportsService.searchLedgers({
         sessionId,
         pageSize: 500,
         pageNumber: 0,
-        groups: [16, 17], // Always fetch groups 16 and 17
+        groups: groups || [16, 17],
         includeChildGroups: true,
       });
     },
-    enabled: !!session?.user.currentSessionId,
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    enabled: !!sessionId && searchTerm.length >= 2,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-// Ledger Outstanding is a POST with filters — useMutation is the right choice.
-// This avoids auto-fetching on mount and only fires when the user clicks "Outstanding".
 export function useLedgerOutstanding() {
-  const session = useSession();
-
   return useMutation({
     mutationFn: (filters: Omit<LedgerOutstandingPayload, "sessionId">) => {
-      const sessionId = session?.user.currentSessionId ?? "";
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
       return reportsService.getLedgerOutstanding({ ...filters, sessionId });
     },
   });
 }
 
-// Ledger Outstanding Summary — POST with filters, fires on user action only.
 export function useLedgerOutstandingSummary() {
-  const session = useSession();
-
   return useMutation({
     mutationFn: (filters: Omit<LedgerOutstandingSummaryPayload, "sessionId">) => {
-      const sessionId = session?.user.currentSessionId ?? "";
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
       return reportsService.getLedgerOutstandingSummary({ ...filters, sessionId });
     },
   });
 }
 
-// Item Register — POST with filters, fires on user action only.
 export function useItemRegister() {
-  const session = useSession();
-
   return useMutation({
     mutationFn: (filters: Omit<ItemRegisterPayload, "sessionId">) => {
-      const sessionId = session?.user.currentSessionId ?? "";
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
       return reportsService.getItemRegister({ ...filters, sessionId });
     },
   });
 }
 
-// Ledger Register — POST with filters, fires on user action only.
 export function useLedgerRegister() {
-  const session = useSession();
-
   return useMutation({
     mutationFn: (filters: Omit<LedgerRegisterPayload, "sessionId">) => {
-      const sessionId = session?.user.currentSessionId ?? "";
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
       return reportsService.getLedgerRegister({ ...filters, sessionId });
     },
   });

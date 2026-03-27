@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths through
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Allow public paths
+  if (PUBLIC_PATHS.some((p) => pathname === p)) {
     return NextResponse.next();
   }
 
@@ -20,9 +20,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // NOTE: localStorage is client-only, so we can't read it in middleware.
-  // Auth guard is enforced client-side via AuthGuard component.
-  // Middleware here is a lightweight pass-through; real protection is in AuthGuard.
+  // For protected routes, let AuthGuard handle client-side
+  // (middleware can't access localStorage)
   return NextResponse.next();
 }
 

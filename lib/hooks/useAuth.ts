@@ -1,34 +1,16 @@
 "use client";
 
 // ==================== Auth Hook ====================
-// Manages auth state using TanStack Query mutation + localStorage
-// No useEffect needed — mutation callbacks handle side effects
+// Simple auth management with React Query
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/api/auth.service";
+import { auth } from "@/lib/auth";
 import type { AuthSession, LoginPayload } from "@/lib/types/auth.types";
 
-const AUTH_SESSION_KEY = "auth_session";
-const AUTH_QUERY_KEY = ["auth", "session"] as const;
-
-// Read session from localStorage (synchronous, no API call)
-export function getStoredSession(): AuthSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(AUTH_SESSION_KEY);
-    return raw ? (JSON.parse(raw) as AuthSession) : null;
-  } catch {
-    return null;
-  }
-}
-
-function storeSession(session: AuthSession) {
-  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
-}
-
-function clearSession() {
-  localStorage.removeItem(AUTH_SESSION_KEY);
+export function useSession(): AuthSession | null {
+  return auth.getSession();
 }
 
 export function useLogin() {
@@ -44,9 +26,9 @@ export function useLogin() {
         roles: data.roles,
         rights: data.rights,
       };
-      storeSession(session);
-      // Seed the query cache so any component reading auth session gets it instantly
-      queryClient.setQueryData(AUTH_QUERY_KEY, session);
+      
+      auth.setSession(session);
+      queryClient.setQueryData(["auth", "session"], session);
       router.push("/dashboard");
     },
   });
@@ -57,16 +39,8 @@ export function useLogout() {
   const router = useRouter();
 
   return () => {
-    clearSession();
-    queryClient.removeQueries({ queryKey: AUTH_QUERY_KEY });
+    auth.clearSession();
+    queryClient.clear();
     router.push("/login");
   };
-}
-
-export function useSession(): AuthSession | null {
-  // Reads from cache first (set on login), falls back to sessionStorage
-  // This is intentionally NOT a useQuery to avoid unnecessary network calls
-  const queryClient = useQueryClient();
-  const cached = queryClient.getQueryData<AuthSession>(AUTH_QUERY_KEY);
-  return cached ?? getStoredSession();
 }

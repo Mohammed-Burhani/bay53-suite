@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,13 +28,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
-import { useLedgerOutstanding, useLedgerSearch } from "@/lib/hooks/useReports";
-import type { LedgerOutstandingItem, Ledger } from "@/lib/types/reports.types";
+import { useLedgerOutstanding } from "@/lib/hooks/useReports";
+import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
 import { format, subMonths } from "date-fns";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { LedgerSearchInput } from "./LedgerSearchInput";
 
 // Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
 function toApiDate(date: Date) {
@@ -68,25 +67,10 @@ function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
 export default function LedgerOutstandingTable() {
   const [detailed, setDetailed] = useState(false);
   const [datePreset, setDatePreset] = useState<DatePreset>("none");
-  // Selected ledger IDs
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
-  const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
-  const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  // Custom date range (only used when preset === "range")
   const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
   const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // Debounce search term (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(ledgerSearchTerm);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [ledgerSearchTerm]);
-
-  const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(debouncedSearchTerm);
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
 
   const handleSearch = () => {
@@ -105,46 +89,6 @@ export default function LedgerOutstandingTable() {
       toDate: toApiDate(range.to),
     });
   };
-
-  // Keep track of all selected ledgers (from search results + previously selected)
-  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(new Map());
-
-  const handleLedgerSelect = (ledger: Ledger) => {
-    if (selectedLedgerIds.includes(ledger.ledger_id)) {
-      // Deselect
-      setSelectedLedgerIds((prev) => prev.filter((id) => id !== ledger.ledger_id));
-      setSelectedLedgersMap((prev) => {
-        const newMap = new Map(prev);
-        newMap.delete(ledger.ledger_id);
-        return newMap;
-      });
-    } else {
-      // Select
-      setSelectedLedgerIds((prev) => [...prev, ledger.ledger_id]);
-      setSelectedLedgersMap((prev) => new Map(prev).set(ledger.ledger_id, ledger));
-    }
-  };
-
-  const removeLedgerById = (ledgerId: number) => {
-    setSelectedLedgerIds((prev) => prev.filter((id) => id !== ledgerId));
-    setSelectedLedgersMap((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(ledgerId);
-      return newMap;
-    });
-  };
-
-  const selectedLedgers = Array.from(selectedLedgersMap.values());
-
-  // Group ledgers by their group field
-  const groupedLedgers = searchResults.reduce((acc, ledger) => {
-    const groupName = ledger.group || "Ungrouped";
-    if (!acc[groupName]) {
-      acc[groupName] = [];
-    }
-    acc[groupName].push(ledger);
-    return acc;
-  }, {} as Record<string, Ledger[]>);
 
   const rows: LedgerOutstandingItem[] = data ?? [];
   const totalOutstanding = rows.reduce((sum, r) => sum + r.pending, 0);
@@ -202,94 +146,14 @@ export default function LedgerOutstandingTable() {
           <CardContent className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
               {/* Ledger Selection */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Ledgers <span className="text-red-500">*</span>
-                </Label>
-                <Popover open={ledgerSearchOpen} onOpenChange={setLedgerSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={ledgerSearchOpen}
-                      className="w-full h-9 justify-between font-normal"
-                    >
-                      {selectedLedgerIds.length === 0 ? (
-                        <span className="text-muted-foreground">Search and select ledgers...</span>
-                      ) : (
-                        <span className="truncate">
-                          {selectedLedgerIds.length} ledger{selectedLedgerIds.length > 1 ? "s" : ""} selected
-                        </span>
-                      )}
-                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0" align="start">
-                    <Command shouldFilter={false}>
-                      <CommandInput 
-                        placeholder="Type to search ledgers (min 2 chars)..." 
-                        value={ledgerSearchTerm}
-                        onValueChange={setLedgerSearchTerm}
-                      />
-                      {ledgerSearchTerm.length < 2 ? (
-                        <div className="py-6 text-center text-sm text-muted-foreground">
-                          Type at least 2 characters to search
-                        </div>
-                      ) : ledgersLoading || ledgerSearchTerm !== debouncedSearchTerm ? (
-                        <div className="py-6 text-center text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-                          Searching...
-                        </div>
-                      ) : Object.keys(groupedLedgers).length === 0 ? (
-                        <CommandEmpty>No ledgers found.</CommandEmpty>
-                      ) : (
-                        <div className="max-h-[300px] overflow-auto">
-                          {Object.entries(groupedLedgers).map(([groupName, ledgers]) => (
-                            <CommandGroup key={groupName} heading={groupName}>
-                              {ledgers.map((ledger) => (
-                                <CommandItem
-                                  key={ledger.ledger_id}
-                                  value={`${ledger.name} ${ledger.ledger_id}`}
-                                  onSelect={() => handleLedgerSelect(ledger)}
-                                >
-                                  <Checkbox
-                                    checked={selectedLedgerIds.includes(ledger.ledger_id)}
-                                    className="mr-2"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-medium">{ledger.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      ID: {ledger.ledger_id}
-                                    </div>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          ))}
-                        </div>
-                      )}
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {selectedLedgers.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {selectedLedgers.map((ledger) => (
-                      <Badge
-                        key={ledger.ledger_id}
-                        variant="secondary"
-                        className="text-xs gap-1"
-                      >
-                        {ledger.name}
-                        <X
-                          className="h-3 w-3 cursor-pointer hover:text-destructive"
-                          onClick={() => removeLedgerById(ledger.ledger_id)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <LedgerSearchInput
+                selectedLedgerIds={selectedLedgerIds}
+                onLedgerIdsChange={setSelectedLedgerIds}
+                label="Ledgers"
+                placeholder="Search and select ledgers..."
+                required={true}
+                groups={[16, 17]}
+              />
 
               {/* Date preset */}
               <div className="space-y-1.5">
