@@ -5,6 +5,7 @@ import { apiClient } from "./client";
 import type {
   Ledger,
   LedgerSearchPayload,
+  LedgerSearchResponse,
   LedgerOutstandingPayload,
   LedgerOutstandingItem,
   ItemRegisterPayload,
@@ -12,8 +13,23 @@ import type {
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
-  searchLedgers: (payload: LedgerSearchPayload) =>
-    apiClient.post<Ledger[]>("/Ledger/Search", payload),
+  searchLedgers: async (payload: LedgerSearchPayload): Promise<Ledger[]> => {
+    const response = await apiClient.post<LedgerSearchResponse>("/Ledger/Search", payload);
+    const ledgers = response.list || [];
+    
+    // Client-side filtering if searchTerm is provided (fallback if API doesn't support it)
+    if (payload.searchTerm && payload.searchTerm.length >= 2) {
+      const term = payload.searchTerm.toLowerCase();
+      return ledgers.filter(
+        (ledger) =>
+          ledger.name.toLowerCase().includes(term) ||
+          ledger.ledger_id.toString().includes(term) ||
+          (ledger.group && ledger.group.toLowerCase().includes(term))
+      );
+    }
+    
+    return ledgers;
+  },
 
   getLedgerOutstanding: (payload: LedgerOutstandingPayload) =>
     apiClient.post<LedgerOutstandingItem[]>("/Report/LedgerOutstanding", payload),

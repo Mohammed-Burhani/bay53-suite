@@ -4,6 +4,7 @@
 
 export interface Ledger {
   name: string;
+  group_id: number;
   group: string | null;
   address: string | null;
   state: string | null;
@@ -18,6 +19,16 @@ export interface Ledger {
 
 export interface LedgerSearchPayload {
   sessionId: string;
+  pageSize: number;
+  pageNumber: number;
+  groups: number[];
+  includeChildGroups: boolean;
+  searchTerm?: string; // Optional search term for filtering
+}
+
+export interface LedgerSearchResponse {
+  list: Ledger[];
+  deletes: any[] | null;
 }
 
 // --- Ledger Outstanding ---
