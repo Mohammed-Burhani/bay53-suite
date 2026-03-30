@@ -57,11 +57,14 @@ async function request<T>(
       // Keep as text
     }
     
-    // Handle session expiration on non-200 status codes
-    if (response.status === 401 || response.status === 403) {
-      auth.clearSession();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+    // Handle session expiration on 400/401/403 status codes
+    // API returns 400 with "Invalid Session or Session Expired" text
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
+      if (text === "Invalid Session or Session Expired") {
+        auth.clearSession();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
       }
     }
     
