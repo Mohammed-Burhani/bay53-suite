@@ -56,6 +56,15 @@ async function request<T>(
     } catch {
       // Keep as text
     }
+    
+    // Handle session expiration on non-200 status codes
+    if (response.status === 401 || response.status === 403) {
+      auth.clearSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+    
     throw new ApiError(response.status, `API Error: ${response.status}`, errorData);
   }
 
