@@ -68,3 +68,12 @@ export interface AuthSession {
   roles: AuthRole[];
   rights: AuthRight[];
 }
+
+export interface CheckSessionPayload {
+  id: number;
+  sessionId: string;
+}
+
+export interface CheckSessionResponse {
+  message: string;
+}
