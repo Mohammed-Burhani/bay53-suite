@@ -29,15 +29,16 @@ export function useSessionChecker() {
           sessionId: session.user.currentSessionId,
         });
 
-        // Session is valid
+        // Session is valid (200 status with "Session is valid" message)
         if (response.message === "Session is valid") {
           return;
         }
 
-        // Session is invalid
+        // Any other response means session is invalid
         handleSessionExpired();
       } catch (error) {
-        // API error or session expired
+        // API returns 400 with "Invalid Session or Session Expired" text
+        // or any other error - treat as session expired
         handleSessionExpired();
       }
     };
