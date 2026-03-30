@@ -34,6 +34,7 @@ import { useLedgerOutstanding } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
 import { format, subMonths } from "date-fns";
 import { LedgerSearchInput } from "./LedgerSearchInput";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 // Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
 function toApiDate(date: Date) {
@@ -72,6 +73,7 @@ export default function LedgerOutstandingTable() {
   const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
     if (selectedLedgerIds.length === 0) return;
@@ -91,6 +93,7 @@ export default function LedgerOutstandingTable() {
   };
 
   const rows: LedgerOutstandingItem[] = data ?? [];
+  const paginatedRows = getPaginatedData(rows);
   const totalOutstanding = rows.reduce((sum, r) => sum + r.pending, 0);
   const overdueCount = rows.filter((r) => r.overDue > 0).length;
 
@@ -288,7 +291,7 @@ export default function LedgerOutstandingTable() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    rows.map((row, idx) => {
+                    paginatedRows.map((row, idx) => {
                       const isOverdue = row.overDue > 0;
                       return (
                         <TableRow
@@ -338,6 +341,13 @@ export default function LedgerOutstandingTable() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={rows.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

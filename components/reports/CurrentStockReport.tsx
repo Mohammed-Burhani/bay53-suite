@@ -44,6 +44,7 @@ import {
   Layers
 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 interface StockItem {
   bound: string;
@@ -71,6 +72,7 @@ export default function CurrentStockReport({ initialData = [] }: CurrentStockRep
   const [data, setData] = useState<StockCategory[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination(50);
 
   const handleStock = () => {
     setIsLoading(true);
@@ -114,6 +116,26 @@ export default function CurrentStockReport({ initialData = [] }: CurrentStockRep
   const negativeStockItems = data.reduce((sum, cat) => 
     sum + cat.items.filter(item => item.totalBalance < 0).length, 0
   );
+
+  // Flatten data for pagination
+  const flattenedData = data.flatMap((category, catIdx) => 
+    category.items.map((item, itemIdx) => ({ category, item, catIdx, itemIdx }))
+  );
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFlatData = flattenedData.slice(startIndex, endIndex);
+
+  // Group paginated data back by category
+  const paginatedData: StockCategory[] = [];
+  paginatedFlatData.forEach(({ category, item }) => {
+    let existingCategory = paginatedData.find(c => c.category === category.category);
+    if (!existingCategory) {
+      existingCategory = { category: category.category, items: [] };
+      paginatedData.push(existingCategory);
+    }
+    existingCategory.items.push(item);
+  });
 
   return (
     <TooltipProvider>
@@ -428,7 +450,7 @@ export default function CurrentStockReport({ initialData = [] }: CurrentStockRep
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.map((category, idx) => (
+                    {paginatedData.map((category, idx) => (
                       <>
                         <TableRow key={`cat-${idx}`} className="bg-linear-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/30 dark:to-purple-950/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-950/40 dark:hover:to-purple-950/40">
                           <TableCell colSpan={9} className="font-semibold">
@@ -498,6 +520,13 @@ export default function CurrentStockReport({ initialData = [] }: CurrentStockRep
                   </TableBody>
                 </Table>
               </div>
+              <TablePagination
+                totalItems={flattenedData.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </CardContent>
           </Card>
         ) : (

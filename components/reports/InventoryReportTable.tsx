@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, BarChart3, TrendingUp } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 interface InventoryReportTableProps {
   initialData?: any[];
@@ -43,6 +44,7 @@ export default function InventoryReportTable({ initialData = [] }: InventoryRepo
   const [data, setData] = useState<any[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
     setIsLoading(true);
@@ -56,6 +58,8 @@ export default function InventoryReportTable({ initialData = [] }: InventoryRepo
     setData([]);
     setSearchTerm("");
   };
+
+  const paginatedData = getPaginatedData(data);
 
   return (
     <TooltipProvider>
@@ -490,7 +494,7 @@ export default function InventoryReportTable({ initialData = [] }: InventoryRepo
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.map((row, idx) => (
+                    paginatedData.map((row, idx) => (
                       <TableRow key={idx} className="hover:bg-muted/50">
                         <TableCell>{row.particular}</TableCell>
                         <TableCell className="text-right">{row.qty}</TableCell>
@@ -514,6 +518,13 @@ export default function InventoryReportTable({ initialData = [] }: InventoryRepo
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={data.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

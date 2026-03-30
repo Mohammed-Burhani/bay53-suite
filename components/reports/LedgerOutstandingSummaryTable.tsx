@@ -28,6 +28,7 @@ import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.t
 import { format } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 // Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
 function toApiDate(date: Date) {
@@ -52,6 +53,7 @@ export default function LedgerOutstandingSummaryTable() {
 
   const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(debouncedSearchTerm);
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
     if (selectedLedgerIds.length === 0) return;
@@ -101,6 +103,7 @@ export default function LedgerOutstandingSummaryTable() {
   }, {} as Record<string, Ledger[]>);
 
   const rows: LedgerOutstandingSummaryItem[] = data ?? [];
+  const paginatedRows = getPaginatedData(rows);
   const totalPending = rows.reduce((sum, r) => sum + r["Pending Amount"], 0);
   const debtorCount = rows.filter((r) => r.DrCr === "Dr").length;
   const creditorCount = rows.filter((r) => r.DrCr === "Cr").length;
@@ -327,7 +330,7 @@ export default function LedgerOutstandingSummaryTable() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    rows.map((row, idx) => (
+                    paginatedRows.map((row, idx) => (
                       <TableRow key={idx} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{row.Party}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{row.Area}</TableCell>
@@ -351,6 +354,13 @@ export default function LedgerOutstandingSummaryTable() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={rows.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 interface PendingItemsTableProps {
   initialData?: Array<{
@@ -56,9 +57,11 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
   const [data] = useState(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const totalPending = data.reduce((sum, item) => sum + item.pendingQty, 0);
   const totalOrders = data.length;
+  const paginatedData = getPaginatedData(data);
 
   return (
     <TooltipProvider>
@@ -428,7 +431,7 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.map((row, idx) => (
+                    paginatedData.map((row, idx) => (
                       <TableRow key={idx} className="hover:bg-muted/50">
                         <TableCell>{row.size}</TableCell>
                         <TableCell>{row.material}</TableCell>
@@ -452,6 +455,13 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={data.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

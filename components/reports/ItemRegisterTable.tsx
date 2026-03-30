@@ -33,6 +33,7 @@ import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useItemRegister } from "@/lib/hooks/useReports";
 import type { ItemRegisterItem } from "@/lib/types/reports.types";
 import { format, subMonths } from "date-fns";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
 
@@ -73,6 +74,7 @@ export default function ItemRegisterTable() {
   const [itemIdInput, setItemIdInput] = useState("");
 
   const { mutate: fetchItemRegister, data, isPending, error, reset } = useItemRegister();
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
     const itemId = parseInt(itemIdInput.trim(), 10);
@@ -121,6 +123,8 @@ export default function ItemRegisterTable() {
           r.BillNo?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : rows;
+
+  const paginatedFiltered = getPaginatedData(filtered);
 
   return (
     <TooltipProvider>
@@ -485,7 +489,7 @@ export default function ItemRegisterTable() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filtered.map((row, idx) => {
+                    paginatedFiltered.map((row, idx) => {
                       const isSpecial = row.Type === "Opening" || row.Type === "Closing";
                       return (
                         <TableRow
@@ -527,6 +531,13 @@ export default function ItemRegisterTable() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

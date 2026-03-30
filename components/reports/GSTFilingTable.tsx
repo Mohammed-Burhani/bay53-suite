@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 interface GSTFilingRow {
   [key: string]: string | number;
@@ -43,12 +44,14 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
   const [reportType, setReportType] = useState("b2b");
   const [dateType, setDateType] = useState("yearly");
   const [data] = useState<GSTFilingRow[]>(initialData);
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const totalInvoices = data.length;
   const totalTaxableValue = data.reduce((sum, row) => sum + (Number(row.taxableValue) || 0), 0);
   const totalCGST = data.reduce((sum, row) => sum + (Number(row.cgst) || 0), 0);
   const totalSGST = data.reduce((sum, row) => sum + (Number(row.sgst) || 0), 0);
   const totalIGST = data.reduce((sum, row) => sum + (Number(row.igst) || 0), 0);
+  const paginatedData = getPaginatedData(data);
 
   const renderTableHeaders = () => {
     switch (reportType) {
@@ -307,7 +310,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.map((row, idx) => (
+                    paginatedData.map((row, idx) => (
                       <TableRow key={idx} className="hover:bg-muted/50">
                         {Object.values(row).map((value, cellIdx) => (
                           <TableCell 
@@ -325,6 +328,13 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              totalItems={data.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>
