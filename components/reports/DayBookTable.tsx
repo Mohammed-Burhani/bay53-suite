@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 interface DayBookRow {
   billNo: string;
@@ -44,6 +45,79 @@ interface DayBookRow {
 
 interface DayBookTableProps {
   initialData?: DayBookRow[];
+}
+
+// Pagination component for Day Book table
+function DayBookTableWithPagination({ data, totalDebit, totalCredit }: { data: DayBookRow[], totalDebit: number, totalCredit: number }) {
+  const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
+  const paginatedData = getPaginatedData(data);
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+              <TableHead className="font-semibold">Bill No</TableHead>
+              <TableHead className="font-semibold">Bill Date</TableHead>
+              <TableHead className="font-semibold">Party Name</TableHead>
+              <TableHead className="font-semibold">Bill Type</TableHead>
+              <TableHead className="text-right font-semibold">Bill Amount</TableHead>
+              <TableHead className="font-semibold">Particular</TableHead>
+              <TableHead className="text-right font-semibold">Debit Amount</TableHead>
+              <TableHead className="text-right font-semibold">Credit Amount</TableHead>
+              <TableHead className="font-semibold">Narration / Remarks</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-lg font-medium">No data found</p>
+                  <p className="text-sm">Select filters and click Register to view transactions</p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              <>
+                {paginatedData.map((row, idx) => (
+                  <TableRow key={idx} className="hover:bg-muted/50">
+                    <TableCell className="font-mono text-sm">{row.billNo}</TableCell>
+                    <TableCell>{row.billDate}</TableCell>
+                    <TableCell className="font-medium">{row.partyName}</TableCell>
+                    <TableCell><Badge variant="outline">{row.billType}</Badge></TableCell>
+                    <TableCell className="text-right font-medium">₹{row.billAmount.toLocaleString()}</TableCell>
+                    <TableCell>{row.particular}</TableCell>
+                    <TableCell className="text-right font-medium text-emerald-600">
+                      {row.debitAmount > 0 ? `₹${row.debitAmount.toLocaleString()}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-red-600">
+                      {row.creditAmount > 0 ? `₹${row.creditAmount.toLocaleString()}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{row.narration}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/50 font-semibold">
+                  <TableCell colSpan={6} className="text-right">Total:</TableCell>
+                  <TableCell className="text-right text-emerald-600">₹{totalDebit.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-red-600">₹{totalCredit.toLocaleString()}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <TablePagination
+        totalItems={data.length}
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+      />
+    </>
+  );
 }
 
 export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
@@ -232,60 +306,7 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
             <CardDescription>Daily financial entries</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
-                    <TableHead className="font-semibold">Bill No</TableHead>
-                    <TableHead className="font-semibold">Bill Date</TableHead>
-                    <TableHead className="font-semibold">Party Name</TableHead>
-                    <TableHead className="font-semibold">Bill Type</TableHead>
-                    <TableHead className="text-right font-semibold">Bill Amount</TableHead>
-                    <TableHead className="font-semibold">Particular</TableHead>
-                    <TableHead className="text-right font-semibold">Debit Amount</TableHead>
-                    <TableHead className="text-right font-semibold">Credit Amount</TableHead>
-                    <TableHead className="font-semibold">Narration / Remarks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                        <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-lg font-medium">No data found</p>
-                        <p className="text-sm">Select filters and click Register to view transactions</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <>
-                      {data.map((row, idx) => (
-                        <TableRow key={idx} className="hover:bg-muted/50">
-                          <TableCell className="font-mono text-sm">{row.billNo}</TableCell>
-                          <TableCell>{row.billDate}</TableCell>
-                          <TableCell className="font-medium">{row.partyName}</TableCell>
-                          <TableCell><Badge variant="outline">{row.billType}</Badge></TableCell>
-                          <TableCell className="text-right font-medium">₹{row.billAmount.toLocaleString()}</TableCell>
-                          <TableCell>{row.particular}</TableCell>
-                          <TableCell className="text-right font-medium text-emerald-600">
-                            {row.debitAmount > 0 ? `₹${row.debitAmount.toLocaleString()}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-red-600">
-                            {row.creditAmount > 0 ? `₹${row.creditAmount.toLocaleString()}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{row.narration}</TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-muted/50 font-semibold">
-                        <TableCell colSpan={6} className="text-right">Total:</TableCell>
-                        <TableCell className="text-right text-emerald-600">₹{totalDebit.toLocaleString()}</TableCell>
-                        <TableCell className="text-right text-red-600">₹{totalCredit.toLocaleString()}</TableCell>
-                        <TableCell></TableCell>
-                      </TableRow>
-                    </>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <DayBookTableWithPagination data={data} totalDebit={totalDebit} totalCredit={totalCredit} />
           </CardContent>
         </Card>
       </div>
