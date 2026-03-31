@@ -5,14 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -23,38 +15,11 @@ import { Download, Search, X, Filter, FileSpreadsheet, Printer, Loader2, FileTex
 import { useLedgerRegister } from "@/lib/hooks/useReports";
 import { LedgerRegisterTable } from "@/components/reports/LedgerRegisterTable";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
-import { format, subMonths } from "date-fns";
-
-type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
-
-function toApiDate(date: Date) {
-  return format(date, "dd/MM/yyyy HH:mm:ss");
-}
-
-function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: new Date(new Date().setHours(0, 0, 0, 0)), to: new Date() };
-    case "current_month":
-      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
-    case "monthly":
-      return { from: subMonths(new Date(), 1), to: new Date() };
-    case "quarterly":
-      return { from: subMonths(new Date(), 3), to: new Date() };
-    case "half_yearly":
-      return { from: subMonths(new Date(), 6), to: new Date() };
-    case "yearly":
-      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
-    default:
-      return { from: new Date("2022-01-01"), to: new Date() };
-  }
-}
+import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
 
 export default function LedgerRegisterPage() {
-  const [datePreset, setDatePreset] = useState<DatePreset>("yearly");
-  const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
-  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [runningBalance, setRunningBalance] = useState(true);
   const [openingBalance, setOpeningBalance] = useState(true);
   const [billDetails, setBillDetails] = useState(true);
@@ -64,18 +29,18 @@ export default function LedgerRegisterPage() {
 
   const { mutate: fetchLedgerRegister, data, isPending, error, reset } = useLedgerRegister();
 
+  const handleDateChange = (from: string, to: string) => {
+    setFromDate(from);
+    setToDate(to);
+  };
+
   const handleSearch = () => {
     const ledgerId = selectedLedgerIds[0];
     if (!ledgerId) return;
 
-    const range =
-      datePreset === "range"
-        ? { from: new Date(fromDate), to: new Date(toDate) }
-        : resolveDateRange(datePreset);
-
     fetchLedgerRegister({
-      from: toApiDate(range.from),
-      to: toApiDate(range.to),
+      from: fromDate,
+      to: toDate,
       ledgerId,
       runningBalance,
       openingBalance,
@@ -87,7 +52,6 @@ export default function LedgerRegisterPage() {
   const handleClear = () => {
     setSelectedLedgerIds([]);
     setSelectedLedgerName("");
-    setDatePreset("yearly");
     reset();
   };
 
@@ -131,46 +95,9 @@ export default function LedgerRegisterPage() {
                 groups={[16, 17]}
               />
 
-              {/* Date Preset */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Date Range
-                </Label>
-                <Select
-                  value={datePreset}
-                  onValueChange={(v) => setDatePreset(v as DatePreset)}
-                >
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Custom Range</SelectItem>
-                    <SelectItem value="monthly">Last Month</SelectItem>
-                    <SelectItem value="quarterly">Last Quarter</SelectItem>
-                    <SelectItem value="half_yearly">Last 6 Months</SelectItem>
-                    <SelectItem value="yearly">This Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Date Range Filter */}
+              <DateRangeFilter onDateChange={handleDateChange} label="Date Range" />
             </div>
-
-            {/* Custom date range */}
-            {datePreset === "range" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">From Date</Label>
-                  <Input type="date" className="h-9" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">To Date</Label>
-                  <Input type="date" className="h-9" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-                </div>
-              </div>
-            )}
 
             {/* Display Options */}
             <div className="flex flex-wrap items-center gap-6 pt-2">

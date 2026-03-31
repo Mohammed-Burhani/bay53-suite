@@ -140,7 +140,7 @@ const NAV_MODULES: NavModule[] = [
       { href: "/reports/item-register", label: "Item Register", icon: FileText },
       { href: "/reports/pending-items", label: "Pending Items", icon: TrendingDown },
       { href: "/reports/ledger-outstanding", label: "Ledger Outstanding", icon: Receipt },
-      { href: "/reports/ledger-outstanding-summary", label: "Ledger Outstanding Summary", icon: FileBarChart },
+      { href: "/reports/ledger-balances", label: "Ledger Balances", icon: FileBarChart },
       { href: "/reports/ledger-register", label: "Ledger Register", icon: FileText },
       { href: "/reports/day-book", label: "Day Book", icon: FileText },
       { href: "/reports/gst-filing", label: "GST Filing", icon: FileText },
