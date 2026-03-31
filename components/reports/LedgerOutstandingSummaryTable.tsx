@@ -25,7 +25,7 @@ import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X } from 
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstandingSummary, useLedgerSearch } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.types";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
@@ -35,12 +35,38 @@ function toApiDate(date: Date) {
   return format(date, "dd/MM/yyyy HH:mm:ss");
 }
 
+// Preset date ranges
+type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
+
+function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
+  const now = new Date();
+  switch (preset) {
+    case "today":
+      return { from: new Date(now.setHours(0, 0, 0, 0)), to: new Date() };
+    case "current_month":
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
+    case "monthly":
+      return { from: subMonths(new Date(), 1), to: new Date() };
+    case "quarterly":
+      return { from: subMonths(new Date(), 3), to: new Date() };
+    case "half_yearly":
+      return { from: subMonths(new Date(), 6), to: new Date() };
+    case "yearly":
+      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
+    default:
+      // "none" / "range" — use wide default
+      return { from: new Date("2022-01-01"), to: new Date() };
+  }
+}
+
 export default function LedgerOutstandingSummaryTable() {
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [datePreset, setDatePreset] = useState<"none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly">("none");
+  const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
 
   // Debounce search term (500ms delay)
   useEffect(() => {
@@ -56,11 +82,15 @@ export default function LedgerOutstandingSummaryTable() {
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
-    if (selectedLedgerIds.length === 0) return;
+    // Allow search even without ledger selection
+    const range =
+      datePreset === "range"
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : resolveDateRange(datePreset);
 
     fetchSummary({
-      ledgers: selectedLedgerIds,
-      toDate: toApiDate(new Date(toDate)),
+      ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [], // Empty array if no selection
+      toDate: toApiDate(range.to),
     });
   };
 
@@ -163,7 +193,7 @@ export default function LedgerOutstandingSummaryTable() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Ledgers <span className="text-red-500">*</span>
+                  Ledgers
                 </Label>
                 <Popover open={ledgerSearchOpen} onOpenChange={setLedgerSearchOpen}>
                   <PopoverTrigger asChild>
@@ -236,13 +266,20 @@ export default function LedgerOutstandingSummaryTable() {
                       <Badge
                         key={ledger.ledger_id}
                         variant="secondary"
-                        className="text-xs gap-1"
+                        className="text-xs gap-1 pr-1"
                       >
-                        {ledger.name}
-                        <X
-                          className="h-3 w-3 cursor-pointer hover:text-destructive"
-                          onClick={() => removeLedgerById(ledger.ledger_id)}
-                        />
+                        <span>{ledger.name}</span>
+                        <button
+                          type="button"
+                          className="ml-1 rounded-sm hover:bg-destructive/20 hover:text-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeLedgerById(ledger.ledger_id);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </Badge>
                     ))}
                   </div>
@@ -268,7 +305,7 @@ export default function LedgerOutstandingSummaryTable() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button
                 onClick={handleSearch}
-                disabled={isPending || selectedLedgerIds.length === 0}
+                disabled={isPending}
                 size="sm"
                 className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
               >
@@ -325,8 +362,8 @@ export default function LedgerOutstandingSummaryTable() {
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                         <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-lg font-medium">Select ledgers to view summary</p>
-                        <p className="text-sm">Choose one or more ledgers above and click Get Summary</p>
+                        <p className="text-lg font-medium">No outstanding summary data</p>
+                        <p className="text-sm">Click Get Summary to view outstanding balances</p>
                       </TableCell>
                     </TableRow>
                   ) : (
