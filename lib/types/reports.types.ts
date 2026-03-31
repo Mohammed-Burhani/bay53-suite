@@ -192,3 +192,19 @@ export interface LedgerRegisterItem {
   currRate: number;
   currTotal: number;
 }
+
+// --- Group ---
+
+export interface Group {
+  id: number;
+  name: string;
+  parent: string | null;
+  parentId: number;
+  nature: string;
+  isCr: string;
+  modifiedDate: string;
+}
+
+export interface GroupSearchPayload {
+  sessionId: string;
+}

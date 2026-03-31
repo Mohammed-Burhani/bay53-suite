@@ -6,7 +6,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { reportsService } from "@/lib/api/reports.service";
 import { auth } from "@/lib/auth";
-import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload } from "@/lib/types/reports.types";
+import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload, Group } from "@/lib/types/reports.types";
 
 // Fetch ledgers for dropdown/filter selection
 export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
@@ -20,7 +20,7 @@ export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
         sessionId,
         pageSize: 500,
         pageNumber: 0,
-        groups: groups || [16, 17],
+        groups: groups && groups.length > 0 ? groups : [16, 17],
         includeChildGroups: true,
       });
     },
@@ -66,5 +66,19 @@ export function useLedgerRegister() {
       if (!sessionId) throw new Error("No session");
       return reportsService.getLedgerRegister({ ...filters, sessionId });
     },
+  });
+}
+
+export function useGroupSearch() {
+  const sessionId = auth.getSessionId();
+
+  return useQuery<Group[]>({
+    queryKey: ["groups", sessionId],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      return reportsService.searchGroups({ sessionId });
+    },
+    enabled: !!sessionId,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
   });
 }

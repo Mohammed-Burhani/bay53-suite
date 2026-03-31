@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,8 +22,15 @@ import {
 } from "@/components/ui/tooltip";
 import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
-import { useLedgerOutstandingSummary, useLedgerSearch } from "@/lib/hooks/useReports";
+import { useLedgerOutstandingSummary, useLedgerSearch, useGroupSearch } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,8 +42,8 @@ export default function LedgerOutstandingSummaryTable() {
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
 
   // Debounce search term (500ms delay)
   useEffect(() => {
@@ -48,12 +54,19 @@ export default function LedgerOutstandingSummaryTable() {
     return () => clearTimeout(timer);
   }, [ledgerSearchTerm]);
 
-  const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(debouncedSearchTerm);
+  const { data: allGroups = [] } = useGroupSearch();
+  const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(
+    debouncedSearchTerm,
+    selectedGroupId && selectedGroupId !== "all" ? [parseInt(selectedGroupId)] : undefined
+  );
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
+  // Filter groups to show only IDs 16, 17, 29, 30
+  const allowedGroupIds = [16, 17, 29, 30];
+  const filteredGroups = allGroups.filter(group => allowedGroupIds.includes(group.id));
+
   const handleDateChange = (from: string, to: string) => {
-    setFromDate(from);
     setToDate(to);
   };
 
@@ -159,7 +172,28 @@ export default function LedgerOutstandingSummaryTable() {
           </CardHeader>
 
           <CardContent className="p-6 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
+              {/* Group Filter */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  Group
+                </Label>
+                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                  <SelectTrigger className="w-full h-9">
+                    <SelectValue placeholder="Select group..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Groups</SelectItem>
+                    {filteredGroups.map((group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Ledger Selection */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
