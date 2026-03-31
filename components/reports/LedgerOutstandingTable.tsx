@@ -32,63 +32,33 @@ import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2 } 
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstanding } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
-import { format, subMonths } from "date-fns";
 import { LedgerSearchInput } from "./LedgerSearchInput";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
-
-// Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
-function toApiDate(date: Date) {
-  return format(date, "dd/MM/yyyy HH:mm:ss");
-}
-
-// Preset date ranges
-type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
-
-function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: new Date(now.setHours(0, 0, 0, 0)), to: new Date() };
-    case "current_month":
-      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
-    case "monthly":
-      return { from: subMonths(new Date(), 1), to: new Date() };
-    case "quarterly":
-      return { from: subMonths(new Date(), 3), to: new Date() };
-    case "half_yearly":
-      return { from: subMonths(new Date(), 6), to: new Date() };
-    case "yearly":
-      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
-    default:
-      // "none" / "range" — use wide default
-      return { from: new Date("2022-01-01"), to: new Date() };
-  }
-}
+import { DateRangeFilter } from "./DateRangeFilter";
 
 export default function LedgerOutstandingTable() {
   const [detailed, setDetailed] = useState(false);
-  const [datePreset, setDatePreset] = useState<DatePreset>("none");
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
-  const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
-  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
+  const handleDateChange = (from: string, to: string) => {
+    setFromDate(from);
+    setToDate(to);
+  };
+
   const handleSearch = () => {
     if (selectedLedgerIds.length === 0) return;
-
-    const range =
-      datePreset === "range"
-        ? { from: new Date(fromDate), to: new Date(toDate) }
-        : resolveDateRange(datePreset);
 
     fetchOutstanding({
       ledgers: selectedLedgerIds,
       detailed,
       salesman: null,
-      fromDate: toApiDate(range.from),
-      toDate: toApiDate(range.to),
+      fromDate,
+      toDate,
     });
   };
 
@@ -140,7 +110,7 @@ export default function LedgerOutstandingTable() {
                 <Filter className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">Ledger Outstanding Filters</CardTitle>
+                <CardTitle className="text-base font-semibold">Ledger Balances Filters</CardTitle>
                 <CardDescription className="text-xs">View outstanding balances by ledger</CardDescription>
               </div>
             </div>
@@ -158,31 +128,12 @@ export default function LedgerOutstandingTable() {
                 groups={[16, 17]}
               />
 
-              {/* Date preset */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Date
-                </Label>
-                <Select
-                  value={datePreset}
-                  onValueChange={(v) => setDatePreset(v as DatePreset)}
-                >
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="half_yearly">Half Yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Date Filter */}
+              <DateRangeFilter
+                onDateChange={handleDateChange}
+                label="Date"
+                financialYearStart={4}
+              />
 
               {/* Detailed checkbox */}
               <div className="space-y-1.5 flex items-end">
@@ -196,30 +147,6 @@ export default function LedgerOutstandingTable() {
                 </div>
               </div>
             </div>
-
-            {/* Custom date range inputs — only shown when preset is "range" */}
-            {datePreset === "range" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">From Date</Label>
-                  <Input
-                    type="date"
-                    className="h-9"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">To Date</Label>
-                  <Input
-                    type="date"
-                    className="h-9"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
@@ -354,7 +281,7 @@ export default function LedgerOutstandingTable() {
 
       {/* AI Assistant */}
       <ModuleAIAssistant
-        moduleName="Ledger Outstanding"
+        moduleName="Ledger Balances"
         moduleData={{ data: rows, detailed, totalOutstanding }}
       />
     </TooltipProvider>

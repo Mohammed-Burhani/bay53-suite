@@ -25,48 +25,19 @@ import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X } from 
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstandingSummary, useLedgerSearch } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.types";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
-
-// Helper: format date string "DD/MM/YYYY HH:mm:ss" for the API
-function toApiDate(date: Date) {
-  return format(date, "dd/MM/yyyy HH:mm:ss");
-}
-
-// Preset date ranges
-type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
-
-function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: new Date(now.setHours(0, 0, 0, 0)), to: new Date() };
-    case "current_month":
-      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
-    case "monthly":
-      return { from: subMonths(new Date(), 1), to: new Date() };
-    case "quarterly":
-      return { from: subMonths(new Date(), 3), to: new Date() };
-    case "half_yearly":
-      return { from: subMonths(new Date(), 6), to: new Date() };
-    case "yearly":
-      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
-    default:
-      // "none" / "range" — use wide default
-      return { from: new Date("2022-01-01"), to: new Date() };
-  }
-}
+import { DateRangeFilter } from "./DateRangeFilter";
 
 export default function LedgerOutstandingSummaryTable() {
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [datePreset, setDatePreset] = useState<"none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly">("none");
-  const [fromDate, setFromDate] = useState(format(new Date("2022-01-01"), "yyyy-MM-dd"));
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Debounce search term (500ms delay)
   useEffect(() => {
@@ -81,16 +52,16 @@ export default function LedgerOutstandingSummaryTable() {
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
+  const handleDateChange = (from: string, to: string) => {
+    setFromDate(from);
+    setToDate(to);
+  };
+
   const handleSearch = () => {
     // Allow search even without ledger selection
-    const range =
-      datePreset === "range"
-        ? { from: new Date(fromDate), to: new Date(toDate) }
-        : resolveDateRange(datePreset);
-
     fetchSummary({
-      ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [], // Empty array if no selection
-      toDate: toApiDate(range.to),
+      ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [],
+      toDate: toDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
     });
   };
 
@@ -181,7 +152,7 @@ export default function LedgerOutstandingSummaryTable() {
                 <Filter className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">Ledger Outstanding Summary Filters</CardTitle>
+                <CardTitle className="text-base font-semibold">Ledger Balances Filters</CardTitle>
                 <CardDescription className="text-xs">View summary of outstanding balances by ledger</CardDescription>
               </div>
             </div>
@@ -286,19 +257,8 @@ export default function LedgerOutstandingSummaryTable() {
                 )}
               </div>
 
-              {/* To Date */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  To Date
-                </Label>
-                <Input
-                  type="date"
-                  className="h-9"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                />
-              </div>
+              {/* Date Filter */}
+              <DateRangeFilter onDateChange={handleDateChange} label="Date Range" />
             </div>
 
             {/* Action Buttons */}
@@ -339,7 +299,7 @@ export default function LedgerOutstandingSummaryTable() {
         {/* Results Table */}
         <Card className="border shadow-sm">
           <CardHeader className="border-b">
-            <CardTitle className="text-xl">Outstanding Summary</CardTitle>
+            <CardTitle className="text-xl">Ledger Balances</CardTitle>
             <CardDescription>Party-wise outstanding summary</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -404,7 +364,7 @@ export default function LedgerOutstandingSummaryTable() {
 
       {/* AI Assistant */}
       <ModuleAIAssistant
-        moduleName="Ledger Outstanding Summary"
+        moduleName="Ledger Balances"
         moduleData={{ data: rows, totalPending, debtorCount, creditorCount }}
       />
     </TooltipProvider>
