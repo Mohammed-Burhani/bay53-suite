@@ -14,6 +14,8 @@ import type {
   ItemRegisterItem,
   LedgerRegisterPayload,
   LedgerRegisterItem,
+  Group,
+  GroupSearchPayload,
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
@@ -21,6 +23,9 @@ export const reportsService = {
     const response = await apiClient.post<LedgerSearchResponse>("/Ledger/Search", payload);
     return response.list || [];
   },
+
+  searchGroups: (payload: GroupSearchPayload) =>
+    apiClient.post<Group[]>("/Group/Search", payload),
 
   getLedgerOutstanding: (payload: LedgerOutstandingPayload) =>
     apiClient.post<LedgerOutstandingItem[]>("/Report/LedgerOutstanding", payload),
