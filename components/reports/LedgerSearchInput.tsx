@@ -195,13 +195,20 @@ export function LedgerSearchInput({
             <Badge
               key={ledger.ledger_id}
               variant="secondary"
-              className="text-xs gap-1"
+              className="text-xs gap-1 pr-1"
             >
-              {ledger.name}
-              <X
-                className="h-3 w-3 cursor-pointer hover:text-destructive"
-                onClick={() => removeLedgerById(ledger.ledger_id)}
-              />
+              <span>{ledger.name}</span>
+              <button
+                type="button"
+                className="ml-1 rounded-sm hover:bg-destructive/20 hover:text-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeLedgerById(ledger.ledger_id);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           ))}
         </div>
