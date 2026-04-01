@@ -56,7 +56,7 @@ export default function CertificatesListingPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>All Certificates</span>

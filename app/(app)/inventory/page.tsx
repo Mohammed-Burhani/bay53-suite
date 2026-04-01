@@ -649,7 +649,7 @@ export default function InventoryPage() {
           </div>
         ) : (
           /* Table View */
-          <Card>
+          <Card className="py-4">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>

@@ -98,7 +98,7 @@ export function ManualCertificateForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Invoice & Customer Details */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="pt-6 space-y-4">
           <h3 className="font-semibold text-lg">Invoice & Customer Details</h3>
           
@@ -172,7 +172,7 @@ export function ManualCertificateForm({
       </Card>
 
       {/* Instrument Details */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="pt-6 space-y-4">
           <h3 className="font-semibold text-lg">Instrument Details</h3>
           
@@ -238,7 +238,7 @@ export function ManualCertificateForm({
       </Card>
 
       {/* Test Conditions & Master Details */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="pt-6 space-y-4">
           <h3 className="font-semibold text-lg">Test Conditions & Master Details</h3>
           
@@ -284,7 +284,7 @@ export function ManualCertificateForm({
       </Card>
 
       {/* Test Results */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-lg">Test Results</h3>
@@ -336,7 +336,7 @@ export function ManualCertificateForm({
       </Card>
 
       {/* Signatures & Remarks */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="pt-6 space-y-4">
           <h3 className="font-semibold text-lg">Signatures & Remarks</h3>
           

@@ -10,7 +10,7 @@ interface InvoiceNotesProps {
 
 export function InvoiceNotes({ notes, onNotesChange }: InvoiceNotesProps) {
   return (
-    <Card>
+    <Card className="py-4">
       <CardContent className="p-6 space-y-2">
         <Label>Notes / Terms & Conditions</Label>
         <textarea

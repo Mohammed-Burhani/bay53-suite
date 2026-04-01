@@ -61,7 +61,7 @@ export default function AddPartyPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-6">
           <Formik
             initialValues={emptyParty}

@@ -53,7 +53,7 @@ export default function LowStockPage() {
 
       {/* Low Stock Table */}
       {lowStockProducts.length > 0 && (
-        <Card>
+        <Card className="py-4">
           <CardContent className="p-0">
             <div className="p-4 border-b">
               <h2 className="font-semibold flex items-center gap-2">
@@ -100,7 +100,7 @@ export default function LowStockPage() {
 
       {/* Out of Stock Table */}
       {outOfStockProducts.length > 0 && (
-        <Card>
+        <Card className="py-4">
           <CardContent className="p-0">
             <div className="p-4 border-b">
               <h2 className="font-semibold flex items-center gap-2">
@@ -138,7 +138,7 @@ export default function LowStockPage() {
       )}
 
       {lowStockProducts.length === 0 && outOfStockProducts.length === 0 && (
-        <Card>
+        <Card className="py-4">
           <CardContent className="p-12 text-center">
             <TrendingDown className="h-12 w-12 mx-auto text-muted-foreground/30" />
             <p className="mt-4 text-muted-foreground">All products are well stocked!</p>
