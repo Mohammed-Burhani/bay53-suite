@@ -96,6 +96,11 @@ export interface LedgerOutstandingSummaryItem {
   DrCr: string;
   Address: string;
   Pin: string;
+  GSTNo?: string;
+  Opening?: number;
+  OpeningDrCr?: string;
+  Running?: number;
+  RunningDrCr?: string;
 }
 
 // --- Item Register ---

@@ -58,13 +58,6 @@ export default function LedgerRegisterPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6 p-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="h-6 w-6" />
-            Ledger Register
-          </h1>
-          <p className="text-sm text-muted-foreground">View detailed ledger transactions with running balance</p>
-        </div>
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
