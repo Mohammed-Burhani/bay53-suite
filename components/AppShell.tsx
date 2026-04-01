@@ -128,6 +128,17 @@ const NAV_MODULES: NavModule[] = [
     ],
   },
   {
+    id: "certificates",
+    label: "Certificates",
+    icon: FileText,
+    color: "text-teal-400",
+    activeBg: "bg-teal-500/20",
+    subItems: [
+      { href: "/certificates", label: "All Certificates", icon: List },
+      { href: "/sales/certificates", label: "Invoice Certificates", icon: Receipt },
+    ],
+  },
+  {
     id: "reports",
     label: "Reports",
     icon: BarChart3,
