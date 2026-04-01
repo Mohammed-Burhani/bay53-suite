@@ -20,7 +20,7 @@ export default function CreatePurchasePage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-12 text-center">
           <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground/30" />
           <p className="mt-4 text-muted-foreground">Purchase entry form coming soon</p>

@@ -10,7 +10,7 @@ interface CertificatePreviewProps {
 
 export function CertificatePreview({ invoice }: CertificatePreviewProps) {
   return (
-    <Card>
+    <Card className="py-4">
       <CardHeader>
         <CardTitle className="text-lg">Certificate Preview</CardTitle>
       </CardHeader>

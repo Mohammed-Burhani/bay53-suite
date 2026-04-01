@@ -11,7 +11,7 @@ export default function PurchaseOrdersPage() {
         <p className="text-sm text-muted-foreground">Manage purchase orders to suppliers</p>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-12 text-center">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground/30" />
           <p className="mt-4 text-muted-foreground">No purchase orders created</p>

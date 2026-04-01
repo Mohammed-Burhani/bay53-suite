@@ -62,7 +62,7 @@ export function InvoiceItemsTable({
   );
 
   return (
-    <Card>
+    <Card className="py-4">
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">

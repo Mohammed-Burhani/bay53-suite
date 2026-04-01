@@ -184,7 +184,7 @@ export function AddressSection({
   customerProps: CustomerAddressProps;
 }) {
   return (
-    <Card>
+    <Card className="py-4">
       <CardContent className="p-6">
         <div className="grid gap-6 md:grid-cols-2">
           <BusinessAddress {...businessProps} />

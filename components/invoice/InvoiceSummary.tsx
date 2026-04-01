@@ -41,7 +41,7 @@ export function InvoiceSummary({
   return (
     <div className="space-y-6">
       {/* GST Breakdown */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-6 space-y-4">
           <div className="text-sm font-semibold text-muted-foreground">Tax Summary</div>
           <div className="space-y-2 text-sm">
@@ -104,7 +104,7 @@ export function InvoiceSummary({
       </Card>
 
       {/* Payment */}
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <CreditCard className="h-4 w-4" />

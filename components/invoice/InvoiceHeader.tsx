@@ -23,7 +23,7 @@ export function InvoiceHeader({
   onInvoiceDateChange,
 }: InvoiceHeaderProps) {
   return (
-    <Card>
+    <Card className="py-4">
       <CardContent className="p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">

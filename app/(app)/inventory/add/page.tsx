@@ -76,7 +76,7 @@ export default function AddProductPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-6">
           <Formik
             initialValues={emptyProduct}

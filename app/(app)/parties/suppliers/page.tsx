@@ -48,7 +48,7 @@ export default function SuppliersPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="py-4">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

@@ -173,7 +173,7 @@ export default function LedgerRegisterReport() {
         )}
 
         {data?.list && data.list.length === 0 && (
-          <Card>
+          <Card className="py-4">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
               <p className="text-lg font-medium text-muted-foreground">No transactions found</p>
