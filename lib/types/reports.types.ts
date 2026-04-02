@@ -80,7 +80,9 @@ export interface LedgerOutstandingItem {
 
 export interface LedgerOutstandingSummaryPayload {
   sessionId: string;
+  groupId: number;
   ledgers: number[];
+  fromDate: string; // "DD/MM/YYYY HH:mm:ss"
   toDate: string; // "DD/MM/YYYY HH:mm:ss"
 }
 

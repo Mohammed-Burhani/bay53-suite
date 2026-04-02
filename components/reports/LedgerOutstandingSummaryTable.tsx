@@ -68,12 +68,12 @@ export default function LedgerOutstandingSummaryTable() {
   // Fetch all ledgers for the selected group once
   const { data: allLedgers = [], isLoading: ledgersLoading } = useLedgersByGroup(groupsForLedgerFetch);
   
-  // Filter ledgers on frontend based on search term
+  // Filter ledgers on frontend based on search term - only show results when user types
   const searchResults = ledgerSearchTerm.length >= 2
     ? allLedgers.filter(ledger => 
         ledger.name.toLowerCase().includes(ledgerSearchTerm.toLowerCase())
       )
-    : allLedgers;
+    : [];
   
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
@@ -87,9 +87,15 @@ export default function LedgerOutstandingSummaryTable() {
   };
 
   const handleSearch = () => {
-    // Allow search even without ledger selection
+    // Require group selection
+    if (!selectedGroupId || selectedGroupId === "all") {
+      return;
+    }
+    
     fetchSummary({
+      groupId: parseInt(selectedGroupId),
       ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [],
+      fromDate: fromDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
       toDate: toDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
     });
   };
@@ -255,7 +261,7 @@ export default function LedgerOutstandingSummaryTable() {
                             ? "Select a group first to search ledgers..."
                             : ledgersLoading
                             ? "Loading ledgers..."
-                            : "Type company name or ledger name..."
+                            : "Type company name or ledger name (min 2 chars)..."
                         }
                         value={ledgerSearchTerm}
                         onValueChange={setLedgerSearchTerm}
@@ -274,15 +280,14 @@ export default function LedgerOutstandingSummaryTable() {
                         <div className="py-6 text-center text-sm text-muted-foreground">
                           No ledgers found in this group
                         </div>
-                      ) : searchResults.length === 0 && ledgerSearchTerm.length >= 2 ? (
+                      ) : ledgerSearchTerm.length < 2 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Type at least 2 characters to search
+                        </div>
+                      ) : searchResults.length === 0 ? (
                         <CommandEmpty>No ledgers match your search.</CommandEmpty>
                       ) : (
                         <div className="max-h-[300px] overflow-auto">
-                          {ledgerSearchTerm.length < 2 && (
-                            <div className="py-3 px-2 text-xs text-muted-foreground text-center border-b">
-                              Showing all {allLedgers.length} ledgers. Type to filter...
-                            </div>
-                          )}
                           {Object.entries(groupedLedgers).map(([groupName, ledgers]) => (
                             <CommandGroup key={groupName} heading={groupName}>
                               {ledgers.map((ledger) => (
@@ -361,7 +366,7 @@ export default function LedgerOutstandingSummaryTable() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button
                 onClick={handleSearch}
-                disabled={isPending}
+                disabled={isPending || !selectedGroupId || selectedGroupId === "all"}
                 size="sm"
                 className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
               >
@@ -372,6 +377,11 @@ export default function LedgerOutstandingSummaryTable() {
                 )}
                 {isPending ? "Loading..." : "Get Summary"}
               </Button>
+              {(!selectedGroupId || selectedGroupId === "all") && (
+                <p className="text-xs text-muted-foreground">
+                  Please select a group to get summary
+                </p>
+              )}
               <div className="flex-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
