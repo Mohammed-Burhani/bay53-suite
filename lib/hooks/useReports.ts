@@ -69,14 +69,21 @@ export function useLedgerRegister() {
   });
 }
 
-export function useGroupSearch() {
+export function useGroupSearch(childOf?: number[] | null) {
   const sessionId = auth.getSessionId();
 
   return useQuery<Group[]>({
-    queryKey: ["groups", sessionId],
+    queryKey: ["groups", sessionId, childOf],
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
-      return reportsService.searchGroups({ sessionId });
+      return reportsService.searchGroups({
+        sessionId,
+        pageSize: 0,
+        pageNumber: 0,
+        childOf: childOf ?? null,
+        name: null,
+        nature: null,
+      });
     },
     enabled: !!sessionId,
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
