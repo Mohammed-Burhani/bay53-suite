@@ -14,7 +14,7 @@ export default function ReportsPage() {
 
   const accountingReports = [
     { href: "/reports/ledger-outstanding", label: "Ledger Outstanding", icon: Receipt, description: "View outstanding balances by ledger" },
-    { href: "/reports/ledger-outstanding-summary", label: "Ledger Outstanding Summary", icon: FileText, description: "Summary of outstanding balances by party" },
+    { href: "/reports/ledger-balances", label: "Ledger Balances", icon: FileText, description: "Summary of outstanding balances by party" },
     { href: "/reports/ledger-register", label: "Ledger Register", icon: BookOpen, description: "Detailed ledger transactions with running balance" },
     { href: "/reports/day-book", label: "Day Book", icon: Calendar, description: "Daily transaction register" },
     { href: "/reports/gst-filing", label: "GST Filing", icon: FileSpreadsheet, description: "Generate GST-ready reports for filing" },
