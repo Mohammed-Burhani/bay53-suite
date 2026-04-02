@@ -54,7 +54,8 @@ export default function LedgerOutstandingSummaryTable() {
     return () => clearTimeout(timer);
   }, [ledgerSearchTerm]);
 
-  const { data: allGroups = [] } = useGroupSearch();
+  // Fetch groups with childOf filter for ledger balances (16, 17)
+  const { data: allGroups = [] } = useGroupSearch([16, 17]);
   const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(
     debouncedSearchTerm,
     selectedGroupId && selectedGroupId !== "all" ? [parseInt(selectedGroupId)] : undefined
@@ -62,7 +63,7 @@ export default function LedgerOutstandingSummaryTable() {
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
-  // Filter groups to show only IDs 16, 17, 29, 30
+  // Filter groups to show only IDs 16, 17, 29, 30 in the dropdown
   const allowedGroupIds = [16, 17, 29, 30];
   const filteredGroups = allGroups.filter(group => allowedGroupIds.includes(group.id));
 

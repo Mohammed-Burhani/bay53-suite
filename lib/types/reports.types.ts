@@ -212,4 +212,9 @@ export interface Group {
 
 export interface GroupSearchPayload {
   sessionId: string;
+  pageSize: number;
+  pageNumber: number;
+  childOf: number[] | null;
+  name: string | null;
+  nature: string | null;
 }
