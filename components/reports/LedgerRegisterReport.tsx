@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,22 +15,30 @@ import { useLedgerRegister } from "@/lib/hooks/useReports";
 import { LedgerRegisterTable } from "@/components/reports/LedgerRegisterTable";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
+import { useReportFiltersStore } from "@/lib/stores/report-filters-store";
 
 export default function LedgerRegisterReport() {
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [runningBalance, setRunningBalance] = useState(true);
-  const [openingBalance, setOpeningBalance] = useState(true);
-  const [billDetails, setBillDetails] = useState(true);
-  const [bankDetails, setBankDetails] = useState(true);
-  const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
-  const [selectedLedgerName, setSelectedLedgerName] = useState<string>("");
+  const { ledgerRegister, setLedgerRegisterFilters } = useReportFiltersStore();
+  const { 
+    fromDate, 
+    toDate, 
+    runningBalance, 
+    openingBalance, 
+    billDetails, 
+    bankDetails,
+    selectedLedgerIds,
+    selectedLedgerName,
+    dateType,
+    selectedMonth,
+    selectedQuarter,
+    selectedHalfYear,
+    selectedYear,
+  } = ledgerRegister;
 
   const { mutate: fetchLedgerRegister, data, isPending, error, reset } = useLedgerRegister();
 
   const handleDateChange = (from: string, to: string) => {
-    setFromDate(from);
-    setToDate(to);
+    setLedgerRegisterFilters({ fromDate: from, toDate: to });
   };
 
   const handleSearch = () => {
@@ -50,8 +57,10 @@ export default function LedgerRegisterReport() {
   };
 
   const handleClear = () => {
-    setSelectedLedgerIds([]);
-    setSelectedLedgerName("");
+    setLedgerRegisterFilters({ 
+      selectedLedgerIds: [], 
+      selectedLedgerName: "" 
+    });
     reset();
   };
 
@@ -78,8 +87,8 @@ export default function LedgerRegisterReport() {
               {/* Ledger Selection */}
               <LedgerSearchInput
                 selectedLedgerIds={selectedLedgerIds}
-                onLedgerIdsChange={setSelectedLedgerIds}
-                onLedgerNameChange={setSelectedLedgerName}
+                onLedgerIdsChange={(ids) => setLedgerRegisterFilters({ selectedLedgerIds: ids })}
+                onLedgerNameChange={(name) => setLedgerRegisterFilters({ selectedLedgerName: name })}
                 label="Ledger"
                 placeholder="Select ledger..."
                 required={true}
@@ -88,25 +97,58 @@ export default function LedgerRegisterReport() {
               />
 
               {/* Date Range Filter */}
-              <DateRangeFilter onDateChange={handleDateChange} label="Date Range" />
+              <DateRangeFilter 
+                dateType={dateType}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedHalfYear={selectedHalfYear}
+                selectedYear={selectedYear}
+                fromDate={fromDate}
+                toDate={toDate}
+                onDateTypeChange={(type) => setLedgerRegisterFilters({ dateType: type })}
+                onSelectedMonthChange={(month) => setLedgerRegisterFilters({ selectedMonth: month })}
+                onSelectedQuarterChange={(quarter) => setLedgerRegisterFilters({ selectedQuarter: quarter })}
+                onSelectedHalfYearChange={(halfYear) => setLedgerRegisterFilters({ selectedHalfYear: halfYear })}
+                onSelectedYearChange={(year) => setLedgerRegisterFilters({ selectedYear: year })}
+                onFromDateChange={(date) => setLedgerRegisterFilters({ fromDate: date })}
+                onToDateChange={(date) => setLedgerRegisterFilters({ toDate: date })}
+                onDateChange={handleDateChange} 
+                label="Date Range" 
+              />
             </div>
 
             {/* Display Options */}
             <div className="flex flex-wrap items-center gap-6 pt-2">
               <div className="flex items-center space-x-2">
-                <Checkbox id="running" checked={runningBalance} onCheckedChange={(c) => setRunningBalance(c as boolean)} />
+                <Checkbox 
+                  id="running" 
+                  checked={runningBalance} 
+                  onCheckedChange={(c) => setLedgerRegisterFilters({ runningBalance: c as boolean })} 
+                />
                 <Label htmlFor="running" className="cursor-pointer text-sm font-normal">Running Balance</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="opening" checked={openingBalance} onCheckedChange={(c) => setOpeningBalance(c as boolean)} />
+                <Checkbox 
+                  id="opening" 
+                  checked={openingBalance} 
+                  onCheckedChange={(c) => setLedgerRegisterFilters({ openingBalance: c as boolean })} 
+                />
                 <Label htmlFor="opening" className="cursor-pointer text-sm font-normal">Opening Balance</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="bill" checked={billDetails} onCheckedChange={(c) => setBillDetails(c as boolean)} />
+                <Checkbox 
+                  id="bill" 
+                  checked={billDetails} 
+                  onCheckedChange={(c) => setLedgerRegisterFilters({ billDetails: c as boolean })} 
+                />
                 <Label htmlFor="bill" className="cursor-pointer text-sm font-normal">Bill Details</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="bank" checked={bankDetails} onCheckedChange={(c) => setBankDetails(c as boolean)} />
+                <Checkbox 
+                  id="bank" 
+                  checked={bankDetails} 
+                  onCheckedChange={(c) => setLedgerRegisterFilters({ bankDetails: c as boolean })} 
+                />
                 <Label htmlFor="bank" className="cursor-pointer text-sm font-normal">Bank Details</Label>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,25 +15,46 @@ import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, su
 export type DateFilterType = "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly" | "none";
 
 interface DateRangeFilterProps {
+  dateType: DateFilterType;
+  selectedMonth: string;
+  selectedQuarter: string;
+  selectedHalfYear: string;
+  selectedYear: string;
+  fromDate: string;
+  toDate: string;
+  onDateTypeChange: (type: DateFilterType) => void;
+  onSelectedMonthChange: (month: string) => void;
+  onSelectedQuarterChange: (quarter: string) => void;
+  onSelectedHalfYearChange: (halfYear: string) => void;
+  onSelectedYearChange: (year: string) => void;
+  onFromDateChange: (date: string) => void;
+  onToDateChange: (date: string) => void;
   onDateChange: (fromDate: string, toDate: string) => void;
   label?: string;
   className?: string;
-  financialYearStart?: number; // Month (1-12) when financial year starts, default is 4 (April)
+  financialYearStart?: number;
 }
 
 export function DateRangeFilter({
+  dateType,
+  selectedMonth,
+  selectedQuarter,
+  selectedHalfYear,
+  selectedYear,
+  fromDate,
+  toDate,
+  onDateTypeChange,
+  onSelectedMonthChange,
+  onSelectedQuarterChange,
+  onSelectedHalfYearChange,
+  onSelectedYearChange,
+  onFromDateChange,
+  onToDateChange,
   onDateChange,
   label = "Date",
   className = "",
-  financialYearStart = 4, // April
+  financialYearStart = 4,
 }: DateRangeFilterProps) {
-  const [dateType, setDateType] = useState<DateFilterType>("current_month");
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
-  const [selectedHalfYear, setSelectedHalfYear] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
 
   // Get current financial year
   const getCurrentFinancialYear = () => {
@@ -203,7 +224,7 @@ export function DateRangeFilter({
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
           {label}
         </Label>
-        <Select value={dateType} onValueChange={(v) => setDateType(v as DateFilterType)}>
+        <Select value={dateType} onValueChange={onDateTypeChange}>
           <SelectTrigger className="h-9 w-full">
             <SelectValue />
           </SelectTrigger>
@@ -224,7 +245,7 @@ export function DateRangeFilter({
       {dateType === "monthly" && (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Select Month</Label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <Select value={selectedMonth} onValueChange={onSelectedMonthChange}>
             <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
@@ -244,7 +265,7 @@ export function DateRangeFilter({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <Select value={selectedYear} onValueChange={onSelectedYearChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Select FY" />
               </SelectTrigger>
@@ -259,7 +280,7 @@ export function DateRangeFilter({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Quarter</Label>
-            <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+            <Select value={selectedQuarter} onValueChange={onSelectedQuarterChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Select quarter" />
               </SelectTrigger>
@@ -280,7 +301,7 @@ export function DateRangeFilter({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <Select value={selectedYear} onValueChange={onSelectedYearChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Select FY" />
               </SelectTrigger>
@@ -295,7 +316,7 @@ export function DateRangeFilter({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Half Year</Label>
-            <Select value={selectedHalfYear} onValueChange={setSelectedHalfYear}>
+            <Select value={selectedHalfYear} onValueChange={onSelectedHalfYearChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Select half" />
               </SelectTrigger>
@@ -315,7 +336,7 @@ export function DateRangeFilter({
       {dateType === "yearly" && (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <Select value={selectedYear} onValueChange={onSelectedYearChange}>
             <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Select FY" />
             </SelectTrigger>
@@ -339,7 +360,7 @@ export function DateRangeFilter({
               type="date"
               className="h-9"
               value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              onChange={(e) => onFromDateChange(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
@@ -348,7 +369,7 @@ export function DateRangeFilter({
               type="date"
               className="h-9"
               value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              onChange={(e) => onToDateChange(e.target.value)}
             />
           </div>
         </div>
