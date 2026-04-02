@@ -68,7 +68,7 @@ export interface CertificateTemplate {
   show_accuracy: boolean;
   show_test_conditions: boolean;
   show_master_details: boolean;
-  custom_fields?: any[];
+  custom_fields?: Record<string, unknown>[];
   primary_color: string;
   secondary_color: string;
   font_family: string;
@@ -107,17 +107,61 @@ class CertificatesService {
   // =====================================================
 
   async createCertificate(input: CreateCertificateInput): Promise<string> {
-    const { data, error } = await supabase.rpc('create_certificate', {
-      p_organization_id: input.organization_id,
-      p_invoice_number: input.invoice_number,
-      p_customer_name: input.customer_name,
-      p_customer_address: input.customer_address,
-      p_instrument_name: input.instrument_name,
-      p_certificate_data: input.certificate_data || {},
-    });
+    // Generate certificate number
+    const certificateNumber = await this.generateCertificateNumber(
+      input.organization_id,
+      input.invoice_number
+    );
 
-    if (error) throw error;
-    return data;
+    // Prepare certificate data with proper null handling for dates
+    const certificateData = {
+      organization_id: input.organization_id,
+      certificate_number: certificateNumber,
+      invoice_number: input.invoice_number,
+      customer_name: input.customer_name,
+      customer_address: input.customer_address,
+      instrument_name: input.instrument_name,
+      customer_gstin: input.certificate_data?.customer_gstin || null,
+      customer_contact: input.certificate_data?.customer_contact || null,
+      customer_email: input.certificate_data?.customer_email || null,
+      make_serial: input.certificate_data?.make_serial || null,
+      mounting: input.certificate_data?.mounting || null,
+      range: input.certificate_data?.range || null,
+      accuracy: input.certificate_data?.accuracy || null,
+      calibration_due_date: input.certificate_data?.calibration_due_date || null,
+      test_conditions: input.certificate_data?.test_conditions || null,
+      master_range: input.certificate_data?.master_range || null,
+      master_calibration_due: input.certificate_data?.master_calibration_due || null,
+      master_certificate_no: input.certificate_data?.master_certificate_no || null,
+      test_results: input.certificate_data?.test_results || [],
+      calibrated_by: input.certificate_data?.calibrated_by || null,
+      approved_by: input.certificate_data?.approved_by || null,
+      remarks: input.certificate_data?.remarks || null,
+      created_by: input.certificate_data?.created_by || null,
+      status: 'draft' as const,
+    };
+
+    // Insert certificate
+    const { data: certificate, error: insertError } = await supabase
+      .from('certificates')
+      .insert(certificateData)
+      .select('id')
+      .single();
+
+    if (insertError) throw insertError;
+
+    // Create audit log entry
+    const { error: auditError } = await supabase
+      .from('certificate_audit_log')
+      .insert({
+        certificate_id: certificate.id,
+        action: 'created',
+        performed_by: input.certificate_data?.created_by || null,
+      });
+
+    if (auditError) throw auditError;
+
+    return certificateNumber;
   }
 
   async getCertificates(organizationId: string): Promise<Certificate[]> {
@@ -146,10 +190,12 @@ class CertificatesService {
     organizationId: string,
     invoiceNumber: string
   ): Promise<Certificate[]> {
-    const { data, error } = await supabase.rpc('get_certificates_by_invoice', {
-      p_organization_id: organizationId,
-      p_invoice_number: invoiceNumber,
-    });
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('invoice_number', invoiceNumber)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -176,15 +222,42 @@ class CertificatesService {
     userId?: string,
     pdfUrl?: string
   ): Promise<boolean> {
-    const { data, error } = await supabase.rpc('update_certificate_status', {
-      p_certificate_id: certificateId,
-      p_status: status,
-      p_user_id: userId,
-      p_pdf_url: pdfUrl,
-    });
+    // Get old status for audit log
+    const { data: oldCert, error: fetchError } = await supabase
+      .from('certificates')
+      .select('status')
+      .eq('id', certificateId)
+      .single();
 
-    if (error) throw error;
-    return data;
+    if (fetchError) throw fetchError;
+
+    // Update certificate
+    const updateData: Record<string, unknown> = { status };
+    if (pdfUrl) updateData.pdf_url = pdfUrl;
+
+    const { error: updateError } = await supabase
+      .from('certificates')
+      .update(updateData)
+      .eq('id', certificateId);
+
+    if (updateError) throw updateError;
+
+    // Create audit log entry
+    const { error: auditError } = await supabase
+      .from('certificate_audit_log')
+      .insert({
+        certificate_id: certificateId,
+        action: 'status_changed',
+        performed_by: userId,
+        changes: {
+          old_status: oldCert.status,
+          new_status: status,
+        },
+      });
+
+    if (auditError) throw auditError;
+
+    return true;
   }
 
   async deleteCertificate(id: string): Promise<void> {
@@ -230,13 +303,79 @@ class CertificatesService {
     organizationId: string,
     invoiceNumber?: string
   ): Promise<string> {
-    const { data, error } = await supabase.rpc('generate_certificate_number', {
-      p_organization_id: organizationId,
-      p_invoice_number: invoiceNumber,
-    });
+    // Get configuration (maybeSingle returns null if no rows found)
+    const { data: config } = await supabase
+      .from('certificate_config')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
 
-    if (error) throw error;
-    return data;
+    // Use defaults if no config exists
+    const certificatePrefix = config?.certificate_prefix || 'CERT';
+    const certificateSeparator = config?.certificate_separator || '-';
+    const includeInvoiceNumber = config?.include_invoice_number ?? true;
+    const includeDate = config?.include_date ?? false;
+    const dateFormat = config?.date_format || 'YYYYMMDD';
+    const counterStart = config?.counter_start || 1;
+    const counterPadding = config?.counter_padding || 4;
+
+    // Get next counter value by finding max certificate number
+    const { data: certificates } = await supabase
+      .from('certificates')
+      .select('certificate_number')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    let counter = counterStart;
+    if (certificates && certificates.length > 0) {
+      // Extract numbers from certificate numbers and find max
+      const numbers = certificates
+        .map(cert => {
+          const match = cert.certificate_number.match(/(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(num => !isNaN(num));
+      
+      if (numbers.length > 0) {
+        counter = Math.max(...numbers) + 1;
+      }
+    }
+
+    // Build certificate number
+    let certNumber = certificatePrefix;
+
+    if (includeInvoiceNumber && invoiceNumber) {
+      certNumber += certificateSeparator + invoiceNumber;
+    }
+
+    if (includeDate) {
+      const now = new Date();
+      let datePart = '';
+      
+      switch (dateFormat) {
+        case 'YYYYMMDD':
+          datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+          break;
+        case 'YYMMDD':
+          datePart = now.toISOString().slice(2, 10).replace(/-/g, '');
+          break;
+        case 'YYYY':
+          datePart = now.getFullYear().toString();
+          break;
+        case 'YY':
+          datePart = now.getFullYear().toString().slice(-2);
+          break;
+        default:
+          datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+      }
+      
+      certNumber += certificateSeparator + datePart;
+    }
+
+    certNumber += certificateSeparator + counter.toString().padStart(counterPadding, '0');
+
+    return certNumber;
   }
 
   // =====================================================
