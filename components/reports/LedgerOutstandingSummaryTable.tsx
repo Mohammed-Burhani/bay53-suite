@@ -36,14 +36,25 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { DateRangeFilter } from "./DateRangeFilter";
+import { useReportFiltersStore } from "@/lib/stores/report-filters-store";
 
 export default function LedgerOutstandingSummaryTable() {
-  const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
+  const { ledgerBalances, setLedgerBalancesFilters } = useReportFiltersStore();
+  const { 
+    selectedLedgerIds, 
+    toDate, 
+    selectedGroupId,
+    dateType,
+    selectedMonth,
+    selectedQuarter,
+    selectedHalfYear,
+    selectedYear,
+    fromDate,
+  } = ledgerBalances;
+
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
 
   // Debounce search term (500ms delay)
   useEffect(() => {
@@ -68,7 +79,7 @@ export default function LedgerOutstandingSummaryTable() {
   const filteredGroups = allGroups.filter(group => allowedGroupIds.includes(group.id));
 
   const handleDateChange = (from: string, to: string) => {
-    setToDate(to);
+    setLedgerBalancesFilters({ fromDate: from, toDate: to });
   };
 
   const handleSearch = () => {
@@ -84,20 +95,26 @@ export default function LedgerOutstandingSummaryTable() {
 
   const handleLedgerSelect = (ledger: Ledger) => {
     if (selectedLedgerIds.includes(ledger.ledger_id)) {
-      setSelectedLedgerIds((prev) => prev.filter((id) => id !== ledger.ledger_id));
+      setLedgerBalancesFilters({ 
+        selectedLedgerIds: selectedLedgerIds.filter((id) => id !== ledger.ledger_id) 
+      });
       setSelectedLedgersMap((prev) => {
         const newMap = new Map(prev);
         newMap.delete(ledger.ledger_id);
         return newMap;
       });
     } else {
-      setSelectedLedgerIds((prev) => [...prev, ledger.ledger_id]);
+      setLedgerBalancesFilters({ 
+        selectedLedgerIds: [...selectedLedgerIds, ledger.ledger_id] 
+      });
       setSelectedLedgersMap((prev) => new Map(prev).set(ledger.ledger_id, ledger));
     }
   };
 
   const removeLedgerById = (ledgerId: number) => {
-    setSelectedLedgerIds((prev) => prev.filter((id) => id !== ledgerId));
+    setLedgerBalancesFilters({ 
+      selectedLedgerIds: selectedLedgerIds.filter((id) => id !== ledgerId) 
+    });
     setSelectedLedgersMap((prev) => {
       const newMap = new Map(prev);
       newMap.delete(ledgerId);
@@ -180,7 +197,10 @@ export default function LedgerOutstandingSummaryTable() {
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                   Group
                 </Label>
-                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <Select 
+                  value={selectedGroupId} 
+                  onValueChange={(value) => setLedgerBalancesFilters({ selectedGroupId: value })}
+                >
                   <SelectTrigger className="w-full h-9">
                     <SelectValue placeholder="Select group..." />
                   </SelectTrigger>
@@ -293,7 +313,24 @@ export default function LedgerOutstandingSummaryTable() {
               </div>
 
               {/* Date Filter */}
-              <DateRangeFilter onDateChange={handleDateChange} label="Date Range" />
+              <DateRangeFilter 
+                dateType={dateType}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedHalfYear={selectedHalfYear}
+                selectedYear={selectedYear}
+                fromDate={fromDate}
+                toDate={toDate}
+                onDateTypeChange={(type) => setLedgerBalancesFilters({ dateType: type })}
+                onSelectedMonthChange={(month) => setLedgerBalancesFilters({ selectedMonth: month })}
+                onSelectedQuarterChange={(quarter) => setLedgerBalancesFilters({ selectedQuarter: quarter })}
+                onSelectedHalfYearChange={(halfYear) => setLedgerBalancesFilters({ selectedHalfYear: halfYear })}
+                onSelectedYearChange={(year) => setLedgerBalancesFilters({ selectedYear: year })}
+                onFromDateChange={(date) => setLedgerBalancesFilters({ fromDate: date })}
+                onToDateChange={(date) => setLedgerBalancesFilters({ toDate: date })}
+                onDateChange={handleDateChange} 
+                label="Date Range" 
+              />
             </div>
 
             {/* Action Buttons */}

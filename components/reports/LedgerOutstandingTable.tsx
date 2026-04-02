@@ -1,19 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -35,19 +26,27 @@ import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
 import { LedgerSearchInput } from "./LedgerSearchInput";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { DateRangeFilter } from "./DateRangeFilter";
+import { useReportFiltersStore } from "@/lib/stores/report-filters-store";
 
 export default function LedgerOutstandingTable() {
-  const [detailed, setDetailed] = useState(false);
-  const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const { ledgerOutstanding, setLedgerOutstandingFilters } = useReportFiltersStore();
+  const { 
+    detailed, 
+    selectedLedgerIds, 
+    fromDate, 
+    toDate,
+    dateType,
+    selectedMonth,
+    selectedQuarter,
+    selectedHalfYear,
+    selectedYear,
+  } = ledgerOutstanding;
 
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleDateChange = (from: string, to: string) => {
-    setFromDate(from);
-    setToDate(to);
+    setLedgerOutstandingFilters({ fromDate: from, toDate: to });
   };
 
   const handleSearch = () => {
@@ -121,7 +120,7 @@ export default function LedgerOutstandingTable() {
               {/* Ledger Selection */}
               <LedgerSearchInput
                 selectedLedgerIds={selectedLedgerIds}
-                onLedgerIdsChange={setSelectedLedgerIds}
+                onLedgerIdsChange={(ids) => setLedgerOutstandingFilters({ selectedLedgerIds: ids })}
                 label="Ledgers"
                 placeholder="Search and select ledgers..."
                 required={true}
@@ -130,6 +129,20 @@ export default function LedgerOutstandingTable() {
 
               {/* Date Filter */}
               <DateRangeFilter
+                dateType={dateType}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedHalfYear={selectedHalfYear}
+                selectedYear={selectedYear}
+                fromDate={fromDate}
+                toDate={toDate}
+                onDateTypeChange={(type) => setLedgerOutstandingFilters({ dateType: type })}
+                onSelectedMonthChange={(month) => setLedgerOutstandingFilters({ selectedMonth: month })}
+                onSelectedQuarterChange={(quarter) => setLedgerOutstandingFilters({ selectedQuarter: quarter })}
+                onSelectedHalfYearChange={(halfYear) => setLedgerOutstandingFilters({ selectedHalfYear: halfYear })}
+                onSelectedYearChange={(year) => setLedgerOutstandingFilters({ selectedYear: year })}
+                onFromDateChange={(date) => setLedgerOutstandingFilters({ fromDate: date })}
+                onToDateChange={(date) => setLedgerOutstandingFilters({ toDate: date })}
                 onDateChange={handleDateChange}
                 label="Date"
                 financialYearStart={4}
@@ -141,7 +154,7 @@ export default function LedgerOutstandingTable() {
                   <Checkbox
                     id="detailed"
                     checked={detailed}
-                    onCheckedChange={(c) => setDetailed(c as boolean)}
+                    onCheckedChange={(c) => setLedgerOutstandingFilters({ detailed: c as boolean })}
                   />
                   <Label htmlFor="detailed" className="cursor-pointer text-sm font-normal">Detailed</Label>
                 </div>
