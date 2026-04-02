@@ -37,6 +37,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { useSession, useLogout } from "@/lib/hooks/useAuth";
+import { TabBar } from "@/components/TabBar";
 
 interface SubMenuItem {
   href: string;
@@ -401,22 +402,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {isMobile ? (
           <>
             {/* Mobile Header with Menu Button */}
-            <div className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center gap-3 border-b bg-sidebar px-4 md:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
-                onClick={() => setMobileOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-                <Store className="h-5 w-5" />
+            <div className="fixed top-0 left-0 right-0 z-50 flex flex-col border-b bg-sidebar md:hidden">
+              <div className="flex h-16 items-center gap-3 px-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                  onClick={() => setMobileOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+                  <Store className="h-5 w-5" />
+                </div>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
+                  <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
+                </div>
               </div>
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
-                <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
-              </div>
+              <TabBar />
             </div>
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -431,7 +435,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Sheet>
 
             {/* Main content with top padding for fixed header */}
-            <main className="flex-1 overflow-auto pt-16">{children}</main>
+            <main className="flex-1 overflow-auto" style={{ paddingTop: "104px" }}>{children}</main>
           </>
         ) : (
           <>
@@ -445,8 +449,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {sidebarContent}
             </aside>
 
-            {/* Main content */}
-            <main className="flex-1 overflow-auto">{children}</main>
+            {/* Main content with tab bar */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <TabBar />
+              <main className="flex-1 overflow-auto">{children}</main>
+            </div>
           </>
         )}
       </div>
