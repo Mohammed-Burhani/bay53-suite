@@ -8,7 +8,32 @@ import { reportsService } from "@/lib/api/reports.service";
 import { auth } from "@/lib/auth";
 import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload, Group } from "@/lib/types/reports.types";
 
-// Fetch ledgers for dropdown/filter selection
+// Fetch all ledgers for a group (no search term, fetch once)
+export function useLedgersByGroup(groups?: number[]) {
+  const sessionId = auth.getSessionId();
+
+  return useQuery({
+    queryKey: ["ledgers-by-group", sessionId, groups],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      
+      // If groups are provided, use them; otherwise default to [16, 17]
+      const groupsToSearch = groups && groups.length > 0 ? groups : [16, 17];
+      
+      return reportsService.searchLedgers({
+        sessionId,
+        pageSize: 0, // 0 means fetch all
+        pageNumber: 0,
+        groups: groupsToSearch,
+        includeChildGroups: true,
+      });
+    },
+    enabled: !!sessionId && !!groups && groups.length > 0,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+}
+
+// Fetch ledgers for dropdown/filter selection (legacy - kept for backward compatibility)
 export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
   const sessionId = auth.getSessionId();
 
@@ -16,11 +41,15 @@ export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
     queryKey: ["ledgers", sessionId, searchTerm, groups],
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
+      
+      // If groups are provided, use them; otherwise default to [16, 17]
+      const groupsToSearch = groups && groups.length > 0 ? groups : [16, 17];
+      
       return reportsService.searchLedgers({
         sessionId,
         pageSize: 500,
         pageNumber: 0,
-        groups: groups && groups.length > 0 ? groups : [16, 17],
+        groups: groupsToSearch,
         includeChildGroups: true,
       });
     },

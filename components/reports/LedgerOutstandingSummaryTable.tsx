@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
-import { useLedgerOutstandingSummary, useLedgerSearch, useGroupSearch } from "@/lib/hooks/useReports";
+import { useLedgerOutstandingSummary, useLedgersByGroup, useGroupSearch } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.types";
 import {
   Select,
@@ -54,23 +54,27 @@ export default function LedgerOutstandingSummaryTable() {
 
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-
-  // Debounce search term (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(ledgerSearchTerm);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [ledgerSearchTerm]);
+  // Keep track of all selected ledgers
+  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(new Map());
 
   // Fetch groups with childOf filter for ledger balances (16, 17)
   const { data: allGroups = [] } = useGroupSearch([16, 17]);
-  const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(
-    debouncedSearchTerm,
-    selectedGroupId && selectedGroupId !== "all" ? [parseInt(selectedGroupId)] : undefined
-  );
+  
+  // Determine which groups to pass to ledger fetch
+  const groupsForLedgerFetch = selectedGroupId && selectedGroupId !== "all" 
+    ? [parseInt(selectedGroupId)] 
+    : undefined; // Don't fetch if "All Groups" is selected
+  
+  // Fetch all ledgers for the selected group once
+  const { data: allLedgers = [], isLoading: ledgersLoading } = useLedgersByGroup(groupsForLedgerFetch);
+  
+  // Filter ledgers on frontend based on search term
+  const searchResults = ledgerSearchTerm.length >= 2
+    ? allLedgers.filter(ledger => 
+        ledger.name.toLowerCase().includes(ledgerSearchTerm.toLowerCase())
+      )
+    : allLedgers;
+  
   const { mutate: fetchSummary, data, isPending, error } = useLedgerOutstandingSummary();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
@@ -89,9 +93,6 @@ export default function LedgerOutstandingSummaryTable() {
       toDate: toDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
     });
   };
-
-  // Keep track of all selected ledgers
-  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(new Map());
 
   const handleLedgerSelect = (ledger: Ledger) => {
     if (selectedLedgerIds.includes(ledger.ledger_id)) {
@@ -199,7 +200,14 @@ export default function LedgerOutstandingSummaryTable() {
                 </Label>
                 <Select 
                   value={selectedGroupId} 
-                  onValueChange={(value) => setLedgerBalancesFilters({ selectedGroupId: value })}
+                  onValueChange={(value) => {
+                    setLedgerBalancesFilters({ 
+                      selectedGroupId: value,
+                      selectedLedgerIds: [] // Clear selected ledgers when group changes
+                    });
+                    setSelectedLedgersMap(new Map());
+                    setLedgerSearchTerm("");
+                  }}
                 >
                   <SelectTrigger className="w-full h-9">
                     <SelectValue placeholder="Select group..." />
@@ -242,23 +250,39 @@ export default function LedgerOutstandingSummaryTable() {
                   <PopoverContent className="w-[400px] p-0" align="start">
                     <Command shouldFilter={false}>
                       <CommandInput 
-                        placeholder="Type to search ledgers (min 2 chars)..." 
+                        placeholder={
+                          !selectedGroupId || selectedGroupId === "all"
+                            ? "Select a group first to search ledgers..."
+                            : ledgersLoading
+                            ? "Loading ledgers..."
+                            : "Type company name or ledger name..."
+                        }
                         value={ledgerSearchTerm}
                         onValueChange={setLedgerSearchTerm}
+                        disabled={!selectedGroupId || selectedGroupId === "all" || ledgersLoading}
                       />
-                      {ledgerSearchTerm.length < 2 ? (
+                      {!selectedGroupId || selectedGroupId === "all" ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
-                          Type at least 2 characters to search
+                          Please select a group first to search ledgers
                         </div>
-                      ) : ledgersLoading || ledgerSearchTerm !== debouncedSearchTerm ? (
+                      ) : ledgersLoading ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-                          Searching...
+                          Loading ledgers...
                         </div>
-                      ) : Object.keys(groupedLedgers).length === 0 ? (
-                        <CommandEmpty>No ledgers found.</CommandEmpty>
+                      ) : allLedgers.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          No ledgers found in this group
+                        </div>
+                      ) : searchResults.length === 0 && ledgerSearchTerm.length >= 2 ? (
+                        <CommandEmpty>No ledgers match your search.</CommandEmpty>
                       ) : (
                         <div className="max-h-[300px] overflow-auto">
+                          {ledgerSearchTerm.length < 2 && (
+                            <div className="py-3 px-2 text-xs text-muted-foreground text-center border-b">
+                              Showing all {allLedgers.length} ledgers. Type to filter...
+                            </div>
+                          )}
                           {Object.entries(groupedLedgers).map(([groupName, ledgers]) => (
                             <CommandGroup key={groupName} heading={groupName}>
                               {ledgers.map((ledger) => (
@@ -274,7 +298,7 @@ export default function LedgerOutstandingSummaryTable() {
                                   <div className="flex-1">
                                     <div className="font-medium">{ledger.name}</div>
                                     <div className="text-xs text-muted-foreground">
-                                      ID: {ledger.ledger_id}
+                                      ID: {ledger.ledger_id} • {ledger.group}
                                     </div>
                                   </div>
                                 </CommandItem>
