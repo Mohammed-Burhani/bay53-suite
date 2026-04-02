@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Certificate } from "./services/certificates.service";
 
 export interface CertificateData {
   certificateNumber: string;
@@ -75,7 +76,7 @@ function createCertificatePage(
     head: [["Customer Details", ""]],
     body: [
       ["Name", data.customerName],
-      ["Address", data.customerAddress],
+      ["Address", data.customerAddress || "N/A"],
     ],
     theme: "grid",
     headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
@@ -91,12 +92,12 @@ function createCertificatePage(
     head: [["Details of Instrument Under Test", ""]],
     body: [
       ["Instrument", data.instrumentName],
-      ["Make & Serial no.", data.makeSerial],
-      ["Mounting & Connection", data.mounting],
-      ["Range", data.range],
-      ["Accuracy", data.accuracy],
-      ["Calibration due on", formatDateForDisplay(data.calibrationDueDate)],
-      ["Test conditions", data.testConditions],
+      ["Make & Serial no.", data.makeSerial || "N/A"],
+      ["Mounting & Connection", data.mounting || "N/A"],
+      ["Range", data.range || "N/A"],
+      ["Accuracy", data.accuracy || "N/A"],
+      ["Calibration due on", data.calibrationDueDate ? formatDateForDisplay(data.calibrationDueDate) : "N/A"],
+      ["Test conditions", data.testConditions || "N/A"],
     ],
     theme: "grid",
     headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
@@ -111,9 +112,9 @@ function createCertificatePage(
     startY: yPos,
     head: [["Details of Master Instrument", ""]],
     body: [
-      ["Range", data.masterRange],
-      ["Calibration due on", formatDateForDisplay(data.masterCalibrationDue)],
-      ["Certificate no.", data.masterCertificateNo],
+      ["Range", data.masterRange || "N/A"],
+      ["Calibration due on", data.masterCalibrationDue ? formatDateForDisplay(data.masterCalibrationDue) : "N/A"],
+      ["Certificate no.", data.masterCertificateNo || "N/A"],
     ],
     theme: "grid",
     headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
@@ -124,41 +125,43 @@ function createCertificatePage(
   yPos = (doc as DocWithAutoTable).lastAutoTable.finalY + 10;
 
   // Test Results Table
-  autoTable(doc, {
-    startY: yPos,
-    head: [
-      [
-        {
-          content: "TEST RESULTS",
-          colSpan: 4,
-          styles: { halign: "center", fillColor: [200, 200, 200] } as Record<string, unknown>,
-        },
+  if (data.testResults && data.testResults.length > 0) {
+    autoTable(doc, {
+      startY: yPos,
+      head: [
+        [
+          {
+            content: "TEST RESULTS",
+            colSpan: 4,
+            styles: { halign: "center", fillColor: [200, 200, 200] } as Record<string, unknown>,
+          },
+        ],
+        [
+          "Calibrated Range\n(in units)",
+          "Master Value\n(in units)",
+          "Instrument under test value\n(in units)",
+          "Deviation\n(Allowed ±0.4 units)",
+        ],
       ],
-      [
-        "Calibrated Range\n(in units)",
-        "Master Value\n(in units)",
-        "Instrument under test value\n(in units)",
-        "Deviation\n(Allowed ±0.4 units)",
-      ],
-    ],
-    body: data.testResults.map((result) => [
-      result.calibratedRange,
-      result.masterValue,
-      result.instrumentValue,
-      result.deviation,
-    ]),
-    theme: "grid",
-    headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
-    margin: { left: margin, right: margin },
-    tableWidth: pageWidth - 2 * margin,
-  });
+      body: data.testResults.map((result: Record<string, string>) => [
+        result.calibratedRange || result.reading || "0",
+        result.masterValue || result.standard || "0",
+        result.instrumentValue || "0",
+        result.deviation || result.error || "0",
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
+      margin: { left: margin, right: margin },
+      tableWidth: pageWidth - 2 * margin,
+    });
 
-  yPos = (doc as DocWithAutoTable).lastAutoTable.finalY + 15;
+    yPos = (doc as DocWithAutoTable).lastAutoTable.finalY + 15;
+  }
 
   // Signatures
   doc.setFontSize(10);
-  doc.text(`Calibrated by: ${data.calibratedBy}`, margin, yPos);
-  doc.text(`Approved By: ${data.approvedBy}`, pageWidth - margin - 60, yPos);
+  doc.text(`Calibrated by: ${data.calibratedBy || "N/A"}`, margin, yPos);
+  doc.text(`Approved By: ${data.approvedBy || "N/A"}`, pageWidth - margin - 60, yPos);
   
   yPos += 10;
   doc.text(data.certificateDate, margin, yPos);
@@ -194,3 +197,82 @@ export async function generateCalibrationCertificatePDF(
   // Download the PDF
   doc.save(`Calibration_Certificate_${invoiceNumber}_${currentDate.replace(/\//g, "-")}.pdf`);
 }
+
+// New function to generate PDF from database Certificate
+export function generateCertificatePDF(certificate: Certificate): void {
+  const doc = new jsPDF();
+
+  const certificateData: CertificateData = {
+    certificateNumber: certificate.certificate_number,
+    certificateDate: formatDateForDisplay(certificate.certificate_date),
+    customerName: certificate.customer_name,
+    customerAddress: certificate.customer_address || "",
+    instrumentName: certificate.instrument_name,
+    makeSerial: certificate.make_serial || "",
+    mounting: certificate.mounting || "",
+    range: certificate.range || "",
+    accuracy: certificate.accuracy || "",
+    calibrationDueDate: certificate.calibration_due_date || "",
+    testConditions: certificate.test_conditions || "",
+    masterRange: certificate.master_range || "",
+    masterCalibrationDue: certificate.master_calibration_due || "",
+    masterCertificateNo: certificate.master_certificate_no || "",
+    testResults: (certificate.test_results || []) as Array<{
+      calibratedRange: string;
+      masterValue: string;
+      instrumentValue: string;
+      deviation: string;
+      reading?: string;
+      standard?: string;
+      error?: string;
+    }>,
+    calibratedBy: certificate.calibrated_by || "",
+    approvedBy: certificate.approved_by || "",
+  };
+
+  createCertificatePage(doc, certificateData, true);
+
+  // Download the PDF
+  const fileName = `Certificate_${certificate.certificate_number.replace(/\//g, "_")}_${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}.pdf`;
+  doc.save(fileName);
+}
+
+// New function to print certificate
+export function printCertificate(certificate: Certificate): void {
+  const doc = new jsPDF();
+
+  const certificateData: CertificateData = {
+    certificateNumber: certificate.certificate_number,
+    certificateDate: formatDateForDisplay(certificate.certificate_date),
+    customerName: certificate.customer_name,
+    customerAddress: certificate.customer_address || "",
+    instrumentName: certificate.instrument_name,
+    makeSerial: certificate.make_serial || "",
+    mounting: certificate.mounting || "",
+    range: certificate.range || "",
+    accuracy: certificate.accuracy || "",
+    calibrationDueDate: certificate.calibration_due_date || "",
+    testConditions: certificate.test_conditions || "",
+    masterRange: certificate.master_range || "",
+    masterCalibrationDue: certificate.master_calibration_due || "",
+    masterCertificateNo: certificate.master_certificate_no || "",
+    testResults: (certificate.test_results || []) as Array<{
+      calibratedRange: string;
+      masterValue: string;
+      instrumentValue: string;
+      deviation: string;
+      reading?: string;
+      standard?: string;
+      error?: string;
+    }>,
+    calibratedBy: certificate.calibrated_by || "",
+    approvedBy: certificate.approved_by || "",
+  };
+
+  createCertificatePage(doc, certificateData, true);
+
+  // Open print dialog
+  doc.autoPrint();
+  window.open(doc.output('bloburl'), '_blank');
+}
+

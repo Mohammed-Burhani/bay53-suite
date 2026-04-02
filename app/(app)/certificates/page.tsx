@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Search, Plus, Eye, Trash2, Download } from "lucide-react";
+import { Search, Plus, Eye, Trash2, Download, Printer, FileText } from "lucide-react";
 import { useCertificates, useDeleteCertificate } from "@/lib/hooks/useCertificates";
 import { useSession } from "@/lib/hooks/useAuth";
 import { ManualCertificateForm } from "@/components/certificates/ManualCertificateForm";
 import { Certificate } from "@/lib/services/certificates.service";
+import { generateCertificatePDF, printCertificate } from "@/lib/certificate-generator";
 
 export default function CertificatesListingPage() {
   const session = useSession();
@@ -39,6 +40,14 @@ export default function CertificatesListingPage() {
 
   const handleView = (certificate: Certificate) => {
     setSelectedCertificate(certificate);
+  };
+
+  const handleGeneratePDF = (certificate: Certificate) => {
+    generateCertificatePDF(certificate);
+  };
+
+  const handlePrint = (certificate: Certificate) => {
+    printCertificate(certificate);
   };
 
   return (
@@ -124,14 +133,32 @@ export default function CertificatesListingPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleView(certificate)}
+                          title="View Details"
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleGeneratePDF(certificate)}
+                          title="Download PDF"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handlePrint(certificate)}
+                          title="Print Certificate"
+                        >
+                          <Printer className="h-4 w-4" />
                         </Button>
                         {certificate.pdf_url && (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => window.open(certificate.pdf_url, '_blank')}
+                            title="View Stored PDF"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -140,6 +167,7 @@ export default function CertificatesListingPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDelete(certificate.id)}
+                          title="Delete Certificate"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -225,6 +253,23 @@ export default function CertificatesListingPage() {
                   <label className="text-sm font-medium">Approved By</label>
                   <p className="text-sm text-muted-foreground">{selectedCertificate.approved_by || "N/A"}</p>
                 </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => handleGeneratePDF(selectedCertificate)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePrint(selectedCertificate)}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
+                </Button>
               </div>
             </div>
           )}
