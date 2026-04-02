@@ -24,8 +24,10 @@ export const reportsService = {
     return response.list || [];
   },
 
-  searchGroups: (payload: GroupSearchPayload) =>
-    apiClient.post<Group[]>("/Group/Search", payload),
+  searchGroups: async (payload: GroupSearchPayload): Promise<Group[]> => {
+    const response = await apiClient.post<{ list: Group[] }>("/Group/Search", payload);
+    return response.list || [];
+  },
 
   getLedgerOutstanding: (payload: LedgerOutstandingPayload) =>
     apiClient.post<LedgerOutstandingItem[]>("/Report/LedgerOutstanding", payload),
