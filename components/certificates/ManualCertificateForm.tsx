@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCreateCertificate } from "@/lib/hooks/useCertificates";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLedgersByGroup } from "@/lib/hooks/useReports";
+import type { Ledger } from "@/lib/types/reports.types";
+import { Search, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ManualCertificateFormProps {
   organizationId: string;
@@ -42,11 +48,44 @@ export function ManualCertificateForm({
   onSuccess,
   onCancel,
 }: ManualCertificateFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<CertificateFormData>();
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<CertificateFormData>();
   const createMutation = useCreateCertificate();
   const [testResults, setTestResults] = useState<Array<{ reading: string; standard: string; error: string }>>([
     { reading: "", standard: "", error: "" }
   ]);
+  
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  
+  // Debounce search term (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(customerSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [customerSearchTerm]);
+  
+  // Fetch all customers (group 16 = Sundry Creditors, 17 = Sundry Debtors)
+  const { data: allCustomers = [], isLoading: customersLoading } = useLedgersByGroup([16, 17]);
+  
+  // Filter customers on frontend based on debounced search term
+  const filteredCustomers = debouncedSearchTerm.length >= 2
+    ? allCustomers.filter(customer => 
+        customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      )
+    : [];
+
+  const handleCustomerSelect = (customer: Ledger) => {
+    setValue("customer_name", customer.name);
+    setValue("customer_address", customer.address || "");
+    setValue("customer_gstin", customer.gstNo || "");
+    setValue("customer_contact", customer.contactInfo || "");
+    setCustomerSearchOpen(false);
+    setCustomerSearchTerm("");
+    toast.success(`Customer "${customer.name}" selected`);
+  };
 
   const addTestResult = () => {
     setTestResults([...testResults, { reading: "", standard: "", error: "" }]);
@@ -115,16 +154,85 @@ export function ManualCertificateForm({
               )}
             </div>
 
-            <div>
+            <div className="col-span-2">
               <Label htmlFor="customer_name">Customer Name *</Label>
-              <Input
-                id="customer_name"
-                {...register("customer_name", { required: "Customer name is required" })}
-                placeholder="Customer name"
-              />
+              <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                <PopoverTrigger asChild>
+                  <div className="relative">
+                    <Input
+                      id="customer_name"
+                      {...register("customer_name", { required: "Customer name is required" })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setCustomerSearchTerm(value);
+                        setValue("customer_name", value);
+                        // Open popover when user types
+                        if (value.length >= 2) {
+                          setCustomerSearchOpen(true);
+                        }
+                      }}
+                      placeholder="Type customer name to search..."
+                      className="pr-10"
+                    />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                      {customersLoading && debouncedSearchTerm.length >= 2 ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-[500px] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                  <Command shouldFilter={false}>
+                    <CommandList>
+                      {customerSearchTerm.length < 2 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Type at least 2 characters to search
+                        </div>
+                      ) : customersLoading || customerSearchTerm !== debouncedSearchTerm ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                          Searching...
+                        </div>
+                      ) : filteredCustomers.length === 0 ? (
+                        <CommandEmpty>No customers found.</CommandEmpty>
+                      ) : (
+                        <div className="max-h-[300px] overflow-auto">
+                          <CommandGroup>
+                            {filteredCustomers.map((customer) => (
+                              <CommandItem
+                                key={customer.ledger_id}
+                                value={`${customer.name} ${customer.ledger_id}`}
+                                onSelect={() => handleCustomerSelect(customer)}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{customer.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {customer.address && customer.address.substring(0, 80)}
+                                    {customer.address && customer.address.length > 80 && "..."}
+                                  </div>
+                                  {customer.gstNo && (
+                                    <div className="text-xs text-muted-foreground">
+                                      GST: {customer.gstNo}
+                                    </div>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </div>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.customer_name && (
                 <p className="text-sm text-destructive mt-1">{errors.customer_name.message}</p>
               )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Start typing to search and autofill customer details
+              </p>
             </div>
 
             <div className="col-span-2">

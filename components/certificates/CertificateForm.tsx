@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Search, Loader2 } from "lucide-react";
 import { InvoiceItem } from "@/lib/types";
 import { toast } from "sonner";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLedgersByGroup } from "@/lib/hooks/useReports";
+import type { Ledger } from "@/lib/types/reports.types";
 
 export interface CertificateFormData {
   // Customer Details
@@ -97,6 +101,40 @@ export function CertificateForm({
   });
 
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  
+  // Debounce search term (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(customerSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [customerSearchTerm]);
+  
+  // Fetch all customers (group 16 = Sundry Creditors, 17 = Sundry Debtors)
+  const { data: allCustomers = [], isLoading: customersLoading } = useLedgersByGroup([16, 17]);
+  
+  // Filter customers on frontend based on debounced search term
+  const filteredCustomers = debouncedSearchTerm.length >= 2
+    ? allCustomers.filter(customer => 
+        customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      )
+    : [];
+
+  const handleCustomerSelect = (customer: Ledger) => {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: customer.name,
+      customerAddress: customer.address || "",
+    }));
+    setCustomerSearchOpen(false);
+    setCustomerSearchTerm("");
+    toast.success(`Customer "${customer.name}" selected`);
+  };
+
   const currentItem = formData.items[currentItemIndex];
 
   const updateCurrentItem = (field: string, value: string | Array<{
@@ -264,14 +302,81 @@ export function CertificateForm({
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="customerName">Customer Name</Label>
-            <Input
-              id="customerName"
-              value={formData.customerName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, customerName: e.target.value }))
-              }
-              required
-            />
+            <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+              <PopoverTrigger asChild>
+                <div className="relative">
+                  <Input
+                    id="customerName"
+                    value={customerSearchTerm || formData.customerName}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCustomerSearchTerm(value);
+                      setFormData((prev) => ({ ...prev, customerName: value }));
+                      // Open popover when user types
+                      if (value.length >= 2) {
+                        setCustomerSearchOpen(true);
+                      }
+                    }}
+                    required
+                    className="pr-10"
+                    placeholder="Type customer name to search..."
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                    {customersLoading && debouncedSearchTerm.length >= 2 ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[500px] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                <Command shouldFilter={false}>
+                  <CommandList>
+                    {customerSearchTerm.length < 2 ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        Type at least 2 characters to search
+                      </div>
+                    ) : customersLoading || customerSearchTerm !== debouncedSearchTerm ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                        Searching...
+                      </div>
+                    ) : filteredCustomers.length === 0 ? (
+                      <CommandEmpty>No customers found.</CommandEmpty>
+                    ) : (
+                      <div className="max-h-[300px] overflow-auto">
+                        <CommandGroup>
+                          {filteredCustomers.map((customer) => (
+                            <CommandItem
+                              key={customer.ledger_id}
+                              value={`${customer.name} ${customer.ledger_id}`}
+                              onSelect={() => handleCustomerSelect(customer)}
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">{customer.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {customer.address && customer.address.substring(0, 80)}
+                                  {customer.address && customer.address.length > 80 && "..."}
+                                </div>
+                                {customer.gstNo && (
+                                  <div className="text-xs text-muted-foreground">
+                                    GST: {customer.gstNo}
+                                  </div>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </div>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground mt-1">
+              Start typing to search and autofill customer details
+            </p>
           </div>
           <div>
             <Label htmlFor="customerAddress">Customer Address</Label>
