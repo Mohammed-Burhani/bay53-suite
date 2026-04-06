@@ -3,7 +3,7 @@
 
 import { auth } from "@/lib/auth";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://52.172.96.142:8352/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://bay53service.bay53.com/api";
 
 export class ApiError extends Error {
   constructor(

@@ -6,7 +6,14 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { reportsService } from "@/lib/api/reports.service";
 import { auth } from "@/lib/auth";
-import type { LedgerOutstandingPayload, LedgerOutstandingSummaryPayload, ItemRegisterPayload, LedgerRegisterPayload, Group } from "@/lib/types/reports.types";
+import type { 
+  LedgerOutstandingPayload, 
+  LedgerOutstandingSummaryPayload, 
+  ItemRegisterPayload, 
+  LedgerRegisterPayload, 
+  Group,
+  CurrentStockPayload,
+} from "@/lib/types/reports.types";
 
 // Fetch all ledgers for a group (no search term, fetch once)
 export function useLedgersByGroup(groups?: number[]) {
@@ -116,5 +123,48 @@ export function useGroupSearch(childOf?: number[] | null) {
     },
     enabled: !!sessionId,
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+}
+
+// ==================== Current Stock Hooks ====================
+
+// Fetch all stock places for dropdown
+export function useStockPlaces() {
+  const sessionId = auth.getSessionId();
+
+  return useQuery({
+    queryKey: ["stock-places", sessionId],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      return reportsService.searchStockPlaces({ sessionId });
+    },
+    enabled: !!sessionId,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+}
+
+// Fetch all items for dropdown
+export function useItems() {
+  const sessionId = auth.getSessionId();
+
+  return useQuery({
+    queryKey: ["items", sessionId],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      return reportsService.searchItems({ sessionId });
+    },
+    enabled: !!sessionId,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+}
+
+// Fetch current stock report
+export function useCurrentStock() {
+  return useMutation({
+    mutationFn: (filters: Omit<CurrentStockPayload, "sessionId">) => {
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
+      return reportsService.getCurrentStock({ ...filters, sessionId });
+    },
   });
 }
