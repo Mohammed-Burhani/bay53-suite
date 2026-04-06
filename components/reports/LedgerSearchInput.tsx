@@ -19,7 +19,7 @@ interface LedgerSearchInputProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
-  groups?: number[];
+  groups?: number[] | null;
   multiSelect?: boolean;
   onLedgerNameChange?: (name: string) => void;
 }
