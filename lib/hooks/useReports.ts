@@ -41,7 +41,7 @@ export function useLedgersByGroup(groups?: number[]) {
 }
 
 // Fetch ledgers for dropdown/filter selection (legacy - kept for backward compatibility)
-export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
+export function useLedgerSearch(searchTerm: string = "", groups?: number[] | null) {
   const sessionId = auth.getSessionId();
 
   return useQuery({
@@ -49,12 +49,12 @@ export function useLedgerSearch(searchTerm: string = "", groups?: number[]) {
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
       
-      // If groups are provided, use them; otherwise default to [16, 17]
-      const groupsToSearch = groups && groups.length > 0 ? groups : [16, 17];
+      // If groups is null, fetch all ledgers; if groups are provided, use them; otherwise default to [16, 17]
+      const groupsToSearch = groups === null ? null : (groups && groups.length > 0 ? groups : [16, 17]);
       
       return reportsService.searchLedgers({
         sessionId,
-        pageSize: 500,
+        pageSize: 0, // 0 means fetch all
         pageNumber: 0,
         groups: groupsToSearch,
         includeChildGroups: true,

@@ -93,7 +93,7 @@ export default function LedgerRegisterReport() {
                 placeholder="Select ledger..."
                 required={true}
                 multiSelect={false}
-                groups={[16, 17]}
+                groups={null}
               />
 
               {/* Date Range Filter */}
