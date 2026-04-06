@@ -16,6 +16,12 @@ import type {
   LedgerRegisterItem,
   Group,
   GroupSearchPayload,
+  StockPlace,
+  StockPlaceSearchPayload,
+  Item,
+  ItemSearchPayload,
+  CurrentStockPayload,
+  CurrentStockItem,
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
@@ -40,4 +46,16 @@ export const reportsService = {
 
   getLedgerRegister: (payload: LedgerRegisterPayload) =>
     apiClient.post<{ list: LedgerRegisterItem[] }>("/Report/LedgerRegister", payload),
+
+  // Current Stock APIs
+  searchStockPlaces: async (payload: StockPlaceSearchPayload): Promise<StockPlace[]> => {
+    return apiClient.post<StockPlace[]>("/StockPlace/Search", payload);
+  },
+
+  searchItems: async (payload: ItemSearchPayload): Promise<Item[]> => {
+    return apiClient.post<Item[]>("/Item/Search", payload);
+  },
+
+  getCurrentStock: (payload: CurrentStockPayload) =>
+    apiClient.post<CurrentStockItem[]>("/Report/CurrentStock", payload),
 };

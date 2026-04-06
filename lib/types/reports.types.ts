@@ -220,3 +220,75 @@ export interface GroupSearchPayload {
   name: string | null;
   nature: string | null;
 }
+
+// --- Current Stock ---
+
+export interface StockPlace {
+  name: string;
+  code: string;
+  address_1: string | null;
+  address_2: string | null;
+  area: string;
+  city: string;
+  state: string | null;
+  pin: string | null;
+  phone: string | null;
+  canMakeBill: boolean;
+  isStockPlace: boolean;
+  sp_ID: number;
+}
+
+export interface Item {
+  name: string;
+  vatPer: number;
+  std_Sell_Rate: number;
+  std_Unit: string;
+  item_CodeTxt: string | null;
+  hsnNo: string | null;
+  category: string | null;
+  sizes: string | null;
+  type: string | null;
+  brand: string | null;
+  itemGroup: string | null;
+  item_ID: number;
+  particular: string | null;
+  units: string | null;
+  discount: number;
+  pcs: string | null;
+  costing_On: number;
+  last_PurchaseRate: number;
+  avg_PurchaseRate: number;
+  mfrCodeReq: boolean;
+  isActive: boolean;
+  modified_Date: string;
+  images: string | null;
+}
+
+export interface StockPlaceSearchPayload {
+  sessionId: string;
+}
+
+export interface ItemSearchPayload {
+  sessionId: string;
+}
+
+export interface CurrentStockPayload {
+  itemIds: number[];
+  spId: number;
+  sessionId: string;
+}
+
+export interface CurrentStockItem {
+  itemId: number;
+  itemName: string;
+  category: string | null;
+  unit: string;
+  stockPlace: string;
+  quantity: number;
+  rate: number;
+  value: number;
+  lastPurchaseRate: number;
+  avgPurchaseRate: number;
+  // Additional fields that might come from API
+  [key: string]: any;
+}
