@@ -11,7 +11,7 @@ export interface ColumnConfig {
   type: "text" | "number" | "fixed";
 }
 
-const STORAGE_KEY = "stockbuddy_invoice_columns";
+const STORAGE_KEY = "Bay53_invoice_columns";
 
 /**
  * Get saved column configuration from localStorage
