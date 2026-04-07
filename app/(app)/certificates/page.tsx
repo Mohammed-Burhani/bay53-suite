@@ -4,10 +4,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Search, Plus, Eye, Trash2, Download, Printer, FileText } from "lucide-react";
+import { Search, Plus, Trash2, Download, Printer, FileText, Edit, Copy } from "lucide-react";
 import { useCertificates, useDeleteCertificate } from "@/lib/hooks/useCertificates";
 import { useSession } from "@/lib/hooks/useAuth";
 import { ManualCertificateForm } from "@/components/certificates/ManualCertificateForm";
@@ -21,6 +20,7 @@ export default function CertificatesListingPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'duplicate'>('create');
 
   const { data: certificates = [], isLoading } = useCertificates(organizationId);
   const deleteMutation = useDeleteCertificate();
@@ -38,8 +38,28 @@ export default function CertificatesListingPage() {
     }
   };
 
-  const handleView = (certificate: Certificate) => {
+  const handleEdit = (certificate: Certificate) => {
     setSelectedCertificate(certificate);
+    setDialogMode('edit');
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleDuplicate = (certificate: Certificate) => {
+    setSelectedCertificate(certificate);
+    setDialogMode('duplicate');
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCreateNew = () => {
+    setSelectedCertificate(null);
+    setDialogMode('create');
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setIsCreateDialogOpen(false);
+    setSelectedCertificate(null);
+    setDialogMode('create');
   };
 
   const handleGeneratePDF = async (certificate: Certificate) => {
@@ -59,7 +79,7 @@ export default function CertificatesListingPage() {
             Manage calibration certificates independently
           </p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
+        <Button onClick={handleCreateNew}>
           <Plus className="h-4 w-4 mr-2" />
           New Certificate
         </Button>
@@ -98,7 +118,6 @@ export default function CertificatesListingPage() {
                   <TableHead>Invoice No.</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Instrument</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -114,28 +133,23 @@ export default function CertificatesListingPage() {
                     <TableCell>{certificate.invoice_number}</TableCell>
                     <TableCell>{certificate.customer_name}</TableCell>
                     <TableCell>{certificate.instrument_name}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          certificate.status === "issued"
-                            ? "default"
-                            : certificate.status === "cancelled"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {certificate.status}
-                      </Badge>
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleView(certificate)}
-                          title="View Details"
+                          onClick={() => handleDuplicate(certificate)}
+                          title="Duplicate Certificate"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(certificate)}
+                          title="Edit Certificate"
+                        >
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
@@ -181,98 +195,34 @@ export default function CertificatesListingPage() {
         </CardContent>
       </Card>
 
-      {/* Create Certificate Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      {/* Create/Edit/Duplicate Certificate Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Certificate</DialogTitle>
+            <DialogTitle>
+              {dialogMode === 'edit' 
+                ? 'Edit Certificate' 
+                : dialogMode === 'duplicate'
+                ? 'Duplicate Certificate'
+                : 'Create New Certificate'
+              }
+            </DialogTitle>
             <DialogDescription>
-              Manually enter certificate details for a single invoice item
+              {dialogMode === 'edit'
+                ? 'Update certificate details'
+                : dialogMode === 'duplicate'
+                ? 'Create a new certificate based on existing data'
+                : 'Manually enter certificate details for a single invoice item'
+              }
             </DialogDescription>
           </DialogHeader>
           <ManualCertificateForm
             organizationId={organizationId}
-            onSuccess={() => setIsCreateDialogOpen(false)}
-            onCancel={() => setIsCreateDialogOpen(false)}
+            onSuccess={handleDialogClose}
+            onCancel={handleDialogClose}
+            initialData={selectedCertificate || undefined}
+            mode={dialogMode}
           />
-        </DialogContent>
-      </Dialog>
-
-      {/* View Certificate Dialog */}
-      <Dialog open={!!selectedCertificate} onOpenChange={() => setSelectedCertificate(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Certificate Details</DialogTitle>
-          </DialogHeader>
-          {selectedCertificate && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Certificate Number</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.certificate_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Date</label>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedCertificate.certificate_date).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Invoice Number</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.invoice_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Customer Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.customer_name}</p>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium">Customer Address</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.customer_address || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Instrument Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.instrument_name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Make/Serial</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.make_serial || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Range</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.range || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Accuracy</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.accuracy || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Calibrated By</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.calibrated_by || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Approved By</label>
-                  <p className="text-sm text-muted-foreground">{selectedCertificate.approved_by || "N/A"}</p>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => handleGeneratePDF(selectedCertificate)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handlePrint(selectedCertificate)}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print
-                </Button>
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
