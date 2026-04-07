@@ -27,7 +27,7 @@ export default function LoginForm() {
 
   return (
     <Card className="w-full max-w-md shadow-lg border-0 py-4">
-      <CardHeader className="space-y-3 pb-6">
+      <CardHeader className="space-y-3">
         <div className="flex items-center justify-center">
             <Image 
               src="/logo.png" 
