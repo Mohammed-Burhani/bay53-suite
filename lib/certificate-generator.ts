@@ -39,27 +39,12 @@ function formatDateForDisplay(dateString: string): string {
   return date.toLocaleDateString("en-GB");
 }
 
-async function loadLogoAsBase64(): Promise<string | null> {
-  try {
-    const response = await fetch('/logo.png');
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Failed to load logo:', error);
-    return null;
-  }
-}
+
 
 async function createCertificatePage(
   doc: jsPDF,
   data: CertificateData,
-  isFirstPage: boolean,
-  logoBase64?: string | null
+  isFirstPage: boolean
 ): Promise<void> {
   if (!isFirstPage) {
     doc.addPage();
@@ -68,15 +53,6 @@ async function createCertificatePage(
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   type DocWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } };
-
-  // Add logo if available
-  if (logoBase64) {
-    try {
-      doc.addImage(logoBase64, 'PNG', margin, 10, 20, 20);
-    } catch (error) {
-      console.error('Failed to add logo to PDF:', error);
-    }
-  }
 
   // Title
   doc.setFontSize(16);
@@ -215,12 +191,9 @@ export async function generateCalibrationCertificatePDF(
 ): Promise<void> {
   const doc = new jsPDF();
   const currentDate = new Date().toLocaleDateString("en-GB");
-  
-  // Load logo once
-  const logoBase64 = await loadLogoAsBase64();
 
   for (let index = 0; index < certificatesData.length; index++) {
-    await createCertificatePage(doc, certificatesData[index], index === 0, logoBase64);
+    await createCertificatePage(doc, certificatesData[index], index === 0);
   }
 
   // Download the PDF
@@ -230,9 +203,6 @@ export async function generateCalibrationCertificatePDF(
 // New function to generate PDF from database Certificate
 export async function generateCertificatePDF(certificate: Certificate): Promise<void> {
   const doc = new jsPDF();
-  
-  // Load logo
-  const logoBase64 = await loadLogoAsBase64();
 
   const certificateData: CertificateData = {
     certificateNumber: certificate.certificate_number,
@@ -262,7 +232,7 @@ export async function generateCertificatePDF(certificate: Certificate): Promise<
     approvedBy: certificate.approved_by || "",
   };
 
-  await createCertificatePage(doc, certificateData, true, logoBase64);
+  await createCertificatePage(doc, certificateData, true);
 
   // Download the PDF
   const fileName = `Certificate_${certificate.certificate_number.replace(/\//g, "_")}_${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}.pdf`;
@@ -272,9 +242,6 @@ export async function generateCertificatePDF(certificate: Certificate): Promise<
 // New function to print certificate
 export async function printCertificate(certificate: Certificate): Promise<void> {
   const doc = new jsPDF();
-  
-  // Load logo
-  const logoBase64 = await loadLogoAsBase64();
 
   const certificateData: CertificateData = {
     certificateNumber: certificate.certificate_number,
@@ -304,7 +271,7 @@ export async function printCertificate(certificate: Certificate): Promise<void> 
     approvedBy: certificate.approved_by || "",
   };
 
-  await createCertificatePage(doc, certificateData, true, logoBase64);
+  await createCertificatePage(doc, certificateData, true);
 
   // Open print dialog
   doc.autoPrint();
