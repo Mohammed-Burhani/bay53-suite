@@ -49,8 +49,8 @@ export function useLedgerSearch(searchTerm: string = "", groups?: number[] | nul
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
       
-      // If groups is null, fetch all ledgers; if groups are provided, use them; otherwise default to [16, 17]
-      const groupsToSearch = groups === null ? null : (groups && groups.length > 0 ? groups : [16, 17]);
+      // If groups is null, use empty array; if groups are provided, use them; otherwise default to [16, 17]
+      const groupsToSearch = groups === null ? [] : (groups && groups.length > 0 ? groups : [16, 17]);
       
       return reportsService.searchLedgers({
         sessionId,
