@@ -45,7 +45,7 @@ export default function LedgerOutstandingTable() {
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
-  const handleDateChange = (from: string, to: string) => {
+  const handleDateChange = (from: string | null, to: string | null) => {
     setLedgerOutstandingFilters({ fromDate: from, toDate: to });
   };
 
@@ -56,8 +56,8 @@ export default function LedgerOutstandingTable() {
       ledgers: selectedLedgerIds,
       detailed,
       salesman: null,
-      fromDate,
-      toDate,
+      fromDate: fromDate,
+      toDate: toDate,
     });
   };
 

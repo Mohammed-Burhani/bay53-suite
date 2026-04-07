@@ -82,7 +82,7 @@ export default function LedgerOutstandingSummaryTable() {
   const allowedGroupIds = [16, 17, 29, 30];
   const filteredGroups = allGroups.filter(group => allowedGroupIds.includes(group.id));
 
-  const handleDateChange = (from: string, to: string) => {
+  const handleDateChange = (from: string | null, to: string | null) => {
     setLedgerBalancesFilters({ fromDate: from, toDate: to });
   };
 
@@ -95,8 +95,8 @@ export default function LedgerOutstandingSummaryTable() {
     fetchSummary({
       groupId: parseInt(selectedGroupId),
       ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [],
-      fromDate: fromDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
-      toDate: toDate || format(new Date(), "dd/MM/yyyy HH:mm:ss"),
+      fromDate: fromDate || null,
+      toDate: toDate || null,
     });
   };
 

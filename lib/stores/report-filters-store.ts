@@ -9,8 +9,8 @@ interface DateFilterState {
   selectedQuarter: string;
   selectedHalfYear: string;
   selectedYear: string;
-  fromDate: string;
-  toDate: string;
+  fromDate: string | null;
+  toDate: string | null;
 }
 
 interface LedgerOutstandingFilters extends DateFilterState {
@@ -53,8 +53,8 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
         selectedQuarter: "",
         selectedHalfYear: "",
         selectedYear: "",
-        fromDate: "",
-        toDate: "",
+        fromDate: null,
+        toDate: null,
       },
       ledgerBalances: {
         selectedLedgerIds: [],
@@ -64,8 +64,8 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
         selectedQuarter: "",
         selectedHalfYear: "",
         selectedYear: "",
-        fromDate: "",
-        toDate: "",
+        fromDate: null,
+        toDate: null,
       },
       ledgerRegister: {
         selectedLedgerIds: [],
@@ -79,8 +79,8 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
         selectedQuarter: "",
         selectedHalfYear: "",
         selectedYear: "",
-        fromDate: "",
-        toDate: "",
+        fromDate: null,
+        toDate: null,
       },
       
       setLedgerOutstandingFilters: (filters) =>

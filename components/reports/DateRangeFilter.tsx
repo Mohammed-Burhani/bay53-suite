@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfYear } from "date-fns";
 
 export type DateFilterType = "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly" | "none";
 
@@ -20,8 +20,8 @@ interface DateRangeFilterProps {
   selectedQuarter: string;
   selectedHalfYear: string;
   selectedYear: string;
-  fromDate: string;
-  toDate: string;
+  fromDate: string | null;
+  toDate: string | null;
   onDateTypeChange: (type: DateFilterType) => void;
   onSelectedMonthChange: (month: string) => void;
   onSelectedQuarterChange: (quarter: string) => void;
@@ -29,7 +29,7 @@ interface DateRangeFilterProps {
   onSelectedYearChange: (year: string) => void;
   onFromDateChange: (date: string) => void;
   onToDateChange: (date: string) => void;
-  onDateChange: (fromDate: string, toDate: string) => void;
+  onDateChange: (fromDate: string | null, toDate: string | null) => void;
   label?: string;
   className?: string;
   financialYearStart?: number;
@@ -94,7 +94,7 @@ export function DateRangeFilter({
   };
 
   // Get quarters for financial year
-  const getQuartersForFY = (fyStart: number) => {
+  const getQuartersForFY = () => {
     return [
       { value: "Q1", label: "Quarter 1", months: [0, 1, 2] },
       { value: "Q2", label: "Quarter 2", months: [3, 4, 5] },
@@ -104,7 +104,7 @@ export function DateRangeFilter({
   };
 
   // Get half years for financial year
-  const getHalfYearsForFY = (fyStart: number) => {
+  const getHalfYearsForFY = () => {
     return [
       { value: "H1", label: "Half Year 1 (Apr-Sep)", months: [0, 1, 2, 3, 4, 5] },
       { value: "H2", label: "Half Year 2 (Oct-Mar)", months: [6, 7, 8, 9, 10, 11] },
@@ -113,6 +113,14 @@ export function DateRangeFilter({
 
   // Calculate date range based on selection
   const calculateDateRange = () => {
+    // Return null for both dates when "none" is selected
+    if (dateType === "none") {
+      return {
+        from: null,
+        to: null,
+      };
+    }
+
     const now = new Date();
     let from: Date;
     let to: Date;
@@ -190,7 +198,6 @@ export function DateRangeFilter({
         }
         break;
 
-      case "none":
       default:
         from = new Date(currentFY.start, financialYearStart - 1, 1);
         to = new Date();
@@ -208,14 +215,16 @@ export function DateRangeFilter({
     const { from, to } = calculateDateRange();
     onDateChange(from, to);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateType, selectedMonth, selectedQuarter, selectedHalfYear, selectedYear, fromDate, toDate]);
+  }, [dateType, selectedMonth, selectedQuarter, selectedHalfYear, selectedYear]);
 
-  // Initialize with current month
+  // Update dates when range inputs change (only for range mode)
   useEffect(() => {
-    const { from, to } = calculateDateRange();
-    onDateChange(from, to);
+    if (dateType === "range" && fromDate && toDate) {
+      const { from, to } = calculateDateRange();
+      onDateChange(from, to);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fromDate, toDate]);
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -285,7 +294,7 @@ export function DateRangeFilter({
                 <SelectValue placeholder="Select quarter" />
               </SelectTrigger>
               <SelectContent>
-                {getQuartersForFY(currentFY.start).map((quarter) => (
+                {getQuartersForFY().map((quarter) => (
                   <SelectItem key={quarter.value} value={quarter.value}>
                     {quarter.label}
                   </SelectItem>
@@ -321,7 +330,7 @@ export function DateRangeFilter({
                 <SelectValue placeholder="Select half" />
               </SelectTrigger>
               <SelectContent>
-                {getHalfYearsForFY(currentFY.start).map((half) => (
+                {getHalfYearsForFY().map((half) => (
                   <SelectItem key={half.value} value={half.value}>
                     {half.label}
                   </SelectItem>
@@ -359,7 +368,7 @@ export function DateRangeFilter({
             <Input
               type="date"
               className="h-9"
-              value={fromDate}
+              value={fromDate || ""}
               onChange={(e) => onFromDateChange(e.target.value)}
             />
           </div>
@@ -368,7 +377,7 @@ export function DateRangeFilter({
             <Input
               type="date"
               className="h-9"
-              value={toDate}
+              value={toDate || ""}
               onChange={(e) => onToDateChange(e.target.value)}
             />
           </div>
