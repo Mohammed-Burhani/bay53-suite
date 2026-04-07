@@ -28,17 +28,15 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md shadow-lg border-0 py-4">
       <CardHeader className="space-y-3 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10 rounded-lg overflow-hidden">
+        <div className="flex items-center justify-center">
             <Image 
               src="/logo.png" 
-              alt="StockBuddy Logo" 
-              width={40} 
-              height={40}
-              className="object-contain"
+              alt="Bay53 Logo" 
+              width={500} 
+              height={500}
+              className="w-28 h-16"
             />
-          </div>
-          <span className="text-xl font-bold tracking-tight">StockBuddy</span>
+          {/* <span className="text-xl font-bold tracking-tight">Bay53</span> */}
         </div>
         <div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>

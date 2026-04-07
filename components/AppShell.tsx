@@ -230,19 +230,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Logo */}
       <div className="relative flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden">
+        {/* <div className="flex items-center justify-center">
           <Image 
             src="/logo.png" 
-            alt="StockBuddy Logo" 
-            width={36} 
-            height={36}
-            className="object-contain"
+            alt="Bay53 Logo" 
+            width={500} 
+            height={500}
+            className="w-16 h-10"
           />
-        </div>
+        </div> */}
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
-            <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
+            {/* <span className="text-sm font-bold tracking-tight text-white">Bay53</span> */}
+            <Image 
+            src="/logo.png" 
+            alt="Bay53 Logo" 
+            width={500} 
+            height={500}
+            className="w-16 h-10"
+          />
+            <span className="text-[10px] text-sidebar-foreground/60 ml-1">ERP SUITE</span>
           </div>
         )}
       </div>
@@ -421,14 +428,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden">
                   <Image 
                     src="/logo.png" 
-                    alt="StockBuddy Logo" 
+                    alt="Bay53 Logo" 
                     width={36} 
                     height={36}
                     className="object-contain"
                   />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>
+                  <span className="text-sm font-bold tracking-tight text-white">Bay53</span>
                   <span className="text-[10px] text-sidebar-foreground/60">Inventory & Billing</span>
                 </div>
               </div>

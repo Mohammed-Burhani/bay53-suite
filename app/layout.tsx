@@ -4,7 +4,7 @@ import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "StockBuddy - Inventory & Billing Management",
+  title: "Bay53 - Inventory & Billing Management",
   description: "Complete inventory management and billing solution for Indian businesses. GST compliant, multi-niche support.",
   icons: {
     icon: "/logo.png",

@@ -23,10 +23,10 @@ import Link from "next/link";
 const steps = [
   {
     id: 1,
-    title: "Welcome to StockBuddy",
+    title: "Welcome to Bay53",
     subtitle: "Your AI-Powered Inventory Management System",
     description:
-      "Let's take you on a quick journey to show you how StockBuddy will transform your business operations.",
+      "Let's take you on a quick journey to show you how Bay53 will transform your business operations.",
     icon: Sparkles,
     color: "from-purple-500 to-pink-500",
   },
@@ -174,7 +174,7 @@ export default function OnboardingPage() {
             transition={{ delay: 0.4 }}
             className="text-lg text-muted-foreground mb-8"
           >
-            Your journey with StockBuddy begins now. Start managing your
+            Your journey with Bay53 begins now. Start managing your
             inventory smarter, not harder.
           </motion.p>
 

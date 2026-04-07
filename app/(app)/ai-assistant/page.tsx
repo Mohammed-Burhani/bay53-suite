@@ -70,7 +70,7 @@ export default function AIAssistantPage() {
         {
           id: "welcome",
           role: "assistant",
-          content: "Hello! I'm your StockBuddy AI Assistant, specialized in inventory management. I have access to your complete inventory data, sales records, purchase history, and customer information.\n\nI can help you with:\n• Inventory analysis and stock management\n• Sales trends and forecasting\n• Purchase order recommendations\n• Customer insights and receivables\n• Report generation and data visualization\n• GST calculations and compliance\n• Business insights and recommendations\n\nHow can I assist you today?",
+          content: "Hello! I'm your Bay53 AI Assistant, specialized in inventory management. I have access to your complete inventory data, sales records, purchase history, and customer information.\n\nI can help you with:\n• Inventory analysis and stock management\n• Sales trends and forecasting\n• Purchase order recommendations\n• Customer insights and receivables\n• Report generation and data visualization\n• GST calculations and compliance\n• Business insights and recommendations\n\nHow can I assist you today?",
           timestamp: new Date(),
           metadata: {
             type: "text",
