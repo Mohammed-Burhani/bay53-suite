@@ -53,6 +53,17 @@ export function ManualCertificateForm({
   initialData,
   mode = 'create',
 }: ManualCertificateFormProps) {
+  // Calculate default date (1 year from today minus 1 day)
+  const getDefaultDueDate = () => {
+    const today = new Date();
+    const nextYear = new Date(today);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    nextYear.setDate(nextYear.getDate() - 1); // Subtract 1 day
+    return nextYear.toISOString().split('T')[0];
+  };
+
+  const defaultDueDate = getDefaultDueDate();
+
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<CertificateFormData>({
     defaultValues: initialData ? {
       invoice_number: initialData.invoice_number,
@@ -66,15 +77,18 @@ export function ManualCertificateForm({
       mounting: initialData.mounting || '',
       range: initialData.range || '',
       accuracy: initialData.accuracy || '',
-      calibration_due_date: initialData.calibration_due_date || '',
+      calibration_due_date: initialData.calibration_due_date || defaultDueDate,
       test_conditions: initialData.test_conditions || '',
       master_range: initialData.master_range || '',
-      master_calibration_due: initialData.master_calibration_due || '',
+      master_calibration_due: initialData.master_calibration_due || defaultDueDate,
       master_certificate_no: initialData.master_certificate_no || '',
       calibrated_by: initialData.calibrated_by || '',
       approved_by: initialData.approved_by || '',
       remarks: initialData.remarks || '',
-    } : undefined,
+    } : {
+      calibration_due_date: defaultDueDate,
+      master_calibration_due: defaultDueDate,
+    },
   });
   const createMutation = useCreateCertificate();
   const updateMutation = useUpdateCertificate();
