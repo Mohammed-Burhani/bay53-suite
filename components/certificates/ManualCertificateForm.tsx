@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCreateCertificate } from "@/lib/hooks/useCertificates";
+import { useCreateCertificate, useUpdateCertificate } from "@/lib/hooks/useCertificates";
+import type { Certificate } from "@/lib/services/certificates.service";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLedgersByGroup } from "@/lib/hooks/useReports";
@@ -19,6 +20,8 @@ interface ManualCertificateFormProps {
   organizationId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  initialData?: Certificate;
+  mode?: 'create' | 'edit' | 'duplicate';
 }
 
 interface CertificateFormData {
@@ -47,12 +50,37 @@ export function ManualCertificateForm({
   organizationId,
   onSuccess,
   onCancel,
+  initialData,
+  mode = 'create',
 }: ManualCertificateFormProps) {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<CertificateFormData>();
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<CertificateFormData>({
+    defaultValues: initialData ? {
+      invoice_number: initialData.invoice_number,
+      customer_name: initialData.customer_name,
+      customer_address: initialData.customer_address || '',
+      customer_gstin: initialData.customer_gstin || '',
+      customer_contact: initialData.customer_contact || '',
+      customer_email: initialData.customer_email || '',
+      instrument_name: initialData.instrument_name,
+      make_serial: initialData.make_serial || '',
+      mounting: initialData.mounting || '',
+      range: initialData.range || '',
+      accuracy: initialData.accuracy || '',
+      calibration_due_date: initialData.calibration_due_date || '',
+      test_conditions: initialData.test_conditions || '',
+      master_range: initialData.master_range || '',
+      master_calibration_due: initialData.master_calibration_due || '',
+      master_certificate_no: initialData.master_certificate_no || '',
+      calibrated_by: initialData.calibrated_by || '',
+      approved_by: initialData.approved_by || '',
+      remarks: initialData.remarks || '',
+    } : undefined,
+  });
   const createMutation = useCreateCertificate();
-  const [testResults, setTestResults] = useState<Array<{ reading: string; standard: string; error: string }>>([
-    { reading: "", standard: "", error: "" }
-  ]);
+  const updateMutation = useUpdateCertificate();
+  const [testResults, setTestResults] = useState<Array<{ reading: string; standard: string; error: string }>>(
+    initialData?.test_results || [{ reading: "", standard: "", error: "" }]
+  );
   
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -103,34 +131,43 @@ export function ManualCertificateForm({
 
   const onSubmit = async (data: CertificateFormData) => {
     try {
-      await createMutation.mutateAsync({
+      const certificatePayload = {
         organization_id: organizationId,
         invoice_number: data.invoice_number,
         customer_name: data.customer_name,
         customer_address: data.customer_address,
         instrument_name: data.instrument_name,
+        make_serial: data.make_serial,
+        range: data.range,
+        accuracy: data.accuracy,
+        calibrated_by: data.calibrated_by,
+        approved_by: data.approved_by,
         certificate_data: {
           customer_gstin: data.customer_gstin,
           customer_contact: data.customer_contact,
           customer_email: data.customer_email,
-          make_serial: data.make_serial,
           mounting: data.mounting,
-          range: data.range,
-          accuracy: data.accuracy,
           calibration_due_date: data.calibration_due_date,
           test_conditions: data.test_conditions,
           master_range: data.master_range,
           master_calibration_due: data.master_calibration_due,
           master_certificate_no: data.master_certificate_no,
           test_results: testResults.filter(tr => tr.reading || tr.standard || tr.error),
-          calibrated_by: data.calibrated_by,
-          approved_by: data.approved_by,
           remarks: data.remarks,
         },
-      });
+      };
+
+      if (mode === 'edit' && initialData) {
+        await updateMutation.mutateAsync({
+          id: initialData.id,
+          updates: certificatePayload,
+        });
+      } else {
+        await createMutation.mutateAsync(certificatePayload);
+      }
       onSuccess();
     } catch (error) {
-      console.error("Error creating certificate:", error);
+      console.error(`Error ${mode === 'edit' ? 'updating' : 'creating'} certificate:`, error);
     }
   };
 
@@ -485,8 +522,11 @@ export function ManualCertificateForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={createMutation.isPending}>
-          {createMutation.isPending ? "Creating..." : "Create Certificate"}
+        <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+          {mode === 'edit' 
+            ? (updateMutation.isPending ? "Updating..." : "Update Certificate")
+            : (createMutation.isPending ? "Creating..." : "Create Certificate")
+          }
         </Button>
       </div>
     </form>
