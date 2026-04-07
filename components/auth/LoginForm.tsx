@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Loader2, Package } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,9 +28,15 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md shadow-lg border-0 py-4">
       <CardHeader className="space-y-3 pb-6">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-primary rounded-lg">
-            <Package className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center gap-3">
+          <div className="relative h-10 w-10 rounded-lg overflow-hidden">
+            <Image 
+              src="/logo.png" 
+              alt="StockBuddy Logo" 
+              width={40} 
+              height={40}
+              className="object-contain"
+            />
           </div>
           <span className="text-xl font-bold tracking-tight">StockBuddy</span>
         </div>

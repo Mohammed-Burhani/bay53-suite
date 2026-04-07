@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Script from "next/script";
 import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "StockBuddy - Inventory & Billing Management",
   description: "Complete inventory management and billing solution for Indian businesses. GST compliant, multi-niche support.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
