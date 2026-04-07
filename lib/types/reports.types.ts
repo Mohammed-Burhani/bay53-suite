@@ -37,8 +37,8 @@ export interface LedgerOutstandingPayload {
   ledgers: number[];
   detailed: boolean;
   salesman: number | null;
-  fromDate: string; // "DD/MM/YYYY HH:mm:ss"
-  toDate: string;
+  fromDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
+  toDate: string | null;
 }
 
 export interface LedgerOutstandingVoucher {
@@ -82,8 +82,8 @@ export interface LedgerOutstandingSummaryPayload {
   sessionId: string;
   groupId: number;
   ledgers: number[];
-  fromDate: string; // "DD/MM/YYYY HH:mm:ss"
-  toDate: string; // "DD/MM/YYYY HH:mm:ss"
+  fromDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
+  toDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
 }
 
 export interface LedgerOutstandingSummaryItem {
@@ -143,8 +143,8 @@ export interface ItemRegisterItem {
 // --- Ledger Register ---
 
 export interface LedgerRegisterPayload {
-  from: string; // "DD/MM/YYYY HH:mm:ss"
-  to: string;
+  from: string | null; // "DD/MM/YYYY HH:mm:ss" or null
+  to: string | null;
   ledgerId: number;
   runningBalance: boolean;
   openingBalance: boolean;

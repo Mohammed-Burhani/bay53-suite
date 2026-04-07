@@ -37,7 +37,7 @@ export default function LedgerRegisterReport() {
 
   const { mutate: fetchLedgerRegister, data, isPending, error, reset } = useLedgerRegister();
 
-  const handleDateChange = (from: string, to: string) => {
+  const handleDateChange = (from: string | null, to: string | null) => {
     setLedgerRegisterFilters({ fromDate: from, toDate: to });
   };
 
