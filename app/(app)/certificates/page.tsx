@@ -42,12 +42,12 @@ export default function CertificatesListingPage() {
     setSelectedCertificate(certificate);
   };
 
-  const handleGeneratePDF = (certificate: Certificate) => {
-    generateCertificatePDF(certificate);
+  const handleGeneratePDF = async (certificate: Certificate) => {
+    await generateCertificatePDF(certificate);
   };
 
-  const handlePrint = (certificate: Certificate) => {
-    printCertificate(certificate);
+  const handlePrint = async (certificate: Certificate) => {
+    await printCertificate(certificate);
   };
 
   return (

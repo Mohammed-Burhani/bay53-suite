@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -13,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   IndianRupee,
-  Store,
   ChevronDown,
   Plus,
   List,
@@ -230,8 +230,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Logo */}
       <div className="relative flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-          <Store className="h-5 w-5" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden">
+          <Image 
+            src="/logo.png" 
+            alt="StockBuddy Logo" 
+            width={36} 
+            height={36}
+            className="object-contain"
+          />
         </div>
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
@@ -412,8 +418,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-                  <Store className="h-5 w-5" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden">
+                  <Image 
+                    src="/logo.png" 
+                    alt="StockBuddy Logo" 
+                    width={36} 
+                    height={36}
+                    className="object-contain"
+                  />
                 </div>
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-bold tracking-tight text-white">StockBuddy</span>

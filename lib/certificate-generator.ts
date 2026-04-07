@@ -39,11 +39,28 @@ function formatDateForDisplay(dateString: string): string {
   return date.toLocaleDateString("en-GB");
 }
 
-function createCertificatePage(
+async function loadLogoAsBase64(): Promise<string | null> {
+  try {
+    const response = await fetch('/logo.png');
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Failed to load logo:', error);
+    return null;
+  }
+}
+
+async function createCertificatePage(
   doc: jsPDF,
   data: CertificateData,
-  isFirstPage: boolean
-): void {
+  isFirstPage: boolean,
+  logoBase64?: string | null
+): Promise<void> {
   if (!isFirstPage) {
     doc.addPage();
   }
@@ -51,6 +68,15 @@ function createCertificatePage(
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   type DocWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } };
+
+  // Add logo if available
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, 'PNG', margin, 10, 20, 20);
+    } catch (error) {
+      console.error('Failed to add logo to PDF:', error);
+    }
+  }
 
   // Title
   doc.setFontSize(16);
@@ -189,18 +215,24 @@ export async function generateCalibrationCertificatePDF(
 ): Promise<void> {
   const doc = new jsPDF();
   const currentDate = new Date().toLocaleDateString("en-GB");
+  
+  // Load logo once
+  const logoBase64 = await loadLogoAsBase64();
 
-  certificatesData.forEach((certificateData, index) => {
-    createCertificatePage(doc, certificateData, index === 0);
-  });
+  for (let index = 0; index < certificatesData.length; index++) {
+    await createCertificatePage(doc, certificatesData[index], index === 0, logoBase64);
+  }
 
   // Download the PDF
   doc.save(`Calibration_Certificate_${invoiceNumber}_${currentDate.replace(/\//g, "-")}.pdf`);
 }
 
 // New function to generate PDF from database Certificate
-export function generateCertificatePDF(certificate: Certificate): void {
+export async function generateCertificatePDF(certificate: Certificate): Promise<void> {
   const doc = new jsPDF();
+  
+  // Load logo
+  const logoBase64 = await loadLogoAsBase64();
 
   const certificateData: CertificateData = {
     certificateNumber: certificate.certificate_number,
@@ -230,7 +262,7 @@ export function generateCertificatePDF(certificate: Certificate): void {
     approvedBy: certificate.approved_by || "",
   };
 
-  createCertificatePage(doc, certificateData, true);
+  await createCertificatePage(doc, certificateData, true, logoBase64);
 
   // Download the PDF
   const fileName = `Certificate_${certificate.certificate_number.replace(/\//g, "_")}_${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}.pdf`;
@@ -238,8 +270,11 @@ export function generateCertificatePDF(certificate: Certificate): void {
 }
 
 // New function to print certificate
-export function printCertificate(certificate: Certificate): void {
+export async function printCertificate(certificate: Certificate): Promise<void> {
   const doc = new jsPDF();
+  
+  // Load logo
+  const logoBase64 = await loadLogoAsBase64();
 
   const certificateData: CertificateData = {
     certificateNumber: certificate.certificate_number,
@@ -269,7 +304,7 @@ export function printCertificate(certificate: Certificate): void {
     approvedBy: certificate.approved_by || "",
   };
 
-  createCertificatePage(doc, certificateData, true);
+  await createCertificatePage(doc, certificateData, true, logoBase64);
 
   // Open print dialog
   doc.autoPrint();
