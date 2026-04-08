@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,17 +42,17 @@ export function LedgerSearchInput({
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  // Initialize from external selected ledgers if provided
-  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(() => {
+  
+  // Derive selectedLedgersMap from externalSelectedLedgers
+  const selectedLedgersMap = useMemo(() => {
+    const map = new Map<number, Ledger>();
     if (externalSelectedLedgers && Array.isArray(externalSelectedLedgers)) {
-      const map = new Map<number, Ledger>();
       externalSelectedLedgers.forEach(ledger => {
         map.set(ledger.ledger_id, ledger as Ledger);
       });
-      return map;
     }
-    return new Map();
-  });
+    return map;
+  }, [externalSelectedLedgers]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -74,7 +74,6 @@ export function LedgerSearchInput({
         newMap.delete(ledger.ledger_id);
         
         onLedgerIdsChange(newIds);
-        setSelectedLedgersMap(newMap);
         
         if (onSelectedLedgersChange) {
           onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
@@ -88,7 +87,6 @@ export function LedgerSearchInput({
         const newMap = new Map(selectedLedgersMap).set(ledger.ledger_id, ledger);
         
         onLedgerIdsChange(newIds);
-        setSelectedLedgersMap(newMap);
         
         if (onSelectedLedgersChange) {
           onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
@@ -102,7 +100,6 @@ export function LedgerSearchInput({
       const newMap = new Map([[ledger.ledger_id, ledger]]);
       
       onLedgerIdsChange([ledger.ledger_id]);
-      setSelectedLedgersMap(newMap);
       
       if (onLedgerNameChange) {
         onLedgerNameChange(ledger.name);
@@ -124,7 +121,6 @@ export function LedgerSearchInput({
     newMap.delete(ledgerId);
     
     onLedgerIdsChange(newIds);
-    setSelectedLedgersMap(newMap);
     
     if (onSelectedLedgersChange) {
       onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
