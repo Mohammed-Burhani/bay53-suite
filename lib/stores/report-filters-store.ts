@@ -16,11 +16,13 @@ interface DateFilterState {
 interface LedgerOutstandingFilters extends DateFilterState {
   selectedLedgerIds: number[];
   detailed: boolean;
+  selectedLedgers: Array<{ ledger_id: number; name: string; group: string | null }>;
 }
 
 interface LedgerBalancesFilters extends DateFilterState {
   selectedLedgerIds: number[];
   selectedGroupId: string;
+  selectedLedgers: Array<{ ledger_id: number; name: string; group: string | null }>;
 }
 
 interface LedgerRegisterFilters extends DateFilterState {
@@ -30,6 +32,7 @@ interface LedgerRegisterFilters extends DateFilterState {
   openingBalance: boolean;
   billDetails: boolean;
   bankDetails: boolean;
+  selectedLedgers: Array<{ ledger_id: number; name: string; group: string | null }>;
 }
 
 interface ReportFiltersState {
@@ -48,6 +51,7 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
       ledgerOutstanding: {
         selectedLedgerIds: [],
         detailed: false,
+        selectedLedgers: [],
         dateType: "current_month",
         selectedMonth: "",
         selectedQuarter: "",
@@ -59,6 +63,7 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
       ledgerBalances: {
         selectedLedgerIds: [],
         selectedGroupId: "",
+        selectedLedgers: [],
         dateType: "current_month",
         selectedMonth: "",
         selectedQuarter: "",
@@ -74,6 +79,7 @@ export const useReportFiltersStore = create<ReportFiltersState>()(
         openingBalance: true,
         billDetails: true,
         bankDetails: true,
+        selectedLedgers: [],
         dateType: "current_month",
         selectedMonth: "",
         selectedQuarter: "",

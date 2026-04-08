@@ -33,6 +33,7 @@ export default function LedgerRegisterReport() {
     selectedQuarter,
     selectedHalfYear,
     selectedYear,
+    selectedLedgers,
   } = ledgerRegister;
 
   const { mutate: fetchLedgerRegister, data, isPending, error, reset } = useLedgerRegister();
@@ -69,7 +70,15 @@ export default function LedgerRegisterReport() {
   const handleClear = () => {
     setLedgerRegisterFilters({ 
       selectedLedgerIds: [], 
-      selectedLedgerName: "" 
+      selectedLedgerName: "",
+      selectedLedgers: [],
+      dateType: "current_month",
+      fromDate: null,
+      toDate: null,
+      selectedMonth: "",
+      selectedQuarter: "",
+      selectedHalfYear: "",
+      selectedYear: "",
     });
     reset();
   };
@@ -104,6 +113,8 @@ export default function LedgerRegisterReport() {
                 required={true}
                 multiSelect={false}
                 groups={null}
+                selectedLedgers={selectedLedgers}
+                onSelectedLedgersChange={(ledgers) => setLedgerRegisterFilters({ selectedLedgers: ledgers })}
               />
 
               {/* Date Range Filter */}

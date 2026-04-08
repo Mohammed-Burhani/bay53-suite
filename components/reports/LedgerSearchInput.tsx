@@ -22,6 +22,8 @@ interface LedgerSearchInputProps {
   groups?: number[] | null;
   multiSelect?: boolean;
   onLedgerNameChange?: (name: string) => void;
+  selectedLedgers?: Array<{ ledger_id: number; name: string; group: string | null }>;
+  onSelectedLedgersChange?: (ledgers: Array<{ ledger_id: number; name: string; group: string | null }>) => void;
 }
 
 export function LedgerSearchInput({
@@ -34,11 +36,23 @@ export function LedgerSearchInput({
   groups,
   multiSelect = true,
   onLedgerNameChange,
+  selectedLedgers: externalSelectedLedgers,
+  onSelectedLedgersChange,
 }: LedgerSearchInputProps) {
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(new Map());
+  // Initialize from external selected ledgers if provided
+  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(() => {
+    if (externalSelectedLedgers && Array.isArray(externalSelectedLedgers)) {
+      const map = new Map<number, Ledger>();
+      externalSelectedLedgers.forEach(ledger => {
+        map.set(ledger.ledger_id, ledger as Ledger);
+      });
+      return map;
+    }
+    return new Map();
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -56,21 +70,49 @@ export function LedgerSearchInput({
     if (multiSelect) {
       if (selectedLedgerIds.includes(ledger.ledger_id)) {
         const newIds = selectedLedgerIds.filter((id) => id !== ledger.ledger_id);
+        const newMap = new Map(selectedLedgersMap);
+        newMap.delete(ledger.ledger_id);
+        
         onLedgerIdsChange(newIds);
-        setSelectedLedgersMap((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(ledger.ledger_id);
-          return newMap;
-        });
+        setSelectedLedgersMap(newMap);
+        
+        if (onSelectedLedgersChange) {
+          onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
+            ledger_id: l.ledger_id,
+            name: l.name,
+            group: l.group
+          })));
+        }
       } else {
-        onLedgerIdsChange([...selectedLedgerIds, ledger.ledger_id]);
-        setSelectedLedgersMap((prev) => new Map(prev).set(ledger.ledger_id, ledger));
+        const newIds = [...selectedLedgerIds, ledger.ledger_id];
+        const newMap = new Map(selectedLedgersMap).set(ledger.ledger_id, ledger);
+        
+        onLedgerIdsChange(newIds);
+        setSelectedLedgersMap(newMap);
+        
+        if (onSelectedLedgersChange) {
+          onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
+            ledger_id: l.ledger_id,
+            name: l.name,
+            group: l.group
+          })));
+        }
       }
     } else {
+      const newMap = new Map([[ledger.ledger_id, ledger]]);
+      
       onLedgerIdsChange([ledger.ledger_id]);
-      setSelectedLedgersMap(new Map([[ledger.ledger_id, ledger]]));
+      setSelectedLedgersMap(newMap);
+      
       if (onLedgerNameChange) {
         onLedgerNameChange(ledger.name);
+      }
+      if (onSelectedLedgersChange) {
+        onSelectedLedgersChange([{
+          ledger_id: ledger.ledger_id,
+          name: ledger.name,
+          group: ledger.group
+        }]);
       }
       setLedgerSearchOpen(false);
     }
@@ -78,12 +120,20 @@ export function LedgerSearchInput({
 
   const removeLedgerById = (ledgerId: number) => {
     const newIds = selectedLedgerIds.filter((id) => id !== ledgerId);
+    const newMap = new Map(selectedLedgersMap);
+    newMap.delete(ledgerId);
+    
     onLedgerIdsChange(newIds);
-    setSelectedLedgersMap((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(ledgerId);
-      return newMap;
-    });
+    setSelectedLedgersMap(newMap);
+    
+    if (onSelectedLedgersChange) {
+      onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
+        ledger_id: l.ledger_id,
+        name: l.name,
+        group: l.group
+      })));
+    }
+    
     if (!multiSelect && onLedgerNameChange) {
       onLedgerNameChange("");
     }
