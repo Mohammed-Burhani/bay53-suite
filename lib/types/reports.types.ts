@@ -27,7 +27,7 @@ export interface LedgerSearchPayload {
 
 export interface LedgerSearchResponse {
   list: Ledger[];
-  deletes: any[] | null;
+  deletes: unknown[] | null;
 }
 
 // --- Ledger Outstanding ---
@@ -161,12 +161,12 @@ export interface BillDetail {
 }
 
 export interface BankDetail {
-  paymentMode: string | null;
-  bankName: string | null;
-  branch: string | null;
-  chequeDate: string | null;
-  chequeNumber: string | null;
-  amount: number | null;
+  instrumentType: string;
+  instrumentDate: string;
+  instrumentNo: string;
+  amount: string;
+  bankname: string;
+  branchname: string;
 }
 
 export interface LedgerRegisterItem {
@@ -174,30 +174,17 @@ export interface LedgerRegisterItem {
   billDate: string | null;
   particular: string | null;
   type: string;
-  billDetails: BillDetail[] | null;
+  billDetails: BillDetail[];
   debit: number | null;
   credit: number | null;
   running: number | null;
   drCr: string;
-  bankDetails: BankDetail[] | null;
-  note: string | null;
-  invVchId: number | null;
-  invVchType: number | null;
-  madeFromInvoice: boolean | null;
+  bankDetails: BankDetail[];
+  note: string;
+  invVchId: number;
+  invVchType: number;
+  madeFromInvoice: boolean;
   isCr: boolean;
-  paymentMode: string | null;
-  bankName: string | null;
-  branch: string | null;
-  chequeDate: string | null;
-  chequeNumber: string | null;
-  amount: number | null;
-  againstType: string | null;
-  againstRefno: string | null;
-  projectSite: string | null;
-  compBaseCurr: number;
-  invoiceBaseCurr: number;
-  currRate: number;
-  currTotal: number;
 }
 
 // --- Group ---
@@ -306,5 +293,5 @@ export interface CurrentStockItem {
   stdSellRate: number;
   itemid: number;
   // Additional fields that might come from API
-  [key: string]: any;
+  [key: string]: string | number | null | undefined;
 }
