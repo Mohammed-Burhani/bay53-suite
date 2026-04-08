@@ -264,6 +264,16 @@ export interface Item {
   images: string | null;
 }
 
+// Extracted item attributes for filtering
+export interface ItemAttributes {
+  itemCode: string;
+  name: string;
+  size: string;
+  material: string;
+  quality: string;
+  brand: string;
+}
+
 export interface StockPlaceSearchPayload {
   sessionId: string;
 }
@@ -273,7 +283,12 @@ export interface ItemSearchPayload {
 }
 
 export interface CurrentStockPayload {
-  itemIds: number[];
+  itemCode: string | null;
+  name: string | null;
+  size: string | null;
+  material: string | null;
+  quality: string | null;
+  brand: string | null;
   spId: number;
   sessionId: string;
 }

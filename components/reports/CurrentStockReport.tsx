@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,38 +43,99 @@ import {
   BarChart3,
   Layers,
   Loader2,
+  Lightbulb,
 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { Combobox } from "@/components/ui/combobox";
 import { useStockPlaces, useItems, useCurrentStock } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
-import type { CurrentStockItem } from "@/lib/types/reports.types";
+import type { CurrentStockItem, ItemAttributes } from "@/lib/types/reports.types";
+import { getAvailableOptions } from "@/lib/utils/item-parser";
 
 export default function CurrentStockReport() {
   const [selectedStockPlace, setSelectedStockPlace] = useState<number>(0);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  
+  // 6 separate filter states
+  const [selectedItemCode, setSelectedItemCode] = useState<string>("");
+  const [selectedName, setSelectedName] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedMaterial, setSelectedMaterial] = useState<string>("");
+  const [selectedQuality, setSelectedQuality] = useState<string>("");
+  const [selectedBrand, setSelectedBrand] = useState<string>("");
+  
   const [showReorderDetails, setShowReorderDetails] = useState(false);
   const [rackWise, setRackWise] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination(50);
 
-  // Fetch dropdown data
+  // Fetch dropdown data with aggressive caching
   const { data: stockPlaces = [], isLoading: isLoadingStockPlaces } = useStockPlaces();
-  const { data: items = [], isLoading: isLoadingItems } = useItems();
+  const { data: items = [], isLoading: isLoadingItems, isSuccess: itemsLoaded } = useItems();
 
   // Fetch current stock mutation
   const { mutate: fetchCurrentStock, data: stockData = [], isPending: isLoadingStock } = useCurrentStock();
 
+  // Current filter state - memoized to prevent recalculation
+  const currentFilters: Partial<ItemAttributes> = useMemo(() => ({
+    itemCode: selectedItemCode || undefined,
+    name: selectedName || undefined,
+    size: selectedSize || undefined,
+    material: selectedMaterial || undefined,
+    quality: selectedQuality || undefined,
+    brand: selectedBrand || undefined,
+  }), [selectedItemCode, selectedName, selectedSize, selectedMaterial, selectedQuality, selectedBrand]);
+
+  // Pre-compute available options ONLY when items load or filters change
+  // Use lazy initialization to defer computation
+  const availableItemCodes = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'itemCode');
+  }, [items, currentFilters, itemsLoaded]);
+
+  const availableNames = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'name');
+  }, [items, currentFilters, itemsLoaded]);
+
+  const availableSizes = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'size');
+  }, [items, currentFilters, itemsLoaded]);
+
+  const availableMaterials = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'material');
+  }, [items, currentFilters, itemsLoaded]);
+
+  const availableQualities = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'quality');
+  }, [items, currentFilters, itemsLoaded]);
+
+  const availableBrands = useMemo(() => {
+    if (!itemsLoaded || items.length === 0) return [];
+    return getAvailableOptions(items, currentFilters, 'brand');
+  }, [items, currentFilters, itemsLoaded]);
+
   const handleStock = () => {
-    if (selectedItems.length === 0) {
-      toast.error("Please select at least one item");
+    // At least one filter must be selected
+    const hasFilter = selectedItemCode || selectedName || selectedSize || 
+                      selectedMaterial || selectedQuality || selectedBrand;
+    
+    if (!hasFilter) {
+      toast.error("Please select at least one filter");
       return;
     }
 
     fetchCurrentStock(
       {
-        itemIds: selectedItems,
+        itemCode: selectedItemCode || null,
+        name: selectedName || null,
+        size: selectedSize || null,
+        material: selectedMaterial || null,
+        quality: selectedQuality || null,
+        brand: selectedBrand || null,
         spId: selectedStockPlace,
       },
       {
@@ -92,7 +153,12 @@ export default function CurrentStockReport() {
 
   const handleClear = () => {
     setSelectedStockPlace(0);
-    setSelectedItems([]);
+    setSelectedItemCode("");
+    setSelectedName("");
+    setSelectedSize("");
+    setSelectedMaterial("");
+    setSelectedQuality("");
+    setSelectedBrand("");
     setSearchTerm("");
   };
 
@@ -142,6 +208,74 @@ export default function CurrentStockReport() {
   }, [paginatedData]);
 
   const isLoading = isLoadingStockPlaces || isLoadingItems || isLoadingStock;
+  const hasAnyFilter = selectedItemCode || selectedName || selectedSize || 
+                       selectedMaterial || selectedQuality || selectedBrand;
+
+  // Loading tips to show while items are loading
+  const loadingTips = [
+    "Use multiple filters together to narrow down your search quickly",
+    "Filters cascade automatically - selecting one updates the others",
+    "All 10,000+ items are loaded once and cached for instant access",
+    "Try filtering by brand first, then narrow down by other attributes",
+    "The 'Clear All' button resets all filters at once",
+    "Export your filtered results to Excel, CSV, or PDF",
+  ];
+
+  const [currentTip, setCurrentTip] = useState(0);
+
+  useEffect(() => {
+    if (isLoadingItems) {
+      const interval = setInterval(() => {
+        setCurrentTip((prev) => (prev + 1) % loadingTips.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoadingItems, loadingTips.length]);
+
+  // Show loading screen until items are loaded
+  if (isLoadingItems) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <Card className="max-w-md w-full border-0 shadow-xl">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-linear-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-950/50">
+                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Loading Items Data
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Please wait while we load your inventory...
+                </p>
+              </div>
+
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-linear-to-r from-indigo-600 to-purple-600 animate-pulse" style={{ width: '70%' }} />
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                    Pro Tip
+                  </p>
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                    {loadingTips[currentTip]}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -208,7 +342,9 @@ export default function CurrentStockReport() {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold">Smart Filters</CardTitle>
-                <CardDescription className="text-xs">Refine your stock view with intelligent filtering</CardDescription>
+                <CardDescription className="text-xs">
+                  {items.length.toLocaleString()} items loaded • Select filters to narrow down
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -225,55 +361,169 @@ export default function CurrentStockReport() {
               />
             </div>
 
-            {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Stock Place
-                </Label>
-                <Select
-                  value={selectedStockPlace.toString()}
-                  onValueChange={(value) => setSelectedStockPlace(Number(value))}
-                  disabled={isLoadingStockPlaces}
-                >
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Stock Place"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">All Stock Places</SelectItem>
-                    {stockPlaces.map((sp) => (
-                      <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
-                        {sp.name} ({sp.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Stock Place Filter */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                Stock Place
+              </Label>
+              <Select
+                value={selectedStockPlace.toString()}
+                onValueChange={(value) => setSelectedStockPlace(Number(value))}
+                disabled={isLoadingStockPlaces}
+              >
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Stock Place"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All Stock Places</SelectItem>
+                  {stockPlaces.map((sp) => (
+                    <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
+                      {sp.name} ({sp.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 6 Item Attribute Filters */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="h-4 w-4 text-purple-500" />
+                <Label className="text-sm font-semibold">Item Filters</Label>
+                {hasAnyFilter && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {Object.values(currentFilters).filter(Boolean).length} active
+                  </Badge>
+                )}
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  Items (Select Multiple)
-                </Label>
-                <MultiSelect
-                  options={items
-                    .filter(item => item.isActive)
-                    .map(item => ({
-                      label: `${item.name}${item.category ? ` (${item.category})` : ""}`,
-                      value: item.item_ID.toString(),
-                    }))}
-                  selected={selectedItems.map(id => id.toString())}
-                  onChange={(values) => setSelectedItems(values.map(v => Number(v)))}
-                  placeholder={isLoadingItems ? "Loading..." : "Select items"}
-                  disabled={isLoadingItems}
-                  className="h-auto"
-                />
-                {selectedItems.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedItems.length} item(s) selected
-                  </p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+                {/* Item Code */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Item Code
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableItemCodes.map(code => ({ value: code, label: code }))
+                    ]}
+                    value={selectedItemCode || "__all__"}
+                    onValueChange={(val) => setSelectedItemCode(val === "__all__" ? "" : val)}
+                    placeholder="Select Item Code"
+                    searchPlaceholder="Search item codes..."
+                    emptyText="No item codes found."
+                    disabled={!itemsLoaded || availableItemCodes.length === 0}
+                    className="h-9"
+                  />
+                </div>
+
+                {/* Item Name */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    Item Name
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableNames.map(name => ({ value: name, label: name }))
+                    ]}
+                    value={selectedName || "__all__"}
+                    onValueChange={(val) => setSelectedName(val === "__all__" ? "" : val)}
+                    placeholder="Select Name"
+                    searchPlaceholder="Search names..."
+                    emptyText="No names found."
+                    disabled={!itemsLoaded || availableNames.length === 0}
+                    className="h-9"
+                  />
+                </div>
+
+                {/* Size */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                    Size
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableSizes.map(size => ({ value: size, label: size }))
+                    ]}
+                    value={selectedSize || "__all__"}
+                    onValueChange={(val) => setSelectedSize(val === "__all__" ? "" : val)}
+                    placeholder="Select Size"
+                    searchPlaceholder="Search sizes..."
+                    emptyText="No sizes found."
+                    disabled={!itemsLoaded || availableSizes.length === 0}
+                    className="h-9"
+                  />
+                </div>
+
+                {/* Material */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                    Material
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableMaterials.map(material => ({ value: material, label: material }))
+                    ]}
+                    value={selectedMaterial || "__all__"}
+                    onValueChange={(val) => setSelectedMaterial(val === "__all__" ? "" : val)}
+                    placeholder="Select Material"
+                    searchPlaceholder="Search materials..."
+                    emptyText="No materials found."
+                    disabled={!itemsLoaded || availableMaterials.length === 0}
+                    className="h-9"
+                  />
+                </div>
+
+                {/* Quality */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    Quality
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableQualities.map(quality => ({ value: quality, label: quality }))
+                    ]}
+                    value={selectedQuality || "__all__"}
+                    onValueChange={(val) => setSelectedQuality(val === "__all__" ? "" : val)}
+                    placeholder="Select Quality"
+                    searchPlaceholder="Search qualities..."
+                    emptyText="No qualities found."
+                    disabled={!itemsLoaded || availableQualities.length === 0}
+                    className="h-9"
+                  />
+                </div>
+
+                {/* Brand */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                    Brand
+                  </Label>
+                  <Combobox
+                    options={[
+                      { value: "__all__", label: "All" },
+                      ...availableBrands.map(brand => ({ value: brand, label: brand }))
+                    ]}
+                    value={selectedBrand || "__all__"}
+                    onValueChange={(val) => setSelectedBrand(val === "__all__" ? "" : val)}
+                    placeholder="Select Brand"
+                    searchPlaceholder="Search brands..."
+                    emptyText="No brands found."
+                    disabled={!itemsLoaded || availableBrands.length === 0}
+                    className="h-9"
+                  />
+                </div>
               </div>
             </div>
 
@@ -305,7 +555,7 @@ export default function CurrentStockReport() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button 
                 onClick={handleStock} 
-                disabled={isLoading || selectedItems.length === 0}
+                disabled={isLoading || !hasAnyFilter}
                 size="sm"
                 className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
               >
@@ -533,12 +783,12 @@ export default function CurrentStockReport() {
                 No Stock Data Yet
               </h3>
               <p className="text-muted-foreground text-center max-w-md mb-8">
-                Select items and stock place, then click the button below to load your current stock levels
+                Select item filters (code, name, size, material, quality, or brand) and click the button below to load your current stock levels
               </p>
               <Button 
                 onClick={handleStock}
                 size="lg"
-                disabled={isLoading || selectedItems.length === 0}
+                disabled={isLoading || !hasAnyFilter}
                 className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {isLoadingStock ? (
@@ -566,7 +816,7 @@ export default function CurrentStockReport() {
           showReorderDetails, 
           rackWise,
           selectedStockPlace,
-          selectedItems,
+          filters: currentFilters,
           totalItems,
           totalStock,
           totalValue,
