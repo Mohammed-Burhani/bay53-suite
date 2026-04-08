@@ -183,12 +183,26 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Bill Details</h4>
                     <div className="space-y-1">
-                      {item.billDetails.map((detail, idx) => (
-                        <div key={idx} className="flex justify-between text-sm bg-background p-2 rounded">
-                          <span>{detail.name}</span>
-                          <span className="font-mono">{formatCurrency(parseFloat(detail.amount))}</span>
-                        </div>
-                      ))}
+                      {item.billDetails.map((detail, idx) => {
+                        const subTypeMap: Record<string, string> = {
+                          "1": "Against Reference",
+                          "2": "On Account",
+                        };
+                        const subTypeLabel = subTypeMap[detail.subType] || detail.subType;
+                        const isCr = detail.iscr === "1";
+                        
+                        return (
+                          <div key={idx} className="flex justify-between items-center text-sm bg-background p-2 rounded">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{detail.name}</span>
+                              <span className="text-xs text-muted-foreground">{subTypeLabel}</span>
+                            </div>
+                            <span className={`font-mono font-semibold ${isCr ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {formatCurrency(parseFloat(detail.amount))}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -196,26 +210,54 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Bank Details</h4>
                     <div className="space-y-1">
-                      {item.bankDetails!.map((bank, idx) => (
-                        <div key={idx} className="text-sm bg-background p-2 rounded space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Payment Mode:</span>
-                            <span>{bank.paymentMode || "-"}</span>
+                      {item.bankDetails!.map((bank, idx) => {
+                        const instrumentTypeMap: Record<string, string> = {
+                          "1": "Cash",
+                          "2": "Cheque",
+                          "3": "DD",
+                          "4": "NEFT/RTGS",
+                          "5": "Card",
+                          "6": "UPI",
+                        };
+                        const instrumentType = instrumentTypeMap[bank.instrumentType] || bank.instrumentType;
+                        
+                        return (
+                          <div key={idx} className="text-sm bg-background p-2 rounded space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Instrument Type:</span>
+                              <span className="font-medium">{instrumentType}</span>
+                            </div>
+                            {bank.instrumentNo && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Instrument No:</span>
+                                <span className="font-mono">{bank.instrumentNo}</span>
+                              </div>
+                            )}
+                            {bank.instrumentDate && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Date:</span>
+                                <span>{format(new Date(bank.instrumentDate), "dd MMM yyyy")}</span>
+                              </div>
+                            )}
+                            {bank.bankname && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Bank:</span>
+                                <span>{bank.bankname}</span>
+                              </div>
+                            )}
+                            {bank.branchname && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Branch:</span>
+                                <span>{bank.branchname}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Amount:</span>
+                              <span className="font-mono font-semibold">{formatCurrency(parseFloat(bank.amount))}</span>
+                            </div>
                           </div>
-                          {bank.bankName && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Bank:</span>
-                              <span>{bank.bankName}</span>
-                            </div>
-                          )}
-                          {bank.chequeNumber && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Cheque No:</span>
-                              <span>{bank.chequeNumber}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
