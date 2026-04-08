@@ -97,8 +97,6 @@ export function LedgerSearchInput({
         }
       }
     } else {
-      const newMap = new Map([[ledger.ledger_id, ledger]]);
-      
       onLedgerIdsChange([ledger.ledger_id]);
       
       if (onLedgerNameChange) {
@@ -117,12 +115,12 @@ export function LedgerSearchInput({
 
   const removeLedgerById = (ledgerId: number) => {
     const newIds = selectedLedgerIds.filter((id) => id !== ledgerId);
-    const newMap = new Map(selectedLedgersMap);
-    newMap.delete(ledgerId);
     
     onLedgerIdsChange(newIds);
     
     if (onSelectedLedgersChange) {
+      const newMap = new Map(selectedLedgersMap);
+      newMap.delete(ledgerId);
       onSelectedLedgersChange(Array.from(newMap.values()).map(l => ({
         ledger_id: l.ledger_id,
         name: l.name,
