@@ -175,19 +175,20 @@ export default function CurrentStockReport() {
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
       return (
-        item.itemName?.toLowerCase().includes(search) ||
+        item.itename?.toLowerCase().includes(search) ||
         item.category?.toLowerCase().includes(search) ||
-        item.stockPlace?.toLowerCase().includes(search)
+        item.brand?.toLowerCase().includes(search) ||
+        item.itemcode?.toLowerCase().includes(search)
       );
     });
   }, [stockData, searchTerm]);
 
   // Calculate stats
   const totalItems = filteredData.length;
-  const totalStock = filteredData.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const totalValue = filteredData.reduce((sum, item) => sum + (item.value || 0), 0);
-  const lowStockItems = filteredData.filter(item => item.quantity > 0 && item.quantity < 10).length;
-  const negativeStockItems = filteredData.filter(item => item.quantity < 0).length;
+  const totalStock = filteredData.reduce((sum, item) => sum + (item.total || 0), 0);
+  const totalValue = filteredData.reduce((sum, item) => sum + ((item.total || 0) * (item.stdSellRate || 0)), 0);
+  const lowStockItems = filteredData.filter(item => item.total > 0 && item.total < 10).length;
+  const negativeStockItems = filteredData.filter(item => item.total < 0).length;
 
   // Pagination
   const startIndex = (currentPage - 1) * pageSize;
@@ -645,12 +646,14 @@ export default function CurrentStockReport() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+                      <TableHead className="font-semibold">Item Code</TableHead>
                       <TableHead className="font-semibold">Item Name</TableHead>
+                      <TableHead className="font-semibold">Brand</TableHead>
                       <TableHead className="font-semibold">Category</TableHead>
-                      <TableHead className="font-semibold">Unit</TableHead>
-                      <TableHead className="font-semibold">Stock Place</TableHead>
-                      <TableHead className="text-right font-semibold">Quantity</TableHead>
-                      <TableHead className="text-right font-semibold">Rate</TableHead>
+                      <TableHead className="font-semibold">Size</TableHead>
+                      <TableHead className="text-right font-semibold">Stock (HO)</TableHead>
+                      <TableHead className="text-right font-semibold">Total</TableHead>
+                      <TableHead className="text-right font-semibold">Std Rate</TableHead>
                       <TableHead className="text-right font-semibold">Value</TableHead>
                       <TableHead className="text-center font-semibold">Status</TableHead>
                     </TableRow>
@@ -661,7 +664,7 @@ export default function CurrentStockReport() {
                       Object.entries(groupedData).map(([category, items]) => (
                         <>
                           <TableRow key={`cat-${category}`} className="bg-linear-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/30 dark:to-purple-950/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-950/40 dark:hover:to-purple-950/40">
-                            <TableCell colSpan={8} className="font-semibold">
+                            <TableCell colSpan={10} className="font-semibold">
                               <div className="flex items-center gap-3">
                                 <div className="p-1.5 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
                                   <Package className="h-4 w-4" />
@@ -674,23 +677,26 @@ export default function CurrentStockReport() {
                             </TableCell>
                           </TableRow>
                           {items.map((item, idx) => {
-                            const stockStatus = item.quantity < 0 ? 'negative' : item.quantity < 10 ? 'low' : 'good';
+                            const stockStatus = item.total < 0 ? 'negative' : item.total < 10 ? 'low' : 'good';
+                            const itemValue = (item.total || 0) * (item.stdSellRate || 0);
                             
                             return (
                               <TableRow key={`${category}-${idx}`} className="hover:bg-muted/50 transition-colors">
-                                <TableCell className="font-medium">{item.itemName}</TableCell>
+                                <TableCell className="font-mono text-xs">{item.itemcode}</TableCell>
+                                <TableCell className="font-medium">{item.itename}</TableCell>
+                                <TableCell>{item.brand || "-"}</TableCell>
                                 <TableCell>{item.category || "-"}</TableCell>
-                                <TableCell>{item.unit}</TableCell>
-                                <TableCell>{item.stockPlace}</TableCell>
+                                <TableCell>{item.sizes || "-"}</TableCell>
+                                <TableCell className="text-right">{item.HO}</TableCell>
                                 <TableCell className={`text-right font-bold ${
                                   stockStatus === 'negative' ? 'text-red-600' : 
                                   stockStatus === 'low' ? 'text-amber-600' : 
                                   'text-emerald-600'
                                 }`}>
-                                  {item.quantity?.toFixed(2)}
+                                  {item.total}
                                 </TableCell>
-                                <TableCell className="text-right">₹{item.rate?.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-medium">₹{item.value?.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">₹{item.stdSellRate?.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-medium">₹{itemValue.toFixed(2)}</TableCell>
                                 <TableCell className="text-center">
                                   {stockStatus === 'negative' ? (
                                     <Badge className="bg-linear-to-r from-red-500 to-red-600 text-white border-0 shadow-md">
@@ -717,23 +723,26 @@ export default function CurrentStockReport() {
                     ) : (
                       // Flat list
                       paginatedData.map((item, idx) => {
-                        const stockStatus = item.quantity < 0 ? 'negative' : item.quantity < 10 ? 'low' : 'good';
+                        const stockStatus = item.total < 0 ? 'negative' : item.total < 10 ? 'low' : 'good';
+                        const itemValue = (item.total || 0) * (item.stdSellRate || 0);
                         
                         return (
                           <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="font-medium">{item.itemName}</TableCell>
+                            <TableCell className="font-mono text-xs">{item.itemcode}</TableCell>
+                            <TableCell className="font-medium">{item.itename}</TableCell>
+                            <TableCell>{item.brand || "-"}</TableCell>
                             <TableCell>{item.category || "-"}</TableCell>
-                            <TableCell>{item.unit}</TableCell>
-                            <TableCell>{item.stockPlace}</TableCell>
+                            <TableCell>{item.sizes || "-"}</TableCell>
+                            <TableCell className="text-right">{item.HO}</TableCell>
                             <TableCell className={`text-right font-bold ${
                               stockStatus === 'negative' ? 'text-red-600' : 
                               stockStatus === 'low' ? 'text-amber-600' : 
                               'text-emerald-600'
                             }`}>
-                              {item.quantity?.toFixed(2)}
+                              {item.total}
                             </TableCell>
-                            <TableCell className="text-right">₹{item.rate?.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-medium">₹{item.value?.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">₹{item.stdSellRate?.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-medium">₹{itemValue.toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               {stockStatus === 'negative' ? (
                                 <Badge className="bg-linear-to-r from-red-500 to-red-600 text-white border-0 shadow-md">

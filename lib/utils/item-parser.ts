@@ -5,22 +5,15 @@ import type { Item, ItemAttributes } from "@/lib/types/reports.types";
 
 /**
  * Parse item_CodeTxt into 6 components
- * Format: item_CodeTxt = "2PNNNM2" where each character represents a field
- * This is a placeholder - adjust based on actual format
+ * Based on actual API response structure
  */
 export function parseItemCode(item: Item): ItemAttributes {
-  const itemCode = item.item_CodeTxt || "";
-  
-  // Extract components from item_CodeTxt
-  // Adjust this logic based on your actual item code format
-  // For now, using a simple approach - customize as needed
-  
   return {
-    itemCode: itemCode,
+    itemCode: item.item_CodeTxt || "",
     name: item.name || "",
     size: item.sizes || "",
-    material: item.type || "", // Using 'type' as material
-    quality: item.category || "", // Using 'category' as quality
+    material: item.type || "",
+    quality: item.category || "",
     brand: item.brand || "",
   };
 }
