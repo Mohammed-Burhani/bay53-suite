@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -50,12 +50,32 @@ export default function LedgerOutstandingSummaryTable() {
     selectedHalfYear,
     selectedYear,
     fromDate,
+    selectedLedgers: persistedLedgers,
   } = ledgerBalances;
 
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
-  // Keep track of all selected ledgers
-  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(new Map());
+  // Initialize from persisted ledgers
+  const [selectedLedgersMap, setSelectedLedgersMap] = useState<Map<number, Ledger>>(() => {
+    const map = new Map<number, Ledger>();
+    if (persistedLedgers && Array.isArray(persistedLedgers)) {
+      persistedLedgers.forEach(ledger => {
+        map.set(ledger.ledger_id, ledger as Ledger);
+      });
+    }
+    return map;
+  });
+
+  // Sync selectedLedgersMap when persistedLedgers changes (on mount/reload)
+  useEffect(() => {
+    if (persistedLedgers && Array.isArray(persistedLedgers) && persistedLedgers.length > 0) {
+      const map = new Map<number, Ledger>();
+      persistedLedgers.forEach(ledger => {
+        map.set(ledger.ledger_id, ledger as Ledger);
+      });
+      setSelectedLedgersMap(map);
+    }
+  }, [persistedLedgers]);
 
   // Fetch groups with childOf filter for ledger balances (16, 17)
   const { data: allGroups = [] } = useGroupSearch([16, 17]);
@@ -116,31 +136,49 @@ export default function LedgerOutstandingSummaryTable() {
 
   const handleLedgerSelect = (ledger: Ledger) => {
     if (selectedLedgerIds.includes(ledger.ledger_id)) {
+      const newIds = selectedLedgerIds.filter((id) => id !== ledger.ledger_id);
+      const newMap = new Map(selectedLedgersMap);
+      newMap.delete(ledger.ledger_id);
+      
       setLedgerBalancesFilters({ 
-        selectedLedgerIds: selectedLedgerIds.filter((id) => id !== ledger.ledger_id) 
+        selectedLedgerIds: newIds,
+        selectedLedgers: Array.from(newMap.values()).map(l => ({
+          ledger_id: l.ledger_id,
+          name: l.name,
+          group: l.group
+        }))
       });
-      setSelectedLedgersMap((prev) => {
-        const newMap = new Map(prev);
-        newMap.delete(ledger.ledger_id);
-        return newMap;
-      });
+      setSelectedLedgersMap(newMap);
     } else {
+      const newIds = [...selectedLedgerIds, ledger.ledger_id];
+      const newMap = new Map(selectedLedgersMap).set(ledger.ledger_id, ledger);
+      
       setLedgerBalancesFilters({ 
-        selectedLedgerIds: [...selectedLedgerIds, ledger.ledger_id] 
+        selectedLedgerIds: newIds,
+        selectedLedgers: Array.from(newMap.values()).map(l => ({
+          ledger_id: l.ledger_id,
+          name: l.name,
+          group: l.group
+        }))
       });
-      setSelectedLedgersMap((prev) => new Map(prev).set(ledger.ledger_id, ledger));
+      setSelectedLedgersMap(newMap);
     }
   };
 
   const removeLedgerById = (ledgerId: number) => {
+    const newIds = selectedLedgerIds.filter((id) => id !== ledgerId);
+    const newMap = new Map(selectedLedgersMap);
+    newMap.delete(ledgerId);
+    
     setLedgerBalancesFilters({ 
-      selectedLedgerIds: selectedLedgerIds.filter((id) => id !== ledgerId) 
+      selectedLedgerIds: newIds,
+      selectedLedgers: Array.from(newMap.values()).map(l => ({
+        ledger_id: l.ledger_id,
+        name: l.name,
+        group: l.group
+      }))
     });
-    setSelectedLedgersMap((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(ledgerId);
-      return newMap;
-    });
+    setSelectedLedgersMap(newMap);
   };
 
   const selectedLedgers = Array.from(selectedLedgersMap.values());
@@ -223,7 +261,8 @@ export default function LedgerOutstandingSummaryTable() {
                   onValueChange={(value) => {
                     setLedgerBalancesFilters({ 
                       selectedGroupId: value,
-                      selectedLedgerIds: [] // Clear selected ledgers when group changes
+                      selectedLedgerIds: [], // Clear selected ledgers when group changes
+                      selectedLedgers: []
                     });
                     setSelectedLedgersMap(new Map());
                     setLedgerSearchTerm("");
@@ -390,6 +429,30 @@ export default function LedgerOutstandingSummaryTable() {
                   <Search className="h-3.5 w-3.5 mr-1.5" />
                 )}
                 {isPending ? "Loading..." : "Get Summary"}
+              </Button>
+              <Button
+                onClick={() => {
+                  setLedgerBalancesFilters({
+                    selectedGroupId: "",
+                    selectedLedgerIds: [],
+                    selectedLedgers: [],
+                    dateType: "current_month",
+                    fromDate: null,
+                    toDate: null,
+                    selectedMonth: "",
+                    selectedQuarter: "",
+                    selectedHalfYear: "",
+                    selectedYear: "",
+                  });
+                  setSelectedLedgersMap(new Map());
+                  setLedgerSearchTerm("");
+                }}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                <X className="h-3.5 w-3.5 mr-1.5" />
+                Clear Filters
               </Button>
               {(!selectedGroupId || selectedGroupId === "all") && (
                 <p className="text-xs text-muted-foreground">

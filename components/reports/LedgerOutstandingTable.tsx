@@ -40,6 +40,7 @@ export default function LedgerOutstandingTable() {
     selectedQuarter,
     selectedHalfYear,
     selectedYear,
+    selectedLedgers,
   } = ledgerOutstanding;
 
   const { mutate: fetchOutstanding, data, isPending, error } = useLedgerOutstanding();
@@ -136,6 +137,8 @@ export default function LedgerOutstandingTable() {
                 placeholder="Search and select ledgers..."
                 required={true}
                 groups={[16, 17]}
+                selectedLedgers={selectedLedgers}
+                onSelectedLedgersChange={(ledgers) => setLedgerOutstandingFilters({ selectedLedgers: ledgers })}
               />
 
               {/* Date Filter */}
@@ -186,6 +189,28 @@ export default function LedgerOutstandingTable() {
                   <Search className="h-3.5 w-3.5 mr-1.5" />
                 )}
                 {isPending ? "Loading..." : "Outstanding"}
+              </Button>
+              <Button
+                onClick={() => {
+                  setLedgerOutstandingFilters({
+                    selectedLedgerIds: [],
+                    selectedLedgers: [],
+                    detailed: false,
+                    dateType: "current_month",
+                    fromDate: null,
+                    toDate: null,
+                    selectedMonth: "",
+                    selectedQuarter: "",
+                    selectedHalfYear: "",
+                    selectedYear: "",
+                  });
+                }}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                <X className="h-3.5 w-3.5 mr-1.5" />
+                Clear Filters
               </Button>
               <div className="flex-1" />
               <Tooltip>
