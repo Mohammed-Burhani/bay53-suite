@@ -450,10 +450,6 @@ export default function LedgerOutstandingSummaryTable() {
                     <TableHead className="font-semibold">Area</TableHead>
                     <TableHead className="font-semibold">City</TableHead>
                     <TableHead className="font-semibold">Contact No</TableHead>
-                    <TableHead className="text-right font-semibold">Opening</TableHead>
-                    <TableHead className="font-semibold">DrCr</TableHead>
-                    <TableHead className="text-right font-semibold">Running</TableHead>
-                    <TableHead className="font-semibold">DrCr</TableHead>
                     <TableHead className="text-right font-semibold">Closing</TableHead>
                     <TableHead className="font-semibold">DrCr</TableHead>
                   </TableRow>
@@ -461,46 +457,39 @@ export default function LedgerOutstandingSummaryTable() {
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                         <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
                         <p className="text-lg font-medium">No outstanding summary data</p>
                         <p className="text-sm">Click Get Summary to view outstanding balances</p>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedRows.map((row, idx) => (
-                      <TableRow key={idx} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{row.Party}</TableCell>
-                        <TableCell className="text-sm font-mono">{row.GSTNo || "-"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{row.Area}</TableCell>
-                        <TableCell className="text-sm">{row.City}</TableCell>
-                        <TableCell className="text-sm">{row["Contact No."]}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {row.Opening?.toFixed(2) || "0.00"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={row.OpeningDrCr === "Dr" ? "destructive" : "default"} className="text-xs">
-                            {row.OpeningDrCr || "Cr"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {row.Running?.toFixed(2) || "0.00"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={row.RunningDrCr === "Dr" ? "destructive" : "default"} className="text-xs">
-                            {row.RunningDrCr || "Cr"}
-                          </Badge>
-                        </TableCell>
+                    <>
+                      {paginatedRows.map((row, idx) => (
+                        <TableRow key={idx} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{row.Party}</TableCell>
+                          <TableCell className="text-sm font-mono">{row.GSTNo || "-"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.Area}</TableCell>
+                          <TableCell className="text-sm">{row.City}</TableCell>
+                          <TableCell className="text-sm">{row["Contact No."]}</TableCell>
+                          <TableCell className="text-right font-bold text-blue-600">
+                            {row["Pending Amount"]?.toFixed(2) || "0.00"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={row.DrCr === "Dr" ? "destructive" : "default"} className="text-xs">
+                              {row.DrCr}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 font-bold">
+                        <TableCell colSpan={5} className="text-right font-bold">Total:</TableCell>
                         <TableCell className="text-right font-bold text-blue-600">
-                          {row["Pending Amount"]?.toFixed(2) || "0.00"}
+                          ₹{rows.reduce((sum, r) => sum + r["Pending Amount"], 0).toFixed(2)}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={row.DrCr === "Dr" ? "destructive" : "default"} className="text-xs">
-                            {row.DrCr}
-                          </Badge>
-                        </TableCell>
+                        <TableCell></TableCell>
                       </TableRow>
-                    ))
+                    </>
                   )}
                 </TableBody>
               </Table>
