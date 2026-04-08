@@ -24,8 +24,8 @@ export function useLedgersByGroup(groups?: number[]) {
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
       
-      // If groups are provided, use them; otherwise default to [16, 17]
-      const groupsToSearch = groups && groups.length > 0 ? groups : [16, 17];
+      // If groups are provided, use them; if undefined, fetch all ledgers (empty array)
+      const groupsToSearch = groups && groups.length > 0 ? groups : [];
       
       return reportsService.searchLedgers({
         sessionId,
@@ -35,7 +35,7 @@ export function useLedgersByGroup(groups?: number[]) {
         includeChildGroups: true,
       });
     },
-    enabled: !!sessionId && !!groups && groups.length > 0,
+    enabled: !!sessionId,
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
   });
 }

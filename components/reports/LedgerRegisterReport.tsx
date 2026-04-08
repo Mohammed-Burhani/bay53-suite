@@ -109,9 +109,9 @@ export default function LedgerRegisterReport() {
                 onLedgerIdsChange={(ids) => setLedgerRegisterFilters({ selectedLedgerIds: ids })}
                 onLedgerNameChange={(name) => setLedgerRegisterFilters({ selectedLedgerName: name })}
                 label="Ledger"
-                placeholder="Select ledger..."
+                placeholder="Search and select ledgers..."
                 required={true}
-                multiSelect={false}
+                multiSelect={true}
                 groups={null}
                 selectedLedgers={selectedLedgers}
                 onSelectedLedgersChange={(ledgers) => setLedgerRegisterFilters({ selectedLedgers: ledgers })}
@@ -227,10 +227,10 @@ export default function LedgerRegisterReport() {
                 <p className="font-medium">Failed to fetch ledger register:</p>
                 {error instanceof Error && (
                   <div className="text-xs">
-                    {/* @ts-ignore - ApiError has data property */}
+                    {/* @ts-expect-error - ApiError has data property */}
                     {error.data && typeof error.data === 'object' && 'errors' in error.data ? (
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
-                        {/* @ts-ignore */}
+                        {/* @ts-expect-error - ApiError errors property */}
                         {Object.entries(error.data.errors).map(([field, messages]) => (
                           <li key={field}>
                             <span className="font-medium">{field}:</span>{' '}

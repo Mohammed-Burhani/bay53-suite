@@ -229,10 +229,10 @@ export default function LedgerOutstandingTable() {
                 <p className="font-medium">Failed to fetch data:</p>
                 {error instanceof Error && (
                   <div className="text-xs">
-                    {/* @ts-ignore - ApiError has data property */}
+                    {/* @ts-expect-error - ApiError has data property */}
                     {error.data && typeof error.data === 'object' && 'errors' in error.data ? (
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
-                        {/* @ts-ignore */}
+                        {/* @ts-expect-error - ApiError errors property */}
                         {Object.entries(error.data.errors).map(([field, messages]) => (
                           <li key={field}>
                             <span className="font-medium">{field}:</span>{' '}

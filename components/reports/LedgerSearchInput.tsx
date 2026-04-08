@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Search, Loader2, X, Check, ChevronsUpDown } from "lucide-react";
-import { useLedgerSearch } from "@/lib/hooks/useReports";
+import { useLedgersByGroup } from "@/lib/hooks/useReports";
 import type { Ledger } from "@/lib/types/reports.types";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,6 @@ export function LedgerSearchInput({
 }: LedgerSearchInputProps) {
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   
   // Derive selectedLedgersMap from externalSelectedLedgers
   const selectedLedgersMap = useMemo(() => {
@@ -54,17 +53,20 @@ export function LedgerSearchInput({
     return map;
   }, [externalSelectedLedgers]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(ledgerSearchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [ledgerSearchTerm]);
-
-  const { data: searchResults = [], isLoading: ledgersLoading } = useLedgerSearch(
-    debouncedSearchTerm,
-    groups
+  // Fetch all ledgers once based on groups
+  // If groups is null, fetch all ledgers; if groups is an array, filter by those groups
+  const { data: allLedgers = [], isLoading: ledgersLoading } = useLedgersByGroup(
+    groups === null ? undefined : (groups && groups.length > 0 ? groups : undefined)
   );
+  
+  // Filter ledgers on frontend - search anywhere in the name (case-insensitive)
+  const searchResults = useMemo(() => {
+    if (ledgerSearchTerm.length < 2) return [];
+    const searchLower = ledgerSearchTerm.toLowerCase();
+    return allLedgers.filter(ledger => 
+      ledger.name.toLowerCase().includes(searchLower)
+    );
+  }, [allLedgers, ledgerSearchTerm]);
 
   const handleLedgerSelect = (ledger: Ledger) => {
     if (multiSelect) {
@@ -183,14 +185,14 @@ export function LedgerSearchInput({
               onValueChange={setLedgerSearchTerm}
             />
             <CommandList>
-              {ledgerSearchTerm.length < 2 ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Type at least 2 characters to search
-                </div>
-              ) : ledgersLoading || ledgerSearchTerm !== debouncedSearchTerm ? (
+              {ledgersLoading ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-                  Searching...
+                  Loading ledgers...
+                </div>
+              ) : ledgerSearchTerm.length < 2 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  Type at least 2 characters to search
                 </div>
               ) : Object.keys(groupedLedgers).length === 0 ? (
                 <CommandEmpty>No ledgers found.</CommandEmpty>
