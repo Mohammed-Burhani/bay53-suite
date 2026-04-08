@@ -92,8 +92,22 @@ export default function LedgerOutstandingSummaryTable() {
       return;
     }
     
+    // Ensure groupId is a valid number (byte range: 0-255)
+    const groupIdNum = parseInt(selectedGroupId, 10);
+    if (isNaN(groupIdNum) || groupIdNum < 0 || groupIdNum > 255) {
+      console.error("Invalid group ID:", selectedGroupId, "Parsed:", groupIdNum);
+      return;
+    }
+    
+    console.log("Fetching summary with payload:", {
+      groupId: groupIdNum,
+      ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [],
+      fromDate: fromDate || null,
+      toDate: toDate || null,
+    });
+    
     fetchSummary({
-      groupId: parseInt(selectedGroupId),
+      groupId: groupIdNum,
       ledgers: selectedLedgerIds.length > 0 ? selectedLedgerIds : [],
       fromDate: fromDate || null,
       toDate: toDate || null,
@@ -395,9 +409,27 @@ export default function LedgerOutstandingSummaryTable() {
 
             {/* API Error */}
             {error && (
-              <p className="text-sm text-destructive">
-                Failed to fetch data. Please try again.
-              </p>
+              <div className="text-sm text-destructive space-y-1">
+                <p className="font-medium">Failed to fetch data:</p>
+                {error instanceof Error && (
+                  <div className="text-xs">
+                    {/* @ts-ignore - ApiError has data property */}
+                    {error.data && typeof error.data === 'object' && 'errors' in error.data ? (
+                      <ul className="list-disc list-inside space-y-0.5 ml-2">
+                        {/* @ts-ignore */}
+                        {Object.entries(error.data.errors).map(([field, messages]) => (
+                          <li key={field}>
+                            <span className="font-medium">{field}:</span>{' '}
+                            {Array.isArray(messages) ? messages.join(', ') : messages}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{error.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

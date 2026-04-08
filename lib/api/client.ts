@@ -53,8 +53,18 @@ async function request<T>(
     let errorData: unknown = text;
     try {
       errorData = JSON.parse(text);
+      console.error("API Error Response:", {
+        status: response.status,
+        url,
+        data: errorData
+      });
     } catch {
       // Keep as text
+      console.error("API Error (non-JSON):", {
+        status: response.status,
+        url,
+        text
+      });
     }
     
     // Handle session expiration on 400/401/403 status codes

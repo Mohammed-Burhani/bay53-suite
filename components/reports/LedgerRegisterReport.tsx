@@ -45,6 +45,16 @@ export default function LedgerRegisterReport() {
     const ledgerId = selectedLedgerIds[0];
     if (!ledgerId) return;
 
+    console.log("Fetching ledger register with payload:", {
+      from: fromDate,
+      to: toDate,
+      ledgerId,
+      runningBalance,
+      openingBalance,
+      billDetails,
+      bankDetails,
+    });
+
     fetchLedgerRegister({
       from: fromDate,
       to: toDate,
@@ -202,9 +212,27 @@ export default function LedgerRegisterReport() {
             </div>
 
             {error && (
-              <p className="text-sm text-destructive">
-                Failed to fetch ledger register. Please try again.
-              </p>
+              <div className="text-sm text-destructive space-y-1">
+                <p className="font-medium">Failed to fetch ledger register:</p>
+                {error instanceof Error && (
+                  <div className="text-xs">
+                    {/* @ts-ignore - ApiError has data property */}
+                    {error.data && typeof error.data === 'object' && 'errors' in error.data ? (
+                      <ul className="list-disc list-inside space-y-0.5 ml-2">
+                        {/* @ts-ignore */}
+                        {Object.entries(error.data.errors).map(([field, messages]) => (
+                          <li key={field}>
+                            <span className="font-medium">{field}:</span>{' '}
+                            {Array.isArray(messages) ? messages.join(', ') : messages}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{error.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
