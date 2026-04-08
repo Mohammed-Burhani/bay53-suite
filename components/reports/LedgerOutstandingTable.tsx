@@ -50,7 +50,18 @@ export default function LedgerOutstandingTable() {
   };
 
   const handleSearch = () => {
-    if (selectedLedgerIds.length === 0) return;
+    // Require at least one ledger to be selected
+    if (selectedLedgerIds.length === 0) {
+      return;
+    }
+
+    console.log("Fetching outstanding with payload:", {
+      ledgers: selectedLedgerIds,
+      detailed,
+      salesman: null,
+      fromDate: fromDate,
+      toDate: toDate,
+    });
 
     fetchOutstanding({
       ledgers: selectedLedgerIds,
@@ -109,8 +120,8 @@ export default function LedgerOutstandingTable() {
                 <Filter className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">Ledger Balances Filters</CardTitle>
-                <CardDescription className="text-xs">View outstanding balances by ledger</CardDescription>
+                <CardTitle className="text-base font-semibold">Ledger Outstandings</CardTitle>
+                <CardDescription className="text-xs">View outstandings by ledger</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -189,9 +200,27 @@ export default function LedgerOutstandingTable() {
 
             {/* API Error */}
             {error && (
-              <p className="text-sm text-destructive">
-                Failed to fetch data. Please try again.
-              </p>
+              <div className="text-sm text-destructive space-y-1">
+                <p className="font-medium">Failed to fetch data:</p>
+                {error instanceof Error && (
+                  <div className="text-xs">
+                    {/* @ts-ignore - ApiError has data property */}
+                    {error.data && typeof error.data === 'object' && 'errors' in error.data ? (
+                      <ul className="list-disc list-inside space-y-0.5 ml-2">
+                        {/* @ts-ignore */}
+                        {Object.entries(error.data.errors).map(([field, messages]) => (
+                          <li key={field}>
+                            <span className="font-medium">{field}:</span>{' '}
+                            {Array.isArray(messages) ? messages.join(', ') : messages}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{error.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
