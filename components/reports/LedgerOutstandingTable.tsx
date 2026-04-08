@@ -236,7 +236,7 @@ export default function LedgerOutstandingTable() {
                         {Object.entries(error.data.errors).map(([field, messages]) => (
                           <li key={field}>
                             <span className="font-medium">{field}:</span>{' '}
-                            {Array.isArray(messages) ? messages.join(', ') : messages}
+                            {Array.isArray(messages) ? messages.join(', ') : String(messages)}
                           </li>
                         ))}
                       </ul>
