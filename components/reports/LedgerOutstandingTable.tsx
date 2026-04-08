@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstanding } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
