@@ -139,11 +139,12 @@ export function useStockPlaces() {
       return reportsService.searchStockPlaces({ sessionId });
     },
     enabled: !!sessionId,
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    staleTime: Infinity, // Cache indefinitely - stock places rarely change
+    gcTime: Infinity, // Keep in cache forever
   });
 }
 
-// Fetch all items for dropdown
+// Fetch all items for dropdown - with aggressive caching
 export function useItems() {
   const sessionId = auth.getSessionId();
 
@@ -154,7 +155,8 @@ export function useItems() {
       return reportsService.searchItems({ sessionId });
     },
     enabled: !!sessionId,
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    staleTime: Infinity, // Cache indefinitely - fetch once and store in memory
+    gcTime: Infinity, // Keep in cache forever
   });
 }
 
