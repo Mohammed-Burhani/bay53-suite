@@ -765,6 +765,23 @@ export default function CurrentStockReport() {
                         );
                       })
                     )}
+                    {/* Totals Row */}
+                    <TableRow className="bg-linear-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 border-t-2 border-indigo-200 dark:border-indigo-800 font-semibold">
+                      <TableCell colSpan={5} className="text-right text-base">
+                        Total:
+                      </TableCell>
+                      <TableCell className="text-right text-base">
+                        {paginatedData.reduce((sum, item) => sum + (typeof item.HO === 'number' ? item.HO : parseFloat(item.HO as string) || 0), 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right text-base font-bold text-emerald-600 dark:text-emerald-400">
+                        {paginatedData.reduce((sum, item) => sum + (item.total || 0), 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">-</TableCell>
+                      <TableCell className="text-right text-base font-bold text-indigo-600 dark:text-indigo-400">
+                        ₹{paginatedData.reduce((sum, item) => sum + ((item.total || 0) * (item.stdSellRate || 0)), 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-center">-</TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
