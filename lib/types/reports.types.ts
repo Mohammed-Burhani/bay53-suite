@@ -294,16 +294,17 @@ export interface CurrentStockPayload {
 }
 
 export interface CurrentStockItem {
-  itemId: number;
-  itemName: string;
+  itemcode: string;
+  itename: string;
   category: string | null;
-  unit: string;
-  stockPlace: string;
-  quantity: number;
-  rate: number;
-  value: number;
-  lastPurchaseRate: number;
-  avgPurchaseRate: number;
+  sizes: string | null;
+  type: string | null;
+  brand: string | null;
+  itemGroup: string | null;
+  HO: string | number;
+  total: number;
+  stdSellRate: number;
+  itemid: number;
   // Additional fields that might come from API
   [key: string]: any;
 }
