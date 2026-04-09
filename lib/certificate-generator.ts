@@ -18,11 +18,18 @@ export interface CertificateData {
   masterCalibrationDue: string;
   masterCertificateNo: string;
   testResults: Array<{
-    calibratedRange: string;
-    masterValue: string;
-    instrumentValue: string;
-    deviation: string;
+    actual_value?: string;
+    expected_value?: string;
+    error?: string;
+    // Legacy fields for backward compatibility
+    calibratedRange?: string;
+    masterValue?: string;
+    instrumentValue?: string;
+    deviation?: string;
+    reading?: string;
+    standard?: string;
   }>;
+  testResultsCommonField?: string;
   calibratedBy: string;
   approvedBy: string;
 }
@@ -128,6 +135,33 @@ async function createCertificatePage(
 
   // Test Results Table
   if (data.testResults && data.testResults.length > 0) {
+    const hasCommonField = data.testResultsCommonField && data.testResultsCommonField.trim();
+    
+    // Prepare table body with proper structure
+    const tableBody = data.testResults.map((result: Record<string, string>, index: number) => {
+      const row = [
+        // First column: show common field only in first row, empty for others
+        index === 0 && hasCommonField ? {
+          content: data.testResultsCommonField,
+          rowSpan: data.testResults.length,
+          styles: { valign: "middle", halign: "center" } as Record<string, unknown>
+        } : "",
+        // Second column: Master Value (Expected Value)
+        result.expected_value || result.standard || result.masterValue || "0",
+        // Third column: Instrument Value (Actual Value)
+        result.actual_value || result.reading || result.instrumentValue || "0",
+        // Fourth column: Deviation (Error)
+        result.error || result.deviation || "0",
+      ];
+      
+      // For rows after the first, remove the first column since it's merged
+      if (index > 0 && hasCommonField) {
+        return row.slice(1);
+      }
+      
+      return row;
+    });
+    
     autoTable(doc, {
       startY: yPos,
       head: [
@@ -145,12 +179,7 @@ async function createCertificatePage(
           "Deviation\n(Allowed ±0.4 units)",
         ],
       ],
-      body: data.testResults.map((result: Record<string, string>) => [
-        result.calibratedRange || result.reading || "0",
-        result.masterValue || result.standard || "0",
-        result.instrumentValue || "0",
-        result.deviation || result.error || "0",
-      ]),
+      body: tableBody,
       theme: "grid",
       headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" } as Record<string, unknown>,
       margin: { left: margin, right: margin },
@@ -220,14 +249,17 @@ export async function generateCertificatePDF(certificate: Certificate): Promise<
     masterCalibrationDue: certificate.master_calibration_due || "",
     masterCertificateNo: certificate.master_certificate_no || "",
     testResults: (certificate.test_results || []) as Array<{
-      calibratedRange: string;
-      masterValue: string;
-      instrumentValue: string;
-      deviation: string;
+      actual_value?: string;
+      expected_value?: string;
+      error?: string;
+      calibratedRange?: string;
+      masterValue?: string;
+      instrumentValue?: string;
+      deviation?: string;
       reading?: string;
       standard?: string;
-      error?: string;
     }>,
+    testResultsCommonField: certificate.test_results_common_field,
     calibratedBy: certificate.calibrated_by || "",
     approvedBy: certificate.approved_by || "",
   };
@@ -259,14 +291,17 @@ export async function printCertificate(certificate: Certificate): Promise<void> 
     masterCalibrationDue: certificate.master_calibration_due || "",
     masterCertificateNo: certificate.master_certificate_no || "",
     testResults: (certificate.test_results || []) as Array<{
-      calibratedRange: string;
-      masterValue: string;
-      instrumentValue: string;
-      deviation: string;
+      actual_value?: string;
+      expected_value?: string;
+      error?: string;
+      calibratedRange?: string;
+      masterValue?: string;
+      instrumentValue?: string;
+      deviation?: string;
       reading?: string;
       standard?: string;
-      error?: string;
     }>,
+    testResultsCommonField: certificate.test_results_common_field,
     calibratedBy: certificate.calibrated_by || "",
     approvedBy: certificate.approved_by || "",
   };

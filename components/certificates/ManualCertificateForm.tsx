@@ -92,8 +92,11 @@ export function ManualCertificateForm({
   });
   const createMutation = useCreateCertificate();
   const updateMutation = useUpdateCertificate();
-  const [testResults, setTestResults] = useState<Array<{ reading: string; standard: string; error: string }>>(
-    initialData?.test_results || [{ reading: "", standard: "", error: "" }]
+  const [testResults, setTestResults] = useState<Array<{ actual_value: string; expected_value: string; error: string }>>(
+    initialData?.test_results || [{ actual_value: "", expected_value: "", error: "" }]
+  );
+  const [testResultsCommonField, setTestResultsCommonField] = useState<string>(
+    initialData?.test_results_common_field || ""
   );
   
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
@@ -130,7 +133,7 @@ export function ManualCertificateForm({
   };
 
   const addTestResult = () => {
-    setTestResults([...testResults, { reading: "", standard: "", error: "" }]);
+    setTestResults([...testResults, { actual_value: "", expected_value: "", error: "" }]);
   };
 
   const removeTestResult = (index: number) => {
@@ -140,6 +143,24 @@ export function ManualCertificateForm({
   const updateTestResult = (index: number, field: string, value: string) => {
     const updated = [...testResults];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Auto-calculate error when actual_value or expected_value changes
+    // Error = Actual (Instrument Value) - Expected (Master Value)
+    if (field === 'actual_value' || field === 'expected_value') {
+      const actualValue = field === 'actual_value' ? value : updated[index].actual_value;
+      const expectedValue = field === 'expected_value' ? value : updated[index].expected_value;
+      
+      if (actualValue && expectedValue) {
+        const actual = parseFloat(actualValue);
+        const expected = parseFloat(expectedValue);
+        
+        if (!isNaN(actual) && !isNaN(expected)) {
+          const error = actual - expected;
+          updated[index].error = error >= 0 ? `+${error.toFixed(2)}` : error.toFixed(2);
+        }
+      }
+    }
+    
     setTestResults(updated);
   };
 
@@ -150,25 +171,24 @@ export function ManualCertificateForm({
         invoice_number: data.invoice_number,
         customer_name: data.customer_name,
         customer_address: data.customer_address,
+        customer_gstin: data.customer_gstin,
+        customer_contact: data.customer_contact,
+        customer_email: data.customer_email,
         instrument_name: data.instrument_name,
         make_serial: data.make_serial,
+        mounting: data.mounting,
         range: data.range,
         accuracy: data.accuracy,
+        calibration_due_date: data.calibration_due_date,
+        test_conditions: data.test_conditions,
+        master_range: data.master_range,
+        master_calibration_due: data.master_calibration_due,
+        master_certificate_no: data.master_certificate_no,
+        test_results: testResults.filter(tr => tr.actual_value || tr.expected_value || tr.error),
+        test_results_common_field: testResultsCommonField,
         calibrated_by: data.calibrated_by,
         approved_by: data.approved_by,
-        certificate_data: {
-          customer_gstin: data.customer_gstin,
-          customer_contact: data.customer_contact,
-          customer_email: data.customer_email,
-          mounting: data.mounting,
-          calibration_due_date: data.calibration_due_date,
-          test_conditions: data.test_conditions,
-          master_range: data.master_range,
-          master_calibration_due: data.master_calibration_due,
-          master_certificate_no: data.master_certificate_no,
-          test_results: testResults.filter(tr => tr.reading || tr.standard || tr.error),
-          remarks: data.remarks,
-        },
+        remarks: data.remarks,
       };
 
       if (mode === 'edit' && initialData) {
@@ -177,7 +197,33 @@ export function ManualCertificateForm({
           updates: certificatePayload,
         });
       } else {
-        await createMutation.mutateAsync(certificatePayload);
+        // For create mode, wrap in the expected structure
+        await createMutation.mutateAsync({
+          organization_id: organizationId,
+          invoice_number: data.invoice_number,
+          customer_name: data.customer_name,
+          customer_address: data.customer_address,
+          instrument_name: data.instrument_name,
+          certificate_data: {
+            customer_gstin: data.customer_gstin,
+            customer_contact: data.customer_contact,
+            customer_email: data.customer_email,
+            make_serial: data.make_serial,
+            mounting: data.mounting,
+            range: data.range,
+            accuracy: data.accuracy,
+            calibration_due_date: data.calibration_due_date,
+            test_conditions: data.test_conditions,
+            master_range: data.master_range,
+            master_calibration_due: data.master_calibration_due,
+            master_certificate_no: data.master_certificate_no,
+            test_results: testResults.filter(tr => tr.actual_value || tr.expected_value || tr.error),
+            test_results_common_field: testResultsCommonField,
+            calibrated_by: data.calibrated_by,
+            approved_by: data.approved_by,
+            remarks: data.remarks,
+          },
+        });
       }
       onSuccess();
     } catch (error) {
@@ -452,31 +498,52 @@ export function ManualCertificateForm({
             </Button>
           </div>
           
+          {/* Common Field for all test results */}
+          <div>
+            <Label htmlFor="test_results_common_field">Calibrated Range (Common for all rows)</Label>
+            <Input
+              id="test_results_common_field"
+              value={testResultsCommonField}
+              onChange={(e) => setTestResultsCommonField(e.target.value)}
+              placeholder="e.g., 0-100 PSI"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This will appear as a merged cell in the first column of the test results table in the PDF
+            </p>
+          </div>
+          
           <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <Label className="text-sm font-semibold">Master Value (Expected)</Label>
+              <Label className="text-sm font-semibold">Instrument Value (Actual)</Label>
+              <Label className="text-sm font-semibold">Deviation (Error)</Label>
+            </div>
             {testResults.map((result, index) => (
               <div key={index} className="grid grid-cols-4 gap-2 items-end">
                 <div>
-                  <Label>Reading</Label>
                   <Input
-                    value={result.reading}
-                    onChange={(e) => updateTestResult(index, "reading", e.target.value)}
-                    placeholder="50.2"
-                  />
-                </div>
-                <div>
-                  <Label>Standard</Label>
-                  <Input
-                    value={result.standard}
-                    onChange={(e) => updateTestResult(index, "standard", e.target.value)}
+                    value={result.expected_value}
+                    onChange={(e) => updateTestResult(index, "expected_value", e.target.value)}
                     placeholder="50.0"
+                    type="number"
+                    step="any"
                   />
                 </div>
                 <div>
-                  <Label>Error</Label>
+                  <Input
+                    value={result.actual_value}
+                    onChange={(e) => updateTestResult(index, "actual_value", e.target.value)}
+                    placeholder="50.2"
+                    type="number"
+                    step="any"
+                  />
+                </div>
+                <div>
                   <Input
                     value={result.error}
-                    onChange={(e) => updateTestResult(index, "error", e.target.value)}
+                    readOnly
                     placeholder="+0.2"
+                    className="bg-muted"
                   />
                 </div>
                 <Button

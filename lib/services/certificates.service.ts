@@ -22,6 +22,7 @@ export interface Certificate {
   master_calibration_due?: string;
   master_certificate_no?: string;
   test_results?: TestResult[];
+  test_results_common_field?: string;
   calibrated_by?: string;
   approved_by?: string;
   status: 'draft' | 'issued' | 'cancelled';
@@ -32,8 +33,8 @@ export interface Certificate {
 }
 
 export interface TestResult {
-  reading: string;
-  standard: string;
+  actual_value: string;
+  expected_value: string;
   error: string;
   uncertainty?: string;
 }
@@ -94,6 +95,7 @@ export interface CreateCertificateInput {
     master_calibration_due?: string;
     master_certificate_no?: string;
     test_results?: TestResult[];
+    test_results_common_field?: string;
     calibrated_by?: string;
     approved_by?: string;
     remarks?: string;
@@ -134,6 +136,7 @@ class CertificatesService {
       master_calibration_due: input.certificate_data?.master_calibration_due || null,
       master_certificate_no: input.certificate_data?.master_certificate_no || null,
       test_results: input.certificate_data?.test_results || [],
+      test_results_common_field: input.certificate_data?.test_results_common_field || null,
       calibrated_by: input.certificate_data?.calibrated_by || null,
       approved_by: input.certificate_data?.approved_by || null,
       remarks: input.certificate_data?.remarks || null,
