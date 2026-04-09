@@ -184,3 +184,19 @@ export function useInventoryReport() {
     },
   });
 }
+
+// Fetch all invoice types for dropdown
+export function useInvoiceTypes() {
+  const sessionId = auth.getSessionId();
+
+  return useQuery({
+    queryKey: ["invoice-types", sessionId],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      return reportsService.searchInvoiceTypes({ sessionId });
+    },
+    enabled: !!sessionId,
+    staleTime: Infinity, // Cache indefinitely - invoice types rarely change
+    gcTime: Infinity, // Keep in cache forever
+  });
+}

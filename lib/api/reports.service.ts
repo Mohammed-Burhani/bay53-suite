@@ -24,6 +24,8 @@ import type {
   CurrentStockItem,
   InventoryReportPayload,
   InventoryReportItem,
+  InvoiceType,
+  InvoiceTypeSearchPayload,
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
@@ -64,4 +66,9 @@ export const reportsService = {
   // Inventory Report API
   getInventoryReport: (payload: InventoryReportPayload) =>
     apiClient.post<InventoryReportItem[]>("/Report/InventoryReport", payload),
+
+  // Invoice Type API
+  searchInvoiceTypes: async (payload: InvoiceTypeSearchPayload): Promise<InvoiceType[]> => {
+    return apiClient.post<InvoiceType[]>("/InvoiceType/Search", payload);
+  },
 };
