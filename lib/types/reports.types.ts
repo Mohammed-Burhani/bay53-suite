@@ -314,7 +314,12 @@ export interface CurrentStockItem {
 
 export interface InventoryReportPayload {
   itemWise: boolean;
-  itemId: number;
+  itemCode: string | null;
+  name: string | null;
+  size: string | null;
+  material: string | null;
+  quality: string | null;
+  brand: string | null;
   invType: number;
   spIdWise: boolean;
   spId: number;
@@ -323,8 +328,8 @@ export interface InventoryReportPayload {
   mfrReq: boolean;
   billDetailsReq: boolean;
   dateWise: boolean;
-  dateFrom: string | null;
-  dateTo: string | null;
+  fromDate: string | null;
+  toDate: string | null;
   salesman: string;
   batchCode: string;
   area: string;
