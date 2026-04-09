@@ -153,8 +153,7 @@ export default function InventoryReportTable() {
   }, [items, currentFilters, itemsLoaded]);
 
   const handleSearch = () => {
-    // Get selected item ID
-    let selectedItemId = 0;
+    // Check if at least one item filter is selected when allItem is false
     if (!allItem) {
       const hasFilter = selectedItemCode || selectedName || selectedSize || 
                         selectedMaterial || selectedQuality || selectedBrand;
@@ -163,28 +162,17 @@ export default function InventoryReportTable() {
         toast.error("Please select at least one item filter or check 'All Item'");
         return;
       }
-
-      // Find matching item
-      const matchingItem = items.find(item => {
-        const matches = [];
-        if (selectedItemCode) matches.push(item.item_CodeTxt === selectedItemCode);
-        if (selectedName) matches.push(item.name === selectedName);
-        if (selectedSize) matches.push(item.sizes === selectedSize);
-        if (selectedMaterial) matches.push(item.type === selectedMaterial);
-        if (selectedQuality) matches.push(item.category === selectedQuality);
-        if (selectedBrand) matches.push(item.brand === selectedBrand);
-        return matches.every(m => m);
-      });
-
-      if (matchingItem) {
-        selectedItemId = matchingItem.item_ID;
-      }
     }
 
     fetchInventoryReport(
       {
         itemWise: itemWise,
-        itemId: selectedItemId,
+        itemCode: selectedItemCode || null,
+        name: selectedName || null,
+        size: selectedSize || null,
+        material: selectedMaterial || null,
+        quality: selectedQuality || null,
+        brand: selectedBrand || null,
         invType: billType,
         spIdWise: stockPlaceWise,
         spId: billFrom,
@@ -1075,8 +1063,8 @@ export default function InventoryReportTable() {
             salesman,
             dateWise,
             dateType,
-            fromDate: calculatedFromDate,
-            toDate: calculatedToDate,
+            calculatedFromDate,
+            calculatedToDate,
             areaWise,
             area,
             cityWise,
