@@ -13,6 +13,7 @@ import type {
   LedgerRegisterPayload, 
   Group,
   CurrentStockPayload,
+  InventoryReportPayload,
 } from "@/lib/types/reports.types";
 
 // Fetch all ledgers for a group (no search term, fetch once)
@@ -167,6 +168,19 @@ export function useCurrentStock() {
       const sessionId = auth.getSessionId();
       if (!sessionId) throw new Error("No session");
       return reportsService.getCurrentStock({ ...filters, sessionId });
+    },
+  });
+}
+
+// ==================== Inventory Report Hooks ====================
+
+// Fetch inventory report
+export function useInventoryReport() {
+  return useMutation({
+    mutationFn: (filters: Omit<InventoryReportPayload, "sessionId">) => {
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
+      return reportsService.getInventoryReport({ ...filters, sessionId });
     },
   });
 }
