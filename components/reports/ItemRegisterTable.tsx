@@ -25,23 +25,27 @@ import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, Trendin
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useItemRegister, useItems } from "@/lib/hooks/useReports";
 import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
+import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
 import type { ItemRegisterItem } from "@/lib/types/reports.types";
 import { format } from "date-fns";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { toast } from "sonner";
 
-function toApiDate(date: Date) {
-  return format(date, "dd/MM/yyyy HH:mm:ss");
-}
-
 export default function ItemRegisterTable() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [fromDate, setFromDate] = useState(format(new Date("2026-01-01"), "yyyy-MM-dd"));
-  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isOpeningStock, setIsOpeningStock] = useState(true);
-  const [onWeight, setOnWeight] = useState(true);
-  const [batchCode, setBatchCode] = useState("");
+  
+  // Date filter states
+  const [dateType, setDateType] = useState<DateFilterType>("none");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedQuarter, setSelectedQuarter] = useState("");
+  const [selectedHalfYear, setSelectedHalfYear] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
+  const [calculatedFromDate, setCalculatedFromDate] = useState<string | null>(null);
+  const [calculatedToDate, setCalculatedToDate] = useState<string | null>(null);
 
   // Fetch items for dropdown
   const { data: items = [], isLoading: isLoadingItems } = useItems();
@@ -49,20 +53,29 @@ export default function ItemRegisterTable() {
   const { mutate: fetchItemRegister, data, isPending, error, reset } = useItemRegister();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
+  const handleDateChange = (from: string | null, to: string | null) => {
+    setCalculatedFromDate(from);
+    setCalculatedToDate(to);
+  };
+
   const handleSearch = () => {
     if (!selectedItemId) {
       toast.error("Please select an item");
       return;
     }
 
+    // Use calculated dates from DateRangeFilter or null if none selected
+    const fromDateToSend = calculatedFromDate || format(new Date("2026-01-01"), "dd/MM/yyyy HH:mm:ss");
+    const toDateToSend = calculatedToDate || format(new Date(), "dd/MM/yyyy HH:mm:ss");
+
     fetchItemRegister(
       {
-        fromDate: toApiDate(new Date(fromDate)),
-        toDate: toApiDate(new Date(toDate)),
+        fromDate: fromDateToSend,
+        toDate: toDateToSend,
         itemId: selectedItemId,
         isOpeningStock,
-        onWeigth: onWeight,
-        batchCode,
+        onWeigth: true, // Always true as per requirement
+        batchCode: "", // Always empty string as per requirement
       },
       {
         onSuccess: (data) => {
@@ -79,11 +92,16 @@ export default function ItemRegisterTable() {
   const handleClear = () => {
     setSearchTerm("");
     setSelectedItemId(null);
-    setFromDate(format(new Date("2026-01-01"), "yyyy-MM-dd"));
-    setToDate(format(new Date(), "yyyy-MM-dd"));
+    setDateType("none");
+    setSelectedMonth("");
+    setSelectedQuarter("");
+    setSelectedHalfYear("");
+    setSelectedYear("");
+    setFromDate(null);
+    setToDate(null);
+    setCalculatedFromDate(null);
+    setCalculatedToDate(null);
     setIsOpeningStock(true);
-    setOnWeight(true);
-    setBatchCode("");
     reset();
   };
 
@@ -216,9 +234,9 @@ export default function ItemRegisterTable() {
             </div>
 
             {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
               {/* Item Selector */}
-              <div className="space-y-1.5 lg:col-span-2">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                   Item <span className="text-red-500">*</span>
@@ -246,62 +264,27 @@ export default function ItemRegisterTable() {
                   </Label>
                 </div>
               </div>
-
-              {/* Date Range */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  From Date
-                </Label>
-                <Input 
-                  type="date" 
-                  className="h-9" 
-                  value={fromDate} 
-                  onChange={(e) => setFromDate(e.target.value)} 
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  To Date
-                </Label>
-                <Input 
-                  type="date" 
-                  className="h-9" 
-                  value={toDate} 
-                  onChange={(e) => setToDate(e.target.value)} 
-                />
-              </div>
-
-              {/* On Weight Checkbox */}
-              <div className="space-y-1.5 flex items-end">
-                <div className="flex items-center space-x-2 h-9">
-                  <Checkbox 
-                    id="onweight" 
-                    checked={onWeight}
-                    onCheckedChange={(c) => setOnWeight(c as boolean)}
-                  />
-                  <Label htmlFor="onweight" className="cursor-pointer text-sm font-normal">
-                    On Weight
-                  </Label>
-                </div>
-              </div>
-
-              {/* Batch Code */}
-              <div className="space-y-1.5 lg:col-span-2">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  Batch Code
-                </Label>
-                <Input
-                  className="h-9"
-                  placeholder="Enter batch code (optional)"
-                  value={batchCode}
-                  onChange={(e) => setBatchCode(e.target.value)}
-                />
-              </div>
             </div>
+
+            {/* Date Range Filter */}
+            <DateRangeFilter
+              dateType={dateType}
+              selectedMonth={selectedMonth}
+              selectedQuarter={selectedQuarter}
+              selectedHalfYear={selectedHalfYear}
+              selectedYear={selectedYear}
+              fromDate={fromDate}
+              toDate={toDate}
+              onDateTypeChange={setDateType}
+              onSelectedMonthChange={setSelectedMonth}
+              onSelectedQuarterChange={setSelectedQuarter}
+              onSelectedHalfYearChange={setSelectedHalfYear}
+              onSelectedYearChange={setSelectedYear}
+              onFromDateChange={setFromDate}
+              onToDateChange={setToDate}
+              onDateChange={handleDateChange}
+              label="Date Range"
+            />
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
@@ -451,11 +434,10 @@ export default function ItemRegisterTable() {
         moduleData={{ 
           data: rows, 
           selectedItemId,
-          fromDate,
-          toDate,
+          dateType,
+          calculatedFromDate,
+          calculatedToDate,
           isOpeningStock,
-          onWeight,
-          batchCode,
           openingRow, 
           closingRow,
           totalReceived,
