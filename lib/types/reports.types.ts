@@ -293,3 +293,30 @@ export interface CurrentStockItem {
   // Additional fields that might come from API
   [key: string]: string | number | null | undefined;
 }
+
+// --- Inventory Report ---
+
+export interface InventoryReportPayload {
+  itemWise: boolean;
+  itemId: number;
+  invType: number;
+  spIdWise: boolean;
+  spId: number;
+  ledgerWise: boolean;
+  ledgerId: number;
+  mfrReq: boolean;
+  billDetailsReq: boolean;
+  dateWise: boolean;
+  dateFrom: string | null;
+  dateTo: string | null;
+  salesman: string;
+  batchCode: string;
+  area: string;
+  city: string;
+  reorder: boolean;
+  sessionId: string;
+}
+
+export interface InventoryReportItem {
+  [key: string]: string | number | boolean | null | undefined;
+}

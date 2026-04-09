@@ -22,6 +22,8 @@ import type {
   ItemSearchPayload,
   CurrentStockPayload,
   CurrentStockItem,
+  InventoryReportPayload,
+  InventoryReportItem,
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
@@ -58,4 +60,8 @@ export const reportsService = {
 
   getCurrentStock: (payload: CurrentStockPayload) =>
     apiClient.post<CurrentStockItem[]>("/Report/CurrentStock", payload),
+
+  // Inventory Report API
+  getInventoryReport: (payload: InventoryReportPayload) =>
+    apiClient.post<InventoryReportItem[]>("/Report/InventoryReport", payload),
 };
