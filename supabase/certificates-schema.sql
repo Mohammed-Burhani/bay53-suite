@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS certificates (
   master_calibration_due DATE,
   master_certificate_no VARCHAR(100),
   test_results JSONB DEFAULT '[]'::jsonb,
+  test_results_common_field TEXT,
   calibrated_by VARCHAR(255),
   approved_by VARCHAR(255),
   status VARCHAR(20) DEFAULT 'draft',
