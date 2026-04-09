@@ -113,10 +113,8 @@ export interface ItemRegisterPayload {
   toDate: string;
   itemId: number;
   isOpeningStock: boolean;
-  spIds: number[];
-  stockDetail: boolean;
-  includeInternalMov: boolean;
-  mfrItemName: string;
+  onWeigth: boolean;
+  batchCode: string;
 }
 
 export interface ItemRegisterItem {

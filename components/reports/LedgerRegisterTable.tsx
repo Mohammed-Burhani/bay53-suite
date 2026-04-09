@@ -176,13 +176,14 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
     return (
       <>
         {hasDetails && isExpanded && (
-          <tr className="bg-muted/30">
-            <td colSpan={6} className="p-4">
-              <div className="space-y-3">
+          <tr className="bg-muted/30 border-l-4 border-amber-400">
+            <td colSpan={6} className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl">
+                {/* Bill Details Section */}
                 {item.billDetails && item.billDetails.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2">Bill Details</h4>
-                    <div className="space-y-1">
+                  <div className="bg-background rounded-lg p-3 border">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bill Details</h4>
+                    <div className="space-y-2">
                       {item.billDetails.map((detail, idx) => {
                         const subTypeMap: Record<string, string> = {
                           "1": "Against Reference",
@@ -192,12 +193,12 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                         const isCr = detail.iscr === "1";
                         
                         return (
-                          <div key={idx} className="flex justify-between items-center text-sm bg-background p-2 rounded">
-                            <div className="flex flex-col">
-                              <span className="font-medium">{detail.name}</span>
+                          <div key={idx} className="flex items-center justify-between py-1.5 border-b last:border-0">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-medium">{detail.name}</span>
                               <span className="text-xs text-muted-foreground">{subTypeLabel}</span>
                             </div>
-                            <span className={`font-mono font-semibold ${isCr ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <span className={`text-sm font-mono font-semibold ${isCr ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                               {formatCurrency(parseFloat(detail.amount))}
                             </span>
                           </div>
@@ -206,10 +207,12 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                     </div>
                   </div>
                 )}
+
+                {/* Bank Details Section */}
                 {hasBankDetails && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2">Bank Details</h4>
-                    <div className="space-y-1">
+                  <div className="bg-background rounded-lg p-3 border">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bank Details</h4>
+                    <div className="space-y-2">
                       {item.bankDetails!.map((bank, idx) => {
                         const instrumentTypeMap: Record<string, string> = {
                           "1": "Cash",
@@ -222,38 +225,43 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                         const instrumentType = instrumentTypeMap[bank.instrumentType] || bank.instrumentType;
                         
                         return (
-                          <div key={idx} className="text-sm bg-background p-2 rounded space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Instrument Type:</span>
-                              <span className="font-medium">{instrumentType}</span>
-                            </div>
-                            {bank.instrumentNo && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Instrument No:</span>
-                                <span className="font-mono">{bank.instrumentNo}</span>
+                          <div key={idx} className="space-y-1.5">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                              <div className="text-muted-foreground text-xs">Instrument Type:</div>
+                              <div className="font-medium text-right">{instrumentType}</div>
+                              
+                              {bank.instrumentNo && (
+                                <>
+                                  <div className="text-muted-foreground text-xs">Instrument No:</div>
+                                  <div className="font-mono text-right">{bank.instrumentNo}</div>
+                                </>
+                              )}
+                              
+                              {bank.instrumentDate && (
+                                <>
+                                  <div className="text-muted-foreground text-xs">Date:</div>
+                                  <div className="text-right">{format(new Date(bank.instrumentDate), "dd MMM yyyy")}</div>
+                                </>
+                              )}
+                              
+                              {bank.bankname && (
+                                <>
+                                  <div className="text-muted-foreground text-xs">Bank:</div>
+                                  <div className="text-right">{bank.bankname}</div>
+                                </>
+                              )}
+                              
+                              {bank.branchname && (
+                                <>
+                                  <div className="text-muted-foreground text-xs">Branch:</div>
+                                  <div className="text-right">{bank.branchname}</div>
+                                </>
+                              )}
+                              
+                              <div className="text-muted-foreground text-xs">Amount:</div>
+                              <div className="font-mono font-semibold text-right text-green-600 dark:text-green-400">
+                                {formatCurrency(parseFloat(bank.amount))}
                               </div>
-                            )}
-                            {bank.instrumentDate && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Date:</span>
-                                <span>{format(new Date(bank.instrumentDate), "dd MMM yyyy")}</span>
-                              </div>
-                            )}
-                            {bank.bankname && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Bank:</span>
-                                <span>{bank.bankname}</span>
-                              </div>
-                            )}
-                            {bank.branchname && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Branch:</span>
-                                <span>{bank.branchname}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Amount:</span>
-                              <span className="font-mono font-semibold">{formatCurrency(parseFloat(bank.amount))}</span>
                             </div>
                           </div>
                         );
@@ -261,10 +269,12 @@ export function LedgerRegisterTable({ data, ledgerName }: LedgerRegisterTablePro
                     </div>
                   </div>
                 )}
+
+                {/* Note Section - Full Width */}
                 {item.note && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-1">Note</h4>
-                    <p className="text-sm text-muted-foreground bg-background p-2 rounded">{item.note}</p>
+                  <div className="bg-background rounded-lg p-3 border md:col-span-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Note</h4>
+                    <p className="text-sm text-foreground">{item.note}</p>
                   </div>
                 )}
               </div>
