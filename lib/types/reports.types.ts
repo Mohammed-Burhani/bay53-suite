@@ -320,11 +320,11 @@ export interface InventoryReportPayload {
   material: string | null;
   quality: string | null;
   brand: string | null;
-  invType: number;
+  invType: number | null;
   spIdWise: boolean;
-  spId: number;
+  spId: number | null;
   ledgerWise: boolean;
-  ledgerId: number;
+  ledgerId: number | null;
   mfrReq: boolean;
   billDetailsReq: boolean;
   dateWise: boolean;
