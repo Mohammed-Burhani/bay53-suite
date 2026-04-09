@@ -44,7 +44,7 @@ import {
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { Combobox } from "@/components/ui/combobox";
-import { useStockPlaces, useItems, useInventoryReport, useLedgersByGroup } from "@/lib/hooks/useReports";
+import { useStockPlaces, useItems, useInventoryReport, useLedgersByGroup, useInvoiceTypes } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import type { ItemAttributes } from "@/lib/types/reports.types";
 import { getAvailableOptions } from "@/lib/utils/item-parser";
@@ -68,7 +68,7 @@ export default function InventoryReportTable() {
   const [billType, setBillType] = useState<number>(0);
 
   const [stockPlaceWise, setStockPlaceWise] = useState(false);
-  const [stockPlace, setStockPlace] = useState<number>(0);
+  const [billFrom, setBillFrom] = useState<number>(0);
 
   const [batchCodeWise, setBatchCodeWise] = useState(false);
   const [batchCode, setBatchCode] = useState<string>("");
@@ -96,6 +96,7 @@ export default function InventoryReportTable() {
   const { data: stockPlaces = [], isLoading: isLoadingStockPlaces } = useStockPlaces();
   const { data: items = [], isLoading: isLoadingItems, isSuccess: itemsLoaded } = useItems();
   const { data: ledgers = [], isLoading: isLoadingLedgers } = useLedgersByGroup([16, 17]);
+  const { data: invoiceTypes = [], isLoading: isLoadingInvoiceTypes } = useInvoiceTypes();
 
   // Fetch inventory report mutation
   const { mutate: fetchInventoryReport, data: reportData = [], isPending: isLoadingReport } = useInventoryReport();
@@ -176,7 +177,7 @@ export default function InventoryReportTable() {
         itemId: selectedItemId,
         invType: billType,
         spIdWise: stockPlaceWise,
-        spId: stockPlace,
+        spId: billFrom,
         ledgerWise: partyWise,
         ledgerId: party,
         mfrReq: inventory,
@@ -217,7 +218,7 @@ export default function InventoryReportTable() {
     setBillTypeWise(false);
     setBillType(0);
     setStockPlaceWise(false);
-    setStockPlace(0);
+    setBillFrom(0);
     setBatchCodeWise(false);
     setBatchCode("");
     setPartyWise(false);
@@ -268,7 +269,7 @@ export default function InventoryReportTable() {
   const endIndex = startIndex + pageSize;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
-  const isLoading = isLoadingStockPlaces || isLoadingItems || isLoadingLedgers || isLoadingReport;
+  const isLoading = isLoadingStockPlaces || isLoadingItems || isLoadingLedgers || isLoadingInvoiceTypes || isLoadingReport;
   const hasAnyItemFilter = selectedItemCode || selectedName || selectedSize || 
                            selectedMaterial || selectedQuality || selectedBrand;
 
@@ -566,35 +567,38 @@ export default function InventoryReportTable() {
                   <Select
                     value={billType.toString()}
                     onValueChange={(value) => setBillType(Number(value))}
-                    disabled={billTypeWise}
+                    disabled={billTypeWise || isLoadingInvoiceTypes}
                   >
                     <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder="Select Bill Type" />
+                      <SelectValue placeholder={isLoadingInvoiceTypes ? "Loading..." : "Select Bill Type"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="0">All Types</SelectItem>
-                      <SelectItem value="1">Sales Invoice</SelectItem>
-                      <SelectItem value="2">Purchase</SelectItem>
+                      {invoiceTypes.map((type) => (
+                        <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
+                          {type.typeName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Stock Place */}
+                {/* Bill From (Stock Place API) */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    Stock Place
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                    Bill From
                   </Label>
                   <Select
-                    value={stockPlace.toString()}
-                    onValueChange={(value) => setStockPlace(Number(value))}
+                    value={billFrom.toString()}
+                    onValueChange={(value) => setBillFrom(Number(value))}
                     disabled={isLoadingStockPlaces || stockPlaceWise}
                   >
                     <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Stock Place"} />
+                      <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Bill From"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">All Stock Places</SelectItem>
+                      <SelectItem value="0">All Sources</SelectItem>
                       {stockPlaces.map((sp) => (
                         <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
                           {sp.name} ({sp.code})
@@ -1048,7 +1052,7 @@ export default function InventoryReportTable() {
             billTypeWise,
             billType,
             stockPlaceWise,
-            stockPlace,
+            billFrom,
             batchCodeWise,
             batchCode,
             partyWise,

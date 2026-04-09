@@ -267,6 +267,22 @@ export interface ItemSearchPayload {
   sessionId: string;
 }
 
+// --- Invoice Type ---
+
+export interface InvoiceType {
+  invTypeId: number;
+  typeName: string;
+  category: number;
+  stockEffect: number;
+  vouchEffect: boolean;
+  createdDate: string;
+  modifiedDate: string;
+}
+
+export interface InvoiceTypeSearchPayload {
+  sessionId: string;
+}
+
 export interface CurrentStockPayload {
   itemCode: string | null;
   name: string | null;
