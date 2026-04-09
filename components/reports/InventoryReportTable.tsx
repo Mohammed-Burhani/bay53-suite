@@ -44,6 +44,7 @@ import {
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { Combobox } from "@/components/ui/combobox";
+import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
 import { useStockPlaces, useItems, useInventoryReport, useLedgersByGroup, useInvoiceTypes } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import type { ItemAttributes } from "@/lib/types/reports.types";
@@ -80,8 +81,17 @@ export default function InventoryReportTable() {
   const [salesman, setSalesman] = useState<string>("");
 
   const [dateWise, setDateWise] = useState(false);
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  
+  // Date Range Filter states
+  const [dateType, setDateType] = useState<DateFilterType>("none");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedHalfYear, setSelectedHalfYear] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
+  const [calculatedFromDate, setCalculatedFromDate] = useState<string | null>(null);
+  const [calculatedToDate, setCalculatedToDate] = useState<string | null>(null);
 
   const [areaWise, setAreaWise] = useState(false);
   const [area, setArea] = useState<string>("");
@@ -183,8 +193,8 @@ export default function InventoryReportTable() {
         mfrReq: inventory,
         billDetailsReq: billDetail,
         dateWise: dateWise,
-        dateFrom: dateFrom || null,
-        dateTo: dateTo || null,
+        fromDate: calculatedFromDate,
+        toDate: calculatedToDate,
         salesman: salesman,
         batchCode: batchCode,
         area: area,
@@ -226,8 +236,15 @@ export default function InventoryReportTable() {
     setBillDetail(false);
     setSalesman("");
     setDateWise(false);
-    setDateFrom("");
-    setDateTo("");
+    setDateType("none");
+    setSelectedMonth("");
+    setSelectedQuarter("");
+    setSelectedHalfYear("");
+    setSelectedYear("");
+    setFromDate(null);
+    setToDate(null);
+    setCalculatedFromDate(null);
+    setCalculatedToDate(null);
     setAreaWise(false);
     setArea("");
     setCityWise(false);
@@ -550,6 +567,31 @@ export default function InventoryReportTable() {
               </div>
             </div>
 
+            {/* Date Range Filter */}
+            <div className="space-y-3 pt-2 border-t">
+              <DateRangeFilter
+                dateType={dateType}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedHalfYear={selectedHalfYear}
+                selectedYear={selectedYear}
+                fromDate={fromDate || ""}
+                toDate={toDate || ""}
+                onDateTypeChange={setDateType}
+                onSelectedMonthChange={setSelectedMonth}
+                onSelectedQuarterChange={setSelectedQuarter}
+                onSelectedHalfYearChange={setSelectedHalfYear}
+                onSelectedYearChange={setSelectedYear}
+                onFromDateChange={(date) => setFromDate(date)}
+                onToDateChange={(date) => setToDate(date)}
+                onDateChange={(from, to) => {
+                  setCalculatedFromDate(from);
+                  setCalculatedToDate(to);
+                }}
+                label="Date Range"
+              />
+            </div>
+
             {/* Other Filters */}
             <div className="space-y-3 pt-2 border-t">
               <div className="flex items-center gap-2 mb-2">
@@ -693,35 +735,7 @@ export default function InventoryReportTable() {
                   />
                 </div>
 
-                {/* Date From */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    Date From
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    disabled={dateWise}
-                    className="h-9"
-                  />
-                </div>
 
-                {/* Date To */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    Date To
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    disabled={dateWise}
-                    className="h-9"
-                  />
-                </div>
               </div>
             </div>
 
@@ -1060,8 +1074,9 @@ export default function InventoryReportTable() {
             billDetail,
             salesman,
             dateWise,
-            dateFrom,
-            dateTo,
+            dateType,
+            fromDate: calculatedFromDate,
+            toDate: calculatedToDate,
             areaWise,
             area,
             cityWise,
