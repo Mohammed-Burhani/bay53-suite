@@ -330,10 +330,10 @@ export interface InventoryReportPayload {
   dateWise: boolean;
   fromDate: string | null;
   toDate: string | null;
-  salesman: string;
-  batchCode: string;
-  area: string;
-  city: string;
+  salesman: string | null;
+  batchCode: string | null;
+  area: string | null;
+  city: string | null;
   reorder: boolean;
   sessionId: string;
 }
