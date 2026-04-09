@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface ManualCertificateFormProps {
 }
 
 interface CertificateFormData {
+  certificate_number?: string;
   invoice_number: string;
   customer_name: string;
   customer_address: string;
@@ -64,8 +65,9 @@ export function ManualCertificateForm({
 
   const defaultDueDate = getDefaultDueDate();
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<CertificateFormData>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CertificateFormData>({
     defaultValues: initialData ? {
+      certificate_number: initialData.certificate_number,
       invoice_number: initialData.invoice_number,
       customer_name: initialData.customer_name,
       customer_address: initialData.customer_address || '',
@@ -98,10 +100,45 @@ export function ManualCertificateForm({
   const [testResultsCommonField, setTestResultsCommonField] = useState<string>(
     initialData?.test_results_common_field || ""
   );
+  const [isGeneratingCertNumber, setIsGeneratingCertNumber] = useState(false);
+  
+  const invoiceNumber = watch("invoice_number");
   
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  
+  // Generate certificate number
+  const generateCertificateNumber = useCallback(async () => {
+    if (!invoiceNumber) {
+      toast.error("Please enter an invoice number first");
+      return;
+    }
+    
+    setIsGeneratingCertNumber(true);
+    try {
+      // Call the service to generate certificate number
+      const { certificatesService } = await import("@/lib/services/certificates.service");
+      const certNumber = await certificatesService.generateCertificateNumber(
+        organizationId,
+        invoiceNumber
+      );
+      setValue("certificate_number", certNumber);
+      toast.success("Certificate number generated");
+    } catch (error) {
+      console.error("Error generating certificate number:", error);
+      toast.error("Failed to generate certificate number");
+    } finally {
+      setIsGeneratingCertNumber(false);
+    }
+  }, [invoiceNumber, organizationId, setValue]);
+  
+  // Auto-generate certificate number when invoice number changes (only for create/duplicate mode)
+  useEffect(() => {
+    if (mode !== 'edit' && invoiceNumber && !watch("certificate_number")) {
+      generateCertificateNumber();
+    }
+  }, [invoiceNumber, mode, generateCertificateNumber, watch]);
   
   // Debounce search term (500ms delay)
   useEffect(() => {
@@ -168,6 +205,7 @@ export function ManualCertificateForm({
     try {
       const certificatePayload = {
         organization_id: organizationId,
+        certificate_number: data.certificate_number, // Include certificate number
         invoice_number: data.invoice_number,
         customer_name: data.customer_name,
         customer_address: data.customer_address,
@@ -204,6 +242,7 @@ export function ManualCertificateForm({
           customer_name: data.customer_name,
           customer_address: data.customer_address,
           instrument_name: data.instrument_name,
+          certificate_number: data.certificate_number, // Pass certificate number
           certificate_data: {
             customer_gstin: data.customer_gstin,
             customer_contact: data.customer_contact,
@@ -233,6 +272,45 @@ export function ManualCertificateForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Certificate Number */}
+      <Card className="py-4">
+        <CardContent className="pt-6 space-y-4">
+          <h3 className="font-semibold text-lg">Certificate Information</h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="certificate_number">Certificate Number</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="certificate_number"
+                  {...register("certificate_number")}
+                  placeholder="Auto-generated (e.g., CERT-INV001-0001)"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateCertificateNumber}
+                  disabled={isGeneratingCertNumber || !invoiceNumber}
+                >
+                  {isGeneratingCertNumber ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate"
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Auto-generated based on invoice number. You can modify it if needed.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Invoice & Customer Details */}
       <Card className="py-4">
         <CardContent className="pt-6 space-y-4">

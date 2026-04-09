@@ -81,6 +81,7 @@ export interface CreateCertificateInput {
   customer_name: string;
   customer_address?: string;
   instrument_name: string;
+  certificate_number?: string; // Optional: if provided, use it; otherwise auto-generate
   certificate_data?: {
     customer_gstin?: string;
     customer_contact?: string;
@@ -109,8 +110,8 @@ class CertificatesService {
   // =====================================================
 
   async createCertificate(input: CreateCertificateInput): Promise<string> {
-    // Generate certificate number
-    const certificateNumber = await this.generateCertificateNumber(
+    // Use provided certificate number or generate one
+    const certificateNumber = input.certificate_number || await this.generateCertificateNumber(
       input.organization_id,
       input.invoice_number
     );
