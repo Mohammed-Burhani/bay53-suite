@@ -759,28 +759,6 @@ export default function InventoryReportTable() {
 
                 <div className="flex items-center space-x-2">
                   <Checkbox 
-                    id="inventory" 
-                    checked={inventory}
-                    onCheckedChange={(checked) => setInventory(checked as boolean)}
-                  />
-                  <Label htmlFor="inventory" className="cursor-pointer text-sm font-normal">
-                    Inventory
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="reorder" 
-                    checked={reorderDetails}
-                    onCheckedChange={(checked) => setReorderDetails(checked as boolean)}
-                  />
-                  <Label htmlFor="reorder" className="cursor-pointer text-sm font-normal">
-                    Re-order Details
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
                     id="billtypewise" 
                     checked={billTypeWise}
                     onCheckedChange={(checked) => setBillTypeWise(checked as boolean)}
