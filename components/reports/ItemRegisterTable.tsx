@@ -8,13 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,79 +21,69 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, TrendingUp, TrendingDown, Loader2, Lightbulb } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
-import { useItemRegister } from "@/lib/hooks/useReports";
+import { useItemRegister, useItems } from "@/lib/hooks/useReports";
+import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
 import type { ItemRegisterItem } from "@/lib/types/reports.types";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
-
-type DatePreset = "none" | "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly";
+import { toast } from "sonner";
 
 function toApiDate(date: Date) {
   return format(date, "dd/MM/yyyy HH:mm:ss");
 }
 
-function resolveDateRange(preset: DatePreset): { from: Date; to: Date } {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: new Date(new Date().setHours(0, 0, 0, 0)), to: new Date() };
-    case "current_month":
-      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date() };
-    case "monthly":
-      return { from: subMonths(new Date(), 1), to: new Date() };
-    case "quarterly":
-      return { from: subMonths(new Date(), 3), to: new Date() };
-    case "half_yearly":
-      return { from: subMonths(new Date(), 6), to: new Date() };
-    case "yearly":
-      return { from: new Date(now.getFullYear(), 0, 1), to: new Date() };
-    default:
-      return { from: new Date("2022-01-01"), to: new Date() };
-  }
-}
-
 export default function ItemRegisterTable() {
-  const [itemWise, setItemWise] = useState(true);
-  const [dateWise, setDateWise] = useState(true);
-  const [partyWise, setPartyWise] = useState(true);
-  const [billDetail, setBillDetail] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [datePreset, setDatePreset] = useState<DatePreset>("none");
   const [fromDate, setFromDate] = useState(format(new Date("2026-01-01"), "yyyy-MM-dd"));
   const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  // itemId input — placeholder until item master API is available
-  const [itemIdInput, setItemIdInput] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isOpeningStock, setIsOpeningStock] = useState(true);
+  const [onWeight, setOnWeight] = useState(true);
+  const [batchCode, setBatchCode] = useState("");
+
+  // Fetch items for dropdown
+  const { data: items = [], isLoading: isLoadingItems } = useItems();
 
   const { mutate: fetchItemRegister, data, isPending, error, reset } = useItemRegister();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const handleSearch = () => {
-    const itemId = parseInt(itemIdInput.trim(), 10);
-    if (isNaN(itemId)) return;
+    if (!selectedItemId) {
+      toast.error("Please select an item");
+      return;
+    }
 
-    const range =
-      datePreset === "range"
-        ? { from: new Date(fromDate), to: new Date(toDate) }
-        : resolveDateRange(datePreset);
-
-    fetchItemRegister({
-      fromDate: toApiDate(range.from),
-      toDate: toApiDate(range.to),
-      itemId,
-      isOpeningStock: true,
-      spIds: [0],
-      stockDetail: billDetail,
-      includeInternalMov: true,
-      mfrItemName: "",
-    });
+    fetchItemRegister(
+      {
+        fromDate: toApiDate(new Date(fromDate)),
+        toDate: toApiDate(new Date(toDate)),
+        itemId: selectedItemId,
+        isOpeningStock,
+        onWeigth: onWeight,
+        batchCode,
+      },
+      {
+        onSuccess: (data) => {
+          toast.success(`Loaded ${data.length} records`);
+          setCurrentPage(1);
+        },
+        onError: () => {
+          toast.error("Failed to fetch item register data");
+        },
+      }
+    );
   };
 
   const handleClear = () => {
     setSearchTerm("");
-    setItemIdInput("");
-    setDatePreset("none");
+    setSelectedItemId(null);
+    setFromDate(format(new Date("2026-01-01"), "yyyy-MM-dd"));
+    setToDate(format(new Date(), "yyyy-MM-dd"));
+    setIsOpeningStock(true);
+    setOnWeight(true);
+    setBatchCode("");
     reset();
   };
 
@@ -125,6 +108,51 @@ export default function ItemRegisterTable() {
     : rows;
 
   const paginatedFiltered = getPaginatedData(filtered);
+
+  // Show loading screen until items are loaded
+  if (isLoadingItems) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <Card className="max-w-md w-full border-0 shadow-xl">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-linear-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-950/50">
+                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Loading Items Data
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Please wait while we load your inventory...
+                </p>
+              </div>
+
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-linear-to-r from-indigo-600 to-purple-600 animate-pulse" style={{ width: '70%' }} />
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                    Pro Tip
+                  </p>
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                    Item register tracks all stock movements for a specific item over time
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -188,215 +216,90 @@ export default function ItemRegisterTable() {
             </div>
 
             {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4">
-              {/* Item ID — placeholder until item master API is ready */}
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
+              {/* Item Selector */}
+              <div className="space-y-1.5 lg:col-span-2">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Item ID <span className="text-red-500">*</span>
+                  Item <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  className="h-9"
-                  placeholder="e.g. 2767"
-                  value={itemIdInput}
-                  onChange={(e) => setItemIdInput(e.target.value)}
+                <ItemSearchCombobox
+                  items={items}
+                  value={selectedItemId}
+                  onValueChange={setSelectedItemId}
+                  placeholder="Select an item..."
+                  searchPlaceholder="Search by code, name, size, brand..."
+                  isLoading={isLoadingItems}
+                />
+              </div>
+
+              {/* Opening Stock Checkbox */}
+              <div className="space-y-1.5 flex items-end">
+                <div className="flex items-center space-x-2 h-9">
+                  <Checkbox 
+                    id="openingstock" 
+                    checked={isOpeningStock}
+                    onCheckedChange={(c) => setIsOpeningStock(c as boolean)}
+                  />
+                  <Label htmlFor="openingstock" className="cursor-pointer text-sm font-normal">
+                    Include Opening Stock
+                  </Label>
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  From Date
+                </Label>
+                <Input 
+                  type="date" 
+                  className="h-9" 
+                  value={fromDate} 
+                  onChange={(e) => setFromDate(e.target.value)} 
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Date
+                  To Date
                 </Label>
-                <Select
-                  value={datePreset}
-                  onValueChange={(v) => setDatePreset(v as DatePreset)}
-                >
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="half_yearly">Half Yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input 
+                  type="date" 
+                  className="h-9" 
+                  value={toDate} 
+                  onChange={(e) => setToDate(e.target.value)} 
+                />
               </div>
 
-              {/* Remaining filter dropdowns — kept as-is, will be wired when master APIs are ready */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Rack No
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Racks" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Racks</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* On Weight Checkbox */}
+              <div className="space-y-1.5 flex items-end">
+                <div className="flex items-center space-x-2 h-9">
+                  <Checkbox 
+                    id="onweight" 
+                    checked={onWeight}
+                    onCheckedChange={(c) => setOnWeight(c as boolean)}
+                  />
+                  <Label htmlFor="onweight" className="cursor-pointer text-sm font-normal">
+                    On Weight
+                  </Label>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
+              {/* Batch Code */}
+              <div className="space-y-1.5 lg:col-span-2">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  ISDN No
+                  Batch Code
                 </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All ISDNs" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All ISDNs</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                  Bound
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Weight
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Weights" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Weights</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                  Publication
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Publishers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Publishers</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  Color
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Colors" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Colors</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  Party
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Parties" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Parties</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-lime-500" />
-                  Bill Type
-                </Label>
-                <Select defaultValue="sales_invoice">
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales_invoice">Sales Invoice</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                  Salesman
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Salesmen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Salesmen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Custom date range — only when preset is "range" */}
-            {datePreset === "range" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">From Date</Label>
-                  <Input type="date" className="h-9" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">To Date</Label>
-                  <Input type="date" className="h-9" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-                </div>
-              </div>
-            )}
-
-            {/* Display Options */}
-            <div className="flex flex-wrap items-center gap-6 pt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="itemwise" checked={itemWise} onCheckedChange={(c) => setItemWise(c as boolean)} />
-                <Label htmlFor="itemwise" className="cursor-pointer text-sm font-normal">Item Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="datewise" checked={dateWise} onCheckedChange={(c) => setDateWise(c as boolean)} />
-                <Label htmlFor="datewise" className="cursor-pointer text-sm font-normal">Date Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="partywise" checked={partyWise} onCheckedChange={(c) => setPartyWise(c as boolean)} />
-                <Label htmlFor="partywise" className="cursor-pointer text-sm font-normal">Party Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="billdetail" checked={billDetail} onCheckedChange={(c) => setBillDetail(c as boolean)} />
-                <Label htmlFor="billdetail" className="cursor-pointer text-sm font-normal">Bill Detail</Label>
+                <Input
+                  className="h-9"
+                  placeholder="Enter batch code (optional)"
+                  value={batchCode}
+                  onChange={(e) => setBatchCode(e.target.value)}
+                />
               </div>
             </div>
 
@@ -404,7 +307,7 @@ export default function ItemRegisterTable() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button
                 onClick={handleSearch}
-                disabled={isPending || !itemIdInput.trim()}
+                disabled={isPending || !selectedItemId}
                 size="sm"
                 className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
               >
@@ -423,7 +326,7 @@ export default function ItemRegisterTable() {
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -431,7 +334,7 @@ export default function ItemRegisterTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -439,7 +342,7 @@ export default function ItemRegisterTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()}>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()} disabled={filtered.length === 0}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -450,7 +353,7 @@ export default function ItemRegisterTable() {
 
             {error && (
               <p className="text-sm text-destructive">
-                Failed to fetch data. Please check the item ID and try again.
+                Failed to fetch data. Please check your selection and try again.
               </p>
             )}
           </CardContent>
@@ -545,7 +448,20 @@ export default function ItemRegisterTable() {
       {/* AI Assistant */}
       <ModuleAIAssistant
         moduleName="Item Register"
-        moduleData={{ data: rows, itemWise, dateWise, partyWise, billDetail, openingRow, closingRow }}
+        moduleData={{ 
+          data: rows, 
+          selectedItemId,
+          fromDate,
+          toDate,
+          isOpeningStock,
+          onWeight,
+          batchCode,
+          openingRow, 
+          closingRow,
+          totalReceived,
+          totalIssued,
+          closingBalance,
+        }}
       />
     </TooltipProvider>
   );
