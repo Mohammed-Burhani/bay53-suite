@@ -96,7 +96,7 @@ const NAV_MODULES: NavModule[] = [
     activeBg: "bg-cyan-500/20",
     subItems: [
       { href: "/pos", label: "POS (Billing)", icon: ShoppingCart },
-      { href: "/sales", label: "All Invoices", icon: Receipt },
+      { href: "/sales", label: "Sales Invoices", icon: Receipt },
       { href: "/sales/create", label: "Create Invoice", icon: Plus },
       { href: "/sales/returns", label: "Sales Returns", icon: Trash2 },
       { href: "/sales/certificates", label: "Calibration Certificates", icon: FileText },
@@ -109,10 +109,20 @@ const NAV_MODULES: NavModule[] = [
     color: "text-violet-400",
     activeBg: "bg-violet-500/20",
     subItems: [
-      { href: "/purchases", label: "All Purchases", icon: List },
+      { href: "/purchases", label: "Purchase Invoices", icon: Receipt },
       { href: "/purchases/create", label: "New Purchase", icon: Plus },
       { href: "/purchases/orders", label: "Purchase Orders", icon: FileText },
       { href: "/purchases/returns", label: "Purchase Returns", icon: Trash2 },
+    ],
+  },
+  {
+    id: "stock",
+    label: "Stock",
+    icon: Package,
+    color: "text-emerald-400",
+    activeBg: "bg-emerald-500/20",
+    subItems: [
+      { href: "/stock-invoices", label: "Stock Invoices", icon: Receipt },
     ],
   },
   {
