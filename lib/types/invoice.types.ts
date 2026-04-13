@@ -18,32 +18,24 @@ export interface InvoiceSearchPayload {
 export interface InvoiceSearchItem {
   invCode: number;
   billNo: string;
-  billDate: string;
+  date: string; // ISO format: "2026-04-01T11:53:51.2"
   partyName: string;
-  party_ID: number;
-  invType: string;
-  invTypeId: number;
+  gstNo?: string;
+  invoiceType: number;
   stockPlace: string;
-  sp_ID: number;
-  totalAmount: number;
-  taxAmount: number;
-  grandTotal: number;
-  paidAmount: number;
-  balanceAmount: number;
-  status: string; // "Paid", "Partial", "Unpaid"
-  createdBy: string;
-  createdDate: string;
-  modifiedDate: string;
-  note: string | null;
+  spId: number;
+  amount: number;
+  recBy?: string; // Payment method: "Credit", "Cash", etc.
+  city?: string;
+  irn?: string;
   // Additional fields that might come from API
   [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface InvoiceSearchResponse {
   list: InvoiceSearchItem[];
-  totalRecords: number;
-  pageNumber: number;
-  pageSize: number;
+  deletes: any[] | null;
+  totalCount: number;
 }
 
 // Invoice category types

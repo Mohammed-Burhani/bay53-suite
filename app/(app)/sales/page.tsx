@@ -15,7 +15,8 @@ export default function SalesPage() {
 
       <InvoiceListTable
         title="Sales Invoices"
-        defaultInvType={1} // Sales invoice type ID (adjust based on your setup)
+        invType={1} // Sales invoice type ID
+        showInvoiceTypeFilter={false} // Don't show dropdown, fixed to sales
         icon={TrendingUp}
         iconColor="bg-cyan-500"
       />

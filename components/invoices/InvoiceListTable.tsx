@@ -26,8 +26,6 @@ import {
   Loader2,
   Filter,
   X,
-  Building2,
-  Package,
   ChevronsUpDown,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -45,23 +43,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface InvoiceListTableProps {
   title: string;
-  defaultInvType?: number; // Default invoice type filter
+  invType: number; // Invoice type to filter (0 = all, 1 = sales, 2 = purchase, etc.)
+  showInvoiceTypeFilter?: boolean; // Whether to show the invoice type dropdown
   icon?: React.ElementType;
   iconColor?: string;
 }
 
 export function InvoiceListTable({
   title,
-  defaultInvType = 0,
+  invType,
+  showInvoiceTypeFilter = false,
   icon: Icon = FileText,
   iconColor = "bg-indigo-500",
 }: InvoiceListTableProps) {
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedInvType, setSelectedInvType] = useState<number>(defaultInvType);
-  const [selectedStockPlaceIds, setSelectedStockPlaceIds] = useState<number[]>([]);
+  const [selectedInvType, setSelectedInvType] = useState<number>(invType);
+  const [selectedStockPlaceIds, setSelectedStockPlaceIds] = useState<number[]>([0]);
   const [invoiceNo, setInvoiceNo] = useState("");
   const [billNo, setBillNo] = useState("");
+  const [itemName, setItemName] = useState("");
   
   // Date filter state
   const [dateType, setDateType] = useState<DateFilterType>("current_month");
@@ -117,7 +118,7 @@ export function InvoiceListTable({
         bill_No: billNo.trim() || null,
         spIds: selectedStockPlaceIds,
         partyName: partyName,
-        itemName: null,
+        itemName: itemName.trim() || null,
       },
       {
         onSuccess: (data) => {
@@ -133,8 +134,8 @@ export function InvoiceListTable({
   };
 
   const handleClear = () => {
-    setSelectedInvType(defaultInvType);
-    setSelectedStockPlaceIds([]);
+    setSelectedInvType(invType); // Reset to the prop value
+    setSelectedStockPlaceIds([0]);
     setInvoiceNo("");
     setDateType("current_month");
     setSelectedMonth("");
@@ -146,6 +147,7 @@ export function InvoiceListTable({
     setCalculatedFromDate(null);
     setCalculatedToDate(null);
     setBillNo("");
+    setItemName("");
     setSelectedLedgerIds([]);
     setSelectedLedgers([]);
     setSearchTerm("");
@@ -162,16 +164,14 @@ export function InvoiceListTable({
       return (
         inv.billNo?.toLowerCase().includes(search) ||
         inv.partyName?.toLowerCase().includes(search) ||
-        inv.invType?.toLowerCase().includes(search) ||
-        inv.stockPlace?.toLowerCase().includes(search)
+        inv.stockPlace?.toLowerCase().includes(search) ||
+        inv.city?.toLowerCase().includes(search)
       );
     });
   }, [invoiceData?.list, searchTerm]);
 
   // Calculate stats
-  const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
-  const totalPaid = filteredInvoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
-  const totalBalance = filteredInvoices.reduce((sum, inv) => sum + (inv.balanceAmount || 0), 0);
+  const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
   // Pagination
   const startIndex = (currentPage - 1) * pageSize;
@@ -179,43 +179,34 @@ export function InvoiceListTable({
   const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
 
   const isLoading = isLoadingTypes || isLoadingStockPlaces || isLoadingInvoices;
-  const hasFilters = selectedInvType !== 0 || selectedStockPlaceIds.length > 0 || calculatedFromDate || calculatedToDate || billNo || invoiceNo || selectedLedgerIds.length > 0;
+  const hasFilters = 
+    selectedInvType !== 0 || 
+    (selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0)) || 
+    calculatedFromDate || 
+    calculatedToDate || 
+    billNo || 
+    invoiceNo || 
+    itemName ||
+    selectedLedgerIds.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Stats Cards */}
+      {/* Stats Card */}
       {filteredInvoices.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <FileText className="h-8 w-8 opacity-80" />
+        <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium opacity-90">Total Amount</p>
+                <p className="text-3xl font-bold mt-1">{formatCurrency(totalAmount)}</p>
               </div>
-              <p className="text-sm font-medium opacity-90">Total Amount</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(totalAmount)}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <Package className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-sm font-medium opacity-90">Total Paid</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(totalPaid)}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 bg-linear-to-br from-amber-500 to-amber-600 text-white shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <Building2 className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-sm font-medium opacity-90">Balance Due</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(totalBalance)}</p>
-            </CardContent>
-          </Card>
-        </div>
+              <FileText className="h-12 w-12 opacity-80" />
+            </div>
+            <div className="mt-4 text-sm opacity-90">
+              {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? "s" : ""}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Filter Panel */}
@@ -234,7 +225,7 @@ export function InvoiceListTable({
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-4 space-y-3">
           {/* Quick Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -242,33 +233,35 @@ export function InvoiceListTable({
               placeholder="Quick search by bill no, party, type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10"
+              className="pl-10 h-9"
             />
           </div>
 
           {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Invoice Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Invoice Type</label>
-              <Select
-                value={selectedInvType.toString()}
-                onValueChange={(value) => setSelectedInvType(Number(value))}
-                disabled={isLoadingTypes}
-              >
-                <SelectTrigger className="h-9 w-full">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">All Types</SelectItem>
-                  {invoiceTypes.map((type) => (
-                    <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
-                      {type.typeName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${showInvoiceTypeFilter ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
+            {/* Invoice Type - Only show if showInvoiceTypeFilter is true */}
+            {showInvoiceTypeFilter && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Invoice Type</label>
+                <Select
+                  value={selectedInvType.toString()}
+                  onValueChange={(value) => setSelectedInvType(Number(value))}
+                  disabled={isLoadingTypes}
+                >
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">All Types</SelectItem>
+                    {invoiceTypes.map((type) => (
+                      <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
+                        {type.typeName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Invoice Number (Numeric) */}
             <div className="space-y-2">
@@ -292,6 +285,17 @@ export function InvoiceListTable({
                 className="h-9"
               />
             </div>
+
+            {/* Item Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Item Name</label>
+              <Input
+                placeholder="Enter item name"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="h-9"
+              />
+            </div>
           </div>
 
           {/* Stock Place Multi-Select */}
@@ -305,7 +309,7 @@ export function InvoiceListTable({
                     className="w-full h-9 justify-between font-normal"
                     disabled={isLoadingStockPlaces}
                   >
-                    {selectedStockPlaceIds.length === 0 ? (
+                    {selectedStockPlaceIds.length === 0 || (selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) ? (
                       <span className="text-muted-foreground">All Stock Places</span>
                     ) : (
                       <span className="truncate">
@@ -321,15 +325,36 @@ export function InvoiceListTable({
                     <CommandList>
                       <CommandEmpty>No stock places found.</CommandEmpty>
                       <CommandGroup>
+                        <CommandItem
+                          onSelect={() => {
+                            setSelectedStockPlaceIds([0]);
+                          }}
+                        >
+                          <Checkbox
+                            checked={selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0}
+                            className="mr-2"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium">All Stock Places</div>
+                            <div className="text-xs text-muted-foreground">Show all</div>
+                          </div>
+                        </CommandItem>
                         {stockPlaces.map((sp) => (
                           <CommandItem
                             key={sp.sp_ID}
                             onSelect={() => {
-                              setSelectedStockPlaceIds((prev) =>
-                                prev.includes(sp.sp_ID)
-                                  ? prev.filter((id) => id !== sp.sp_ID)
-                                  : [...prev, sp.sp_ID]
-                              );
+                              setSelectedStockPlaceIds((prev) => {
+                                // Remove 0 if it exists when selecting a specific stock place
+                                const filtered = prev.filter(id => id !== 0);
+                                
+                                if (prev.includes(sp.sp_ID)) {
+                                  const newIds = filtered.filter((id) => id !== sp.sp_ID);
+                                  // If no stock places selected, default to [0]
+                                  return newIds.length === 0 ? [0] : newIds;
+                                } else {
+                                  return [...filtered, sp.sp_ID];
+                                }
+                              });
                             }}
                           >
                             <Checkbox
@@ -347,9 +372,10 @@ export function InvoiceListTable({
                   </Command>
                 </PopoverContent>
               </Popover>
-              {selectedStockPlaceIds.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
+              {selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
                   {selectedStockPlaceIds.map((spId) => {
+                    if (spId === 0) return null;
                     const sp = stockPlaces.find((s) => s.sp_ID === spId);
                     if (!sp) return null;
                     return (
@@ -359,7 +385,10 @@ export function InvoiceListTable({
                           type="button"
                           className="ml-1 rounded-sm hover:bg-destructive/20 hover:text-destructive"
                           onClick={() => {
-                            setSelectedStockPlaceIds((prev) => prev.filter((id) => id !== spId));
+                            setSelectedStockPlaceIds((prev) => {
+                              const newIds = prev.filter((id) => id !== spId);
+                              return newIds.length === 0 ? [0] : newIds;
+                            });
                           }}
                         >
                           <X className="h-3 w-3" />
@@ -410,7 +439,7 @@ export function InvoiceListTable({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
             <Button
               onClick={handleSearch}
               disabled={isLoading}
@@ -435,7 +464,16 @@ export function InvoiceListTable({
             </Button>
             {hasFilters && (
               <Badge variant="secondary" className="ml-2">
-                {[selectedInvType !== 0, selectedStockPlaceIds.length > 0, calculatedFromDate, calculatedToDate, billNo, invoiceNo, selectedLedgerIds.length > 0].filter(Boolean).length} filters active
+                {[
+                  selectedInvType !== 0, 
+                  selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0), 
+                  calculatedFromDate, 
+                  calculatedToDate, 
+                  billNo, 
+                  invoiceNo, 
+                  itemName,
+                  selectedLedgerIds.length > 0
+                ].filter(Boolean).length} filters active
               </Badge>
             )}
           </div>
@@ -463,12 +501,10 @@ export function InvoiceListTable({
                     <TableHead className="font-semibold">Bill No</TableHead>
                     <TableHead className="font-semibold">Date</TableHead>
                     <TableHead className="font-semibold">Party</TableHead>
-                    <TableHead className="font-semibold">Type</TableHead>
                     <TableHead className="font-semibold">Stock Place</TableHead>
+                    <TableHead className="font-semibold">City</TableHead>
                     <TableHead className="text-right font-semibold">Amount</TableHead>
-                    <TableHead className="text-right font-semibold">Paid</TableHead>
-                    <TableHead className="text-right font-semibold">Balance</TableHead>
-                    <TableHead className="text-center font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Payment</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -476,36 +512,28 @@ export function InvoiceListTable({
                     <TableRow key={invoice.invCode} className="hover:bg-muted/50">
                       <TableCell className="font-mono text-sm">{invoice.billNo}</TableCell>
                       <TableCell className="text-sm">
-                        {format(new Date(invoice.billDate), "dd MMM yyyy")}
+                        {invoice.date ? (
+                          (() => {
+                            try {
+                              const date = new Date(invoice.date);
+                              return format(date, "dd MMM yyyy");
+                            } catch {
+                              return invoice.date;
+                            }
+                          })()
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{invoice.partyName}</TableCell>
+                      <TableCell className="text-sm">{invoice.stockPlace}</TableCell>
+                      <TableCell className="text-sm">{invoice.city || "-"}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(invoice.amount)}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {invoice.invType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{invoice.stockPlace}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(invoice.grandTotal)}
-                      </TableCell>
-                      <TableCell className="text-right text-green-600 dark:text-green-400">
-                        {formatCurrency(invoice.paidAmount)}
-                      </TableCell>
-                      <TableCell className="text-right text-amber-600 dark:text-amber-400">
-                        {formatCurrency(invoice.balanceAmount)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={
-                            invoice.status === "Paid"
-                              ? "default"
-                              : invoice.status === "Partial"
-                              ? "secondary"
-                              : "destructive"
-                          }
-                          className="text-xs"
-                        >
-                          {invoice.status}
+                          {invoice.recBy || "N/A"}
                         </Badge>
                       </TableCell>
                     </TableRow>
