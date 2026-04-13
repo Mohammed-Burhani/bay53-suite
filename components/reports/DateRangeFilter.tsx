@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format, startOfMonth, endOfMonth, startOfYear } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 export type DateFilterType = "today" | "current_month" | "range" | "monthly" | "quarterly" | "half_yearly" | "yearly" | "none";
 
@@ -122,8 +122,8 @@ export function DateRangeFilter({
     }
 
     const now = new Date();
-    let from: Date;
-    let to: Date;
+    let from: Date | null = null;
+    let to: Date | null = null;
 
     switch (dateType) {
       case "today":
@@ -193,8 +193,11 @@ export function DateRangeFilter({
           from = new Date(fromDate);
           to = new Date(toDate);
         } else {
-          from = startOfYear(now);
-          to = now;
+          // If range is selected but dates are not provided, return null
+          return {
+            from: null,
+            to: null,
+          };
         }
         break;
 
@@ -202,6 +205,14 @@ export function DateRangeFilter({
         from = new Date(currentFY.start, financialYearStart - 1, 1);
         to = new Date();
         break;
+    }
+
+    // Only format if dates are not null and are valid
+    if (!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return {
+        from: null,
+        to: null,
+      };
     }
 
     return {
