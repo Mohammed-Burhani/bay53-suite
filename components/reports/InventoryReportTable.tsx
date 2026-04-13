@@ -60,7 +60,7 @@ export default function InventoryReportTable() {
   const [selectedBrand, setSelectedBrand] = useState<string>("");
 
   // Paired Checkbox Filters
-  const [allItem, setAllItem] = useState(false);
+  const [allItem, setAllItem] = useState(true); // Default to true
   const [itemWise, setItemWise] = useState(false);
   const [inventory, setInventory] = useState(false);
   const [reorderDetails, setReorderDetails] = useState(false);
@@ -164,6 +164,12 @@ export default function InventoryReportTable() {
       }
     }
 
+    // When billTypeWise is NOT checked, force user to select a specific bill type (not "All")
+    if (!billTypeWise && billType === 0) {
+      toast.error("Please select a specific Bill Type or check 'Bill Type Wise'");
+      return;
+    }
+
     fetchInventoryReport(
       {
         itemWise: itemWise,
@@ -173,7 +179,7 @@ export default function InventoryReportTable() {
         material: selectedMaterial || null,
         quality: selectedQuality || null,
         brand: selectedBrand || null,
-        invType: billType || null,
+        invType: billTypeWise ? null : (billType || null),
         spIdWise: stockPlaceWise,
         spId: billFrom || null,
         ledgerWise: partyWise,
@@ -209,7 +215,7 @@ export default function InventoryReportTable() {
     setSelectedMaterial("");
     setSelectedQuality("");
     setSelectedBrand("");
-    setAllItem(false);
+    setAllItem(true); // Reset to default true
     setItemWise(false);
     setInventory(false);
     setReorderDetails(false);
@@ -263,10 +269,40 @@ export default function InventoryReportTable() {
     if (filteredData.length === 0) return [];
     
     const firstRow = filteredData[0];
-    return Object.keys(firstRow).map(key => ({
-      key,
-      label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
-    }));
+    const allColumns = Object.keys(firstRow);
+
+    // Define hidden columns (case-insensitive matching)
+    const hiddenColumns = ['typeid'];
+    
+    // Filter out hidden columns and create column objects
+    const visibleColumns = allColumns
+      .filter(key => !hiddenColumns.includes(key.toLowerCase().replace(/\s+/g, '')))
+      .map(key => ({
+        key,
+        label: key, // Keep original key as label since API already provides formatted names
+      }));
+
+    // Define column order: Bill Type first, then Amount
+    const priorityOrder = ['billtype', 'amount'];
+    
+    // Sort columns: prioritized columns first in specified order, then others
+    const sortedColumns = visibleColumns.sort((a, b) => {
+      const aKey = a.key.toLowerCase().replace(/\s+/g, '');
+      const bKey = b.key.toLowerCase().replace(/\s+/g, '');
+      const aIndex = priorityOrder.indexOf(aKey);
+      const bIndex = priorityOrder.indexOf(bKey);
+      
+      // If both are in priority list, sort by their order
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      // If only a is in priority list, a comes first
+      if (aIndex !== -1) return -1;
+      // If only b is in priority list, b comes first
+      if (bIndex !== -1) return 1;
+      // Otherwise maintain original order
+      return 0;
+    });
+    
+    return sortedColumns;
   }, [filteredData]);
 
   // Pagination
@@ -941,11 +977,17 @@ export default function InventoryReportTable() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
-                      {dynamicColumns.map((col) => (
-                        <TableHead key={col.key} className="font-semibold whitespace-nowrap">
-                          {col.label}
-                        </TableHead>
-                      ))}
+                      {dynamicColumns.map((col) => {
+                        const isAmountColumn = col.key.toLowerCase().replace(/\s+/g, '') === 'amount';
+                        return (
+                          <TableHead 
+                            key={col.key} 
+                            className={`font-semibold whitespace-nowrap ${isAmountColumn ? 'text-right' : 'text-left'}`}
+                          >
+                            {col.label}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -954,14 +996,15 @@ export default function InventoryReportTable() {
                         {dynamicColumns.map((col) => {
                           const value = row[col.key];
                           const isNumeric = typeof value === 'number';
+                          const isAmountColumn = col.key.toLowerCase().replace(/\s+/g, '') === 'amount';
                           
                           return (
                             <TableCell 
                               key={col.key} 
-                              className={isNumeric ? 'text-right font-medium' : ''}
+                              className={`${isNumeric || isAmountColumn ? 'text-right font-medium tabular-nums' : 'text-left'}`}
                             >
                               {value === null || value === undefined ? '-' : 
-                               isNumeric ? value.toLocaleString() : 
+                               isNumeric ? value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 
                                String(value)}
                             </TableCell>
                           );
