@@ -1,22 +1,25 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { InvoiceListTable } from "@/components/invoices/InvoiceListTable";
+import { ShoppingBag } from "lucide-react";
 
 export default function PurchaseOrdersPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Purchase Orders</h1>
-        <p className="text-sm text-muted-foreground">Manage purchase orders to suppliers</p>
+        <p className="text-sm text-muted-foreground">
+          View and manage purchase orders to suppliers
+        </p>
       </div>
 
-      <Card className="py-4">
-        <CardContent className="p-12 text-center">
-          <FileText className="h-12 w-12 mx-auto text-muted-foreground/30" />
-          <p className="mt-4 text-muted-foreground">No purchase orders created</p>
-        </CardContent>
-      </Card>
+      <InvoiceListTable
+        title="Purchase Orders"
+        invType={8}
+        showInvoiceTypeFilter={false}
+        icon={ShoppingBag}
+        iconColor="bg-amber-500"
+      />
     </div>
   );
 }
