@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { InvoiceListTable } from "@/components/invoices/InvoiceListTable";
 import { Undo2 } from "lucide-react";
 
 export default function SalesReturnsPage() {
@@ -8,15 +8,18 @@ export default function SalesReturnsPage() {
     <div className="flex flex-col gap-6 p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sales Returns</h1>
-        <p className="text-sm text-muted-foreground">Manage product returns from customers</p>
+        <p className="text-sm text-muted-foreground">
+          View and manage sales return invoices
+        </p>
       </div>
 
-      <Card className="py-4">
-        <CardContent className="p-12 text-center">
-          <Undo2 className="h-12 w-12 mx-auto text-muted-foreground/30" />
-          <p className="mt-4 text-muted-foreground">No sales returns recorded</p>
-        </CardContent>
-      </Card>
+      <InvoiceListTable
+        title="Sales Returns"
+        invType={3}
+        showInvoiceTypeFilter={false}
+        icon={Undo2}
+        iconColor="bg-red-500"
+      />
     </div>
   );
 }
