@@ -28,6 +28,7 @@ import {
   Rocket,
   Settings,
   LogOut,
+  Search,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,16 @@ const NAV_MODULES: NavModule[] = [
     ],
   },
   {
+    id: "invoices",
+    label: "All Invoices",
+    icon: Receipt,
+    color: "text-indigo-400",
+    activeBg: "bg-indigo-500/20",
+    subItems: [
+      { href: "/invoices", label: "All Invoices", icon: Receipt },
+    ],
+  },
+  {
     id: "inventory",
     label: "Inventory",
     icon: Package,
@@ -95,11 +106,15 @@ const NAV_MODULES: NavModule[] = [
     color: "text-cyan-400",
     activeBg: "bg-cyan-500/20",
     subItems: [
-      { href: "/pos", label: "POS (Billing)", icon: ShoppingCart },
-      { href: "/sales", label: "Sales Invoices", icon: Receipt },
-      { href: "/sales/create", label: "Create Invoice", icon: Plus },
-      { href: "/sales/returns", label: "Sales Returns", icon: Trash2 },
-      { href: "/sales/certificates", label: "Calibration Certificates", icon: FileText },
+      { href: "/sales/enquiry", label: "Enquiry", icon: Search },
+      { href: "/sales/quotation", label: "Quotation", icon: FileText },
+      { href: "/sales/order", label: "Order", icon: ShoppingCart },
+      { href: "/sales/challan", label: "Challan", icon: FileText },
+      { href: "/sales", label: "Invoice", icon: Receipt },
+      { href: "/sales/returns", label: "Return", icon: Trash2 },
+      { href: "/sales/performa", label: "Performa", icon: FileText },
+      { href: "/sales/cash", label: "Cash", icon: IndianRupee },
+      { href: "/sales/other-income", label: "Income thru Other Sales", icon: TrendingUp },
     ],
   },
   {
@@ -109,10 +124,10 @@ const NAV_MODULES: NavModule[] = [
     color: "text-violet-400",
     activeBg: "bg-violet-500/20",
     subItems: [
-      { href: "/purchases", label: "Purchase Invoices", icon: Receipt },
-      { href: "/purchases/create", label: "New Purchase", icon: Plus },
-      { href: "/purchases/orders", label: "Purchase Orders", icon: FileText },
-      { href: "/purchases/returns", label: "Purchase Returns", icon: Trash2 },
+      { href: "/purchases/po", label: "PO", icon: ShoppingCart },
+      { href: "/purchases", label: "Invoice", icon: Receipt },
+      { href: "/purchases/returns", label: "Return", icon: Trash2 },
+      { href: "/purchases/other-expense", label: "Expense thru Other Purchase", icon: TrendingDown },
     ],
   },
   {
@@ -122,7 +137,11 @@ const NAV_MODULES: NavModule[] = [
     color: "text-emerald-400",
     activeBg: "bg-emerald-500/20",
     subItems: [
-      { href: "/stock-invoices", label: "Stock Invoices", icon: Receipt },
+      { href: "/stock/opening", label: "Opening", icon: Package },
+      { href: "/stock/absolute", label: "Absolute", icon: Package },
+      { href: "/stock/adjustment", label: "Adjustment", icon: Package },
+      { href: "/stock/in", label: "In", icon: TrendingUp },
+      { href: "/stock/out", label: "Out", icon: TrendingDown },
     ],
   },
   {

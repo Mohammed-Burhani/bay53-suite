@@ -15,7 +15,8 @@ export default function PurchasesPage() {
 
       <InvoiceListTable
         title="Purchase Invoices"
-        defaultInvType={2} // Purchase invoice type ID (adjust based on your setup)
+        invType={2} // Purchase invoice type ID
+        showInvoiceTypeFilter={false} // Don't show dropdown, fixed to purchase
         icon={ShoppingCart}
         iconColor="bg-violet-500"
       />

@@ -15,7 +15,8 @@ export default function StockInvoicesPage() {
 
       <InvoiceListTable
         title="Stock Invoices"
-        defaultInvType={0} // Show all stock-related types
+        invType={0} // Show all stock-related types
+        showInvoiceTypeFilter={true} // Show dropdown for stock types
         icon={Package}
         iconColor="bg-emerald-500"
       />
