@@ -72,7 +72,7 @@ export default function LedgerRegisterReport() {
       selectedLedgerIds: [], 
       selectedLedgerName: "",
       selectedLedgers: [],
-      dateType: "current_month",
+      dateType: "none",
       fromDate: null,
       toDate: null,
       selectedMonth: "",

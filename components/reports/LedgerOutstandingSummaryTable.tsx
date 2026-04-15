@@ -436,7 +436,7 @@ export default function LedgerOutstandingSummaryTable() {
                     selectedGroupId: "",
                     selectedLedgerIds: [],
                     selectedLedgers: [],
-                    dateType: "current_month",
+                    dateType: "none",
                     fromDate: null,
                     toDate: null,
                     selectedMonth: "",
