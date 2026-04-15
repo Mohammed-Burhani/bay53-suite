@@ -196,7 +196,7 @@ export default function LedgerOutstandingTable() {
                     selectedLedgerIds: [],
                     selectedLedgers: [],
                     detailed: false,
-                    dateType: "current_month",
+                    dateType: "none",
                     fromDate: null,
                     toDate: null,
                     selectedMonth: "",
