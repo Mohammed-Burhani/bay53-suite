@@ -141,8 +141,8 @@ export interface ItemRegisterItem {
 // --- Ledger Register ---
 
 export interface LedgerRegisterPayload {
-  from: string | null; // "DD/MM/YYYY HH:mm:ss" or null
-  to: string | null;
+  fromDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
+  toDate: string | null;
   ledgerId: number;
   runningBalance: boolean;
   openingBalance: boolean;
