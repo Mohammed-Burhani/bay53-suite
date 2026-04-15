@@ -48,8 +48,8 @@ export default function LedgerRegisterReport() {
     if (!ledgerId) return;
 
     console.log("Fetching ledger register with payload:", {
-      from: fromDate,
-      to: toDate,
+      fromDate: fromDate,
+      toDate: toDate,
       ledgerId,
       runningBalance,
       openingBalance,
@@ -58,8 +58,8 @@ export default function LedgerRegisterReport() {
     });
 
     fetchLedgerRegister({
-      from: fromDate,
-      to: toDate,
+      fromDate: fromDate,
+      toDate: toDate,
       ledgerId,
       runningBalance,
       openingBalance,
