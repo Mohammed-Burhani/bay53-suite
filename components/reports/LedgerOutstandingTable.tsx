@@ -76,7 +76,21 @@ export default function LedgerOutstandingTable() {
   const rows: LedgerOutstandingItem[] = data ?? [];
   const paginatedRows = getPaginatedData(rows);
   const totalOutstanding = rows.reduce((sum, r) => sum + r.pending, 0);
-  const overdueCount = rows.filter((r) => r.overDue > 0).length;
+  const overdueCount = rows.filter((r) => {
+    const overdue = typeof r.overDue === 'string' ? parseFloat(r.overDue) : r.overDue;
+    return overdue < 0; // Negative means overdue
+  }).length;
+  
+  // Calculate opening and closing totals
+  const totalOpening = rows.reduce((sum, r) => {
+    const amount = r.openingDrCr === "Cr" ? -r.opening : r.opening;
+    return sum + amount;
+  }, 0);
+  
+  const totalClosing = rows.reduce((sum, r) => {
+    const amount = r.pendingDrCr === "Cr" ? -r.pending : r.pending;
+    return sum + amount;
+  }, 0);
 
   return (
     <TooltipProvider>
@@ -283,52 +297,82 @@ export default function LedgerOutstandingTable() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedRows.map((row, idx) => {
-                      const isOverdue = row.overDue > 0;
-                      return (
-                        <TableRow
-                          key={idx}
-                          className={`hover:bg-muted/50 ${isOverdue ? "bg-red-50/50 dark:bg-red-950/10" : ""}`}
-                        >
-                          <TableCell className="font-medium">{row.party}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{row.group}</TableCell>
-                          <TableCell className="font-mono text-sm">{row.billNo}</TableCell>
-                          <TableCell>{new Date(row.date).toLocaleDateString("en-IN")}</TableCell>
-                          <TableCell className="text-sm">
-                            {[row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / ")}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={row.address}>
-                            {row.address}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">₹{row.opening.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={row.openingDrCr === "Dr" ? "destructive" : "default"}>
-                              {row.openingDrCr}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-blue-600">
-                            ₹{row.pending.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={row.pendingDrCr === "Dr" ? "destructive" : "default"}>
-                              {row.pendingDrCr}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-                              {new Date(row.dueOn).toLocaleDateString("en-IN")}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {isOverdue ? (
-                              <Badge variant="destructive">{row.overDue}d</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                    <>
+                      {/* Opening Total Row */}
+                      <TableRow className="bg-blue-50 dark:bg-blue-950/20 font-bold border-b-2">
+                        <TableCell colSpan={6} className="text-right">Opening Total:</TableCell>
+                        <TableCell className="text-right">₹{Math.abs(totalOpening).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={totalOpening >= 0 ? "destructive" : "default"}>
+                            {totalOpening >= 0 ? "Dr" : "Cr"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell colSpan={4}></TableCell>
+                      </TableRow>
+
+                      {/* Data Rows */}
+                      {paginatedRows.map((row, idx) => {
+                        const overdue = typeof row.overDue === 'string' ? parseFloat(row.overDue) : row.overDue;
+                        const isOverdue = overdue < 0; // Negative means overdue
+                        const overdueDays = Math.abs(overdue); // Display as positive number
+                        return (
+                          <TableRow
+                            key={idx}
+                            className={`hover:bg-muted/50 ${isOverdue ? "bg-red-50/50 dark:bg-red-950/10" : ""}`}
+                          >
+                            <TableCell className="font-medium">{row.party}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{row.group}</TableCell>
+                            <TableCell className="font-mono text-sm">{row.billNo}</TableCell>
+                            <TableCell>{new Date(row.date).toLocaleDateString("en-IN")}</TableCell>
+                            <TableCell className="text-sm">
+                              {[row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / ")}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={row.address}>
+                              {row.address}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">₹{row.opening.toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Badge variant={row.openingDrCr === "Dr" ? "destructive" : "default"}>
+                                {row.openingDrCr}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-blue-600">
+                              ₹{row.pending.toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={row.pendingDrCr === "Dr" ? "destructive" : "default"}>
+                                {row.pendingDrCr}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className={isOverdue ? "text-red-600 font-medium" : ""}>
+                                {new Date(row.dueOn).toLocaleDateString("en-IN")}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {isOverdue ? (
+                                <Badge variant="destructive">{overdueDays}d</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+
+                      {/* Closing Total Row */}
+                      <TableRow className="bg-green-50 dark:bg-green-950/20 font-bold border-t-2">
+                        <TableCell colSpan={6} className="text-right">Closing Total:</TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                        <TableCell className="text-right">₹{Math.abs(totalClosing).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={totalClosing >= 0 ? "destructive" : "default"}>
+                            {totalClosing >= 0 ? "Dr" : "Cr"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                      </TableRow>
+                    </>
                   )}
                 </TableBody>
               </Table>
