@@ -20,9 +20,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, Users, Loader2, X, Download, FileSpreadsheet } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstandingSummary, useLedgersByGroup, useGroupSearch } from "@/lib/hooks/useReports";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 import type { LedgerOutstandingSummaryItem, Ledger } from "@/lib/types/reports.types";
 import {
   Select,
@@ -31,7 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
@@ -198,6 +198,46 @@ export default function LedgerOutstandingSummaryTable() {
   const totalPending = rows.reduce((sum, r) => sum + r["Pending Amount"], 0);
   const debtorCount = rows.filter((r) => r.DrCr === "Dr").length;
   const creditorCount = rows.filter((r) => r.DrCr === "Cr").length;
+
+  // Export handlers
+  const handlePrint = () => {
+    const headers = [
+      { key: "Party", label: "Party" },
+      { key: "GSTNo", label: "GST No" },
+      { key: "Area", label: "Area" },
+      { key: "City", label: "City" },
+      { key: "Contact No.", label: "Contact No" },
+      { key: "Pending Amount", label: "Closing" },
+      { key: "DrCr", label: "DrCr" },
+    ];
+    printTable(rows as unknown as Record<string, unknown>[], headers, "Ledger Balances Report");
+  };
+
+  const handleDownloadPDF = () => {
+    const headers = [
+      { key: "Party", label: "Party" },
+      { key: "GSTNo", label: "GST No" },
+      { key: "Area", label: "Area" },
+      { key: "City", label: "City" },
+      { key: "Contact No.", label: "Contact No" },
+      { key: "Pending Amount", label: "Closing" },
+      { key: "DrCr", label: "DrCr" },
+    ];
+    exportToPDF(rows as unknown as Record<string, unknown>[], headers, "Ledger Balances Report", "ledger-balances");
+  };
+
+  const handleExportExcel = () => {
+    const headers = [
+      { key: "Party", label: "Party" },
+      { key: "GSTNo", label: "GST No" },
+      { key: "Area", label: "Area" },
+      { key: "City", label: "City" },
+      { key: "Contact No.", label: "Contact No" },
+      { key: "Pending Amount", label: "Closing" },
+      { key: "DrCr", label: "DrCr" },
+    ];
+    exportToExcel(rows as unknown as Record<string, unknown>[], headers, "ledger-balances");
+  };
 
   return (
     <TooltipProvider>
@@ -460,11 +500,45 @@ export default function LedgerOutstandingSummaryTable() {
               <div className="flex-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handlePrint}
+                    disabled={rows.length === 0}
+                  >
                     <Printer className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Print</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handleDownloadPDF}
+                    disabled={rows.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download PDF</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handleExportExcel}
+                    disabled={rows.length === 0}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export to Excel</TooltipContent>
               </Tooltip>
             </div>
 

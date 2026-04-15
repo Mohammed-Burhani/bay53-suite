@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X, Download, FileSpreadsheet } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useLedgerOutstanding } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
@@ -27,6 +27,7 @@ import { LedgerSearchInput } from "./LedgerSearchInput";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { DateRangeFilter } from "./DateRangeFilter";
 import { useReportFiltersStore } from "@/lib/stores/report-filters-store";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 export default function LedgerOutstandingTable() {
   const { ledgerOutstanding, setLedgerOutstandingFilters } = useReportFiltersStore();
@@ -91,6 +92,82 @@ export default function LedgerOutstandingTable() {
     const amount = r.pendingDrCr === "Cr" ? -r.pending : r.pending;
     return sum + amount;
   }, 0);
+
+  // Export handlers
+  const handlePrint = () => {
+    const headers = [
+      { key: "party", label: "Party" },
+      { key: "group", label: "Group" },
+      { key: "billNo", label: "Bill No" },
+      { key: "date", label: "Date" },
+      { key: "phone", label: "Phone" },
+      { key: "address", label: "Address" },
+      { key: "opening", label: "Opening" },
+      { key: "openingDrCr", label: "Dr/Cr" },
+      { key: "pending", label: "Pending" },
+      { key: "pendingDrCr", label: "Dr/Cr" },
+      { key: "dueOn", label: "Due On" },
+      { key: "overDue", label: "Overdue (days)" },
+    ];
+    const exportData = rows.map(row => ({
+      ...row,
+      date: new Date(row.date).toLocaleDateString("en-IN"),
+      dueOn: new Date(row.dueOn).toLocaleDateString("en-IN"),
+      phone: [row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / "),
+      overDue: typeof row.overDue === 'string' ? parseFloat(row.overDue) : row.overDue,
+    }));
+    printTable(exportData as unknown as Record<string, unknown>[], headers, "Ledger Outstanding Report");
+  };
+
+  const handleDownloadPDF = () => {
+    const headers = [
+      { key: "party", label: "Party" },
+      { key: "group", label: "Group" },
+      { key: "billNo", label: "Bill No" },
+      { key: "date", label: "Date" },
+      { key: "phone", label: "Phone" },
+      { key: "address", label: "Address" },
+      { key: "opening", label: "Opening" },
+      { key: "openingDrCr", label: "Dr/Cr" },
+      { key: "pending", label: "Pending" },
+      { key: "pendingDrCr", label: "Dr/Cr" },
+      { key: "dueOn", label: "Due On" },
+      { key: "overDue", label: "Overdue (days)" },
+    ];
+    const exportData = rows.map(row => ({
+      ...row,
+      date: new Date(row.date).toLocaleDateString("en-IN"),
+      dueOn: new Date(row.dueOn).toLocaleDateString("en-IN"),
+      phone: [row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / "),
+      overDue: typeof row.overDue === 'string' ? parseFloat(row.overDue) : row.overDue,
+    }));
+    exportToPDF(exportData as unknown as Record<string, unknown>[], headers, "Ledger Outstanding Report", "ledger-outstanding");
+  };
+
+  const handleExportExcel = () => {
+    const headers = [
+      { key: "party", label: "Party" },
+      { key: "group", label: "Group" },
+      { key: "billNo", label: "Bill No" },
+      { key: "date", label: "Date" },
+      { key: "phone", label: "Phone" },
+      { key: "address", label: "Address" },
+      { key: "opening", label: "Opening" },
+      { key: "openingDrCr", label: "Dr/Cr" },
+      { key: "pending", label: "Pending" },
+      { key: "pendingDrCr", label: "Dr/Cr" },
+      { key: "dueOn", label: "Due On" },
+      { key: "overDue", label: "Overdue (days)" },
+    ];
+    const exportData = rows.map(row => ({
+      ...row,
+      date: new Date(row.date).toLocaleDateString("en-IN"),
+      dueOn: new Date(row.dueOn).toLocaleDateString("en-IN"),
+      phone: [row.phone1, row.phone2, row.mobile].filter(Boolean).join(" / "),
+      overDue: typeof row.overDue === 'string' ? parseFloat(row.overDue) : row.overDue,
+    }));
+    exportToExcel(exportData as unknown as Record<string, unknown>[], headers, "ledger-outstanding");
+  };
 
   return (
     <TooltipProvider>
@@ -227,11 +304,45 @@ export default function LedgerOutstandingTable() {
               <div className="flex-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handlePrint}
+                    disabled={rows.length === 0}
+                  >
                     <Printer className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Print</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handleDownloadPDF}
+                    disabled={rows.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download PDF</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    onClick={handleExportExcel}
+                    disabled={rows.length === 0}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export to Excel</TooltipContent>
               </Tooltip>
             </div>
 
