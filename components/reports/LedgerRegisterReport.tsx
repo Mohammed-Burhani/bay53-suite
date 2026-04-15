@@ -16,6 +16,7 @@ import { LedgerRegisterTable } from "@/components/reports/LedgerRegisterTable";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
 import { useReportFiltersStore } from "@/lib/stores/report-filters-store";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 export default function LedgerRegisterReport() {
   const { ledgerRegister, setLedgerRegisterFilters } = useReportFiltersStore();
@@ -79,6 +80,61 @@ export default function LedgerRegisterReport() {
       selectedYear: "",
     });
     reset();
+  };
+
+  // Export handlers
+  const handlePrint = () => {
+    if (!data?.list || data.list.length === 0) return;
+    const headers = [
+      { key: "billDate", label: "Date" },
+      { key: "billNo", label: "Bill No." },
+      { key: "particular", label: "Particulars" },
+      { key: "debit", label: "Debit" },
+      { key: "credit", label: "Credit" },
+      { key: "running", label: "Balance" },
+      { key: "drCr", label: "Dr/Cr" },
+    ];
+    const exportData = data.list.map(row => ({
+      ...row,
+      billDate: row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "",
+    }));
+    printTable(exportData as unknown as Record<string, unknown>[], headers, `Ledger Register - ${selectedLedgerName || "Report"}`);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!data?.list || data.list.length === 0) return;
+    const headers = [
+      { key: "billDate", label: "Date" },
+      { key: "billNo", label: "Bill No." },
+      { key: "particular", label: "Particulars" },
+      { key: "debit", label: "Debit" },
+      { key: "credit", label: "Credit" },
+      { key: "running", label: "Balance" },
+      { key: "drCr", label: "Dr/Cr" },
+    ];
+    const exportData = data.list.map(row => ({
+      ...row,
+      billDate: row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "",
+    }));
+    exportToPDF(exportData as unknown as Record<string, unknown>[], headers, `Ledger Register - ${selectedLedgerName || "Report"}`, "ledger-register");
+  };
+
+  const handleExportExcel = () => {
+    if (!data?.list || data.list.length === 0) return;
+    const headers = [
+      { key: "billDate", label: "Date" },
+      { key: "billNo", label: "Bill No." },
+      { key: "particular", label: "Particulars" },
+      { key: "debit", label: "Debit" },
+      { key: "credit", label: "Credit" },
+      { key: "running", label: "Balance" },
+      { key: "drCr", label: "Dr/Cr" },
+    ];
+    const exportData = data.list.map(row => ({
+      ...row,
+      billDate: row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "",
+    }));
+    exportToExcel(exportData as unknown as Record<string, unknown>[], headers, "ledger-register");
   };
 
   return (
@@ -195,27 +251,45 @@ export default function LedgerRegisterReport() {
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <FileSpreadsheet className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to Excel</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()}>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handlePrint}
+                      disabled={!data?.list || data.list.length === 0}
+                    >
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Print</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleDownloadPDF}
+                      disabled={!data?.list || data.list.length === 0}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download PDF</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleExportExcel}
+                      disabled={!data?.list || data.list.length === 0}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export to Excel</TooltipContent>
                 </Tooltip>
               </div>
             </div>
