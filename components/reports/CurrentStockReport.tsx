@@ -52,6 +52,7 @@ import { useStockPlaces, useItems, useCurrentStock } from "@/lib/hooks/useReport
 import { toast } from "sonner";
 import type { CurrentStockItem, ItemAttributes } from "@/lib/types/reports.types";
 import { getAvailableOptions } from "@/lib/utils/item-parser";
+import { exportToExcel, exportToPDF } from "@/lib/utils/report-export";
 
 export default function CurrentStockReport() {
   const [selectedStockPlace, setSelectedStockPlace] = useState<number>(0);
@@ -163,8 +164,27 @@ export default function CurrentStockReport() {
   };
 
   const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
-    console.log(`Exporting as ${format}`);
-    toast.info(`Exporting as ${format.toUpperCase()}...`);
+    const headers = [
+      { key: "itename", label: "Item Name" },
+      { key: "category", label: "Category" },
+      { key: "brand", label: "Brand" },
+      { key: "stock", label: "Stock" },
+      { key: "unit", label: "Unit" },
+      { key: "costPrice", label: "Cost Price" },
+      { key: "sellingPrice", label: "Selling Price" },
+      { key: "stockValue", label: "Stock Value" },
+    ];
+    
+    if (format === 'excel') {
+      exportToExcel(filteredData as unknown as Record<string, unknown>[], headers, "current-stock");
+      toast.success("Exported to Excel");
+    } else if (format === 'pdf') {
+      exportToPDF(filteredData as unknown as Record<string, unknown>[], headers, "Current Stock Report", "current-stock");
+      toast.success("Downloaded PDF");
+    } else if (format === 'csv') {
+      exportToExcel(filteredData as unknown as Record<string, unknown>[], headers, "current-stock-csv");
+      toast.success("Exported to CSV");
+    }
   };
 
   // Filter and search stock data
