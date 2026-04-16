@@ -409,18 +409,6 @@ export default function LedgerOutstandingTable() {
                     </TableRow>
                   ) : (
                     <>
-                      {/* Opening Total Row */}
-                      <TableRow className="bg-blue-50 dark:bg-blue-950/20 font-bold border-b-2">
-                        <TableCell colSpan={6} className="text-right">Opening Total:</TableCell>
-                        <TableCell className="text-right">₹{Math.abs(totalOpening).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={totalOpening >= 0 ? "destructive" : "default"}>
-                            {totalOpening >= 0 ? "Dr" : "Cr"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell colSpan={4}></TableCell>
-                      </TableRow>
-
                       {/* Data Rows */}
                       {paginatedRows.map((row, idx) => {
                         const overdue = typeof row.overDue === 'string' ? parseFloat(row.overDue) : row.overDue;
@@ -471,10 +459,15 @@ export default function LedgerOutstandingTable() {
                         );
                       })}
 
-                      {/* Closing Total Row */}
-                      <TableRow className="bg-green-50 dark:bg-green-950/20 font-bold border-t-2">
-                        <TableCell colSpan={6} className="text-right">Closing Total:</TableCell>
-                        <TableCell colSpan={2}></TableCell>
+                      {/* Total Row - Opening and Closing in single line */}
+                      <TableRow className="bg-linear-to-r from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20 font-bold border-t-2">
+                        <TableCell colSpan={6} className="text-right">Total:</TableCell>
+                        <TableCell className="text-right">₹{Math.abs(totalOpening).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={totalOpening >= 0 ? "destructive" : "default"}>
+                            {totalOpening >= 0 ? "Dr" : "Cr"}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">₹{Math.abs(totalClosing).toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant={totalClosing >= 0 ? "destructive" : "default"}>
