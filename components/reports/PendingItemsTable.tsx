@@ -31,6 +31,7 @@ import {
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 interface PendingItemsTableProps {
   initialData?: Array<{
@@ -62,6 +63,61 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
   const totalPending = data.reduce((sum, item) => sum + item.pendingQty, 0);
   const totalOrders = data.length;
   const paginatedData = getPaginatedData(data);
+
+  // Export handlers
+  const handlePrint = () => {
+    const headers = [
+      { key: "size", label: "Size" },
+      { key: "material", label: "Material" },
+      { key: "quality", label: "Quality" },
+      { key: "brand", label: "Brand" },
+      { key: "type", label: "Type" },
+      { key: "party", label: "Party" },
+      { key: "billNo", label: "Bill No" },
+      { key: "orderNo", label: "Order No" },
+      { key: "invoiceQty", label: "Invoice Qty" },
+      { key: "unit", label: "Unit" },
+      { key: "pendingQty", label: "Pending Qty" },
+      { key: "status", label: "Status" },
+    ];
+    printTable(data as unknown as Record<string, unknown>[], headers, "Pending Items Report");
+  };
+
+  const handleDownloadPDF = () => {
+    const headers = [
+      { key: "size", label: "Size" },
+      { key: "material", label: "Material" },
+      { key: "quality", label: "Quality" },
+      { key: "brand", label: "Brand" },
+      { key: "type", label: "Type" },
+      { key: "party", label: "Party" },
+      { key: "billNo", label: "Bill No" },
+      { key: "orderNo", label: "Order No" },
+      { key: "invoiceQty", label: "Invoice Qty" },
+      { key: "unit", label: "Unit" },
+      { key: "pendingQty", label: "Pending Qty" },
+      { key: "status", label: "Status" },
+    ];
+    exportToPDF(data as unknown as Record<string, unknown>[], headers, "Pending Items Report", "pending-items");
+  };
+
+  const handleExportExcel = () => {
+    const headers = [
+      { key: "size", label: "Size" },
+      { key: "material", label: "Material" },
+      { key: "quality", label: "Quality" },
+      { key: "brand", label: "Brand" },
+      { key: "type", label: "Type" },
+      { key: "party", label: "Party" },
+      { key: "billNo", label: "Bill No" },
+      { key: "orderNo", label: "Order No" },
+      { key: "invoiceQty", label: "Invoice Qty" },
+      { key: "unit", label: "Unit" },
+      { key: "pendingQty", label: "Pending Qty" },
+      { key: "status", label: "Status" },
+    ];
+    exportToExcel(data as unknown as Record<string, unknown>[], headers, "pending-items");
+  };
 
   return (
     <TooltipProvider>
@@ -369,27 +425,45 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <FileSpreadsheet className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to Excel</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handlePrint}
+                      disabled={data.length === 0}
+                    >
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Print</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleDownloadPDF}
+                      disabled={data.length === 0}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download PDF</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleExportExcel}
+                      disabled={data.length === 0}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export to Excel</TooltipContent>
                 </Tooltip>
               </div>
             </div>

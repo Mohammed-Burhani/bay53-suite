@@ -28,9 +28,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3 } from "lucide-react";
+import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3, Printer } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 interface GSTFilingRow {
   [key: string]: string | number;
@@ -52,6 +53,66 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
   const totalSGST = data.reduce((sum, row) => sum + (Number(row.sgst) || 0), 0);
   const totalIGST = data.reduce((sum, row) => sum + (Number(row.igst) || 0), 0);
   const paginatedData = getPaginatedData(data);
+
+  // Export handlers
+  const getHeaders = () => {
+    switch (reportType) {
+      case "b2b":
+        return [
+          { key: "gstin", label: "GSTIN" },
+          { key: "partyName", label: "Party Name" },
+          { key: "invoiceNo", label: "Invoice No" },
+          { key: "invoiceDate", label: "Invoice Date" },
+          { key: "invoiceValue", label: "Invoice Value" },
+          { key: "taxableValue", label: "Taxable Value" },
+          { key: "gstRate", label: "GST Rate" },
+          { key: "cgst", label: "CGST" },
+          { key: "sgst", label: "SGST" },
+          { key: "igst", label: "IGST" },
+        ];
+      case "b2cl":
+      case "b2cs":
+        return [
+          { key: "invoiceNo", label: "Invoice No" },
+          { key: "invoiceDate", label: "Invoice Date" },
+          { key: "invoiceValue", label: "Invoice Value" },
+          { key: "taxableValue", label: "Taxable Value" },
+          { key: "gstRate", label: "GST Rate" },
+          { key: "cgst", label: "CGST" },
+          { key: "sgst", label: "SGST" },
+          { key: "igst", label: "IGST" },
+          { key: "placeOfSupply", label: "Place of Supply" },
+        ];
+      case "hsn":
+        return [
+          { key: "hsnCode", label: "HSN Code" },
+          { key: "description", label: "Description" },
+          { key: "uom", label: "UOM" },
+          { key: "totalQty", label: "Total Qty" },
+          { key: "taxableValue", label: "Taxable Value" },
+          { key: "cgstRate", label: "CGST Rate" },
+          { key: "cgstAmount", label: "CGST Amount" },
+          { key: "sgstRate", label: "SGST Rate" },
+          { key: "sgstAmount", label: "SGST Amount" },
+          { key: "igstRate", label: "IGST Rate" },
+          { key: "igstAmount", label: "IGST Amount" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const handlePrint = () => {
+    printTable(data as unknown as Record<string, unknown>[], getHeaders(), `GST Filing Report - ${reportType.toUpperCase()}`);
+  };
+
+  const handleDownloadPDF = () => {
+    exportToPDF(data as unknown as Record<string, unknown>[], getHeaders(), `GST Filing Report - ${reportType.toUpperCase()}`, `gst-filing-${reportType}`);
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel(data as unknown as Record<string, unknown>[], getHeaders(), `gst-filing-${reportType}`);
+  };
 
   const renderTableHeaders = () => {
     switch (reportType) {
@@ -255,16 +316,42 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <FileSpreadsheet className="h-4 w-4" />
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handlePrint}
+                      disabled={data.length === 0}
+                    >
+                      <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
+                  <TooltipContent>Print</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleDownloadPDF}
+                      disabled={data.length === 0}
+                    >
                       <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download PDF</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleExportExcel}
+                      disabled={data.length === 0}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Export to Excel</TooltipContent>

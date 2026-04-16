@@ -30,6 +30,7 @@ import type { ItemRegisterItem } from "@/lib/types/reports.types";
 import { format } from "date-fns";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { toast } from "sonner";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 export default function ItemRegisterTable() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -126,6 +127,58 @@ export default function ItemRegisterTable() {
     : rows;
 
   const paginatedFiltered = getPaginatedData(filtered);
+
+  // Export handlers
+  const handlePrint = () => {
+    const headers = [
+      { key: "BillDate", label: "Date" },
+      { key: "BillNo", label: "Bill No" },
+      { key: "Party", label: "Party" },
+      { key: "Type", label: "Type" },
+      { key: "Received", label: "Received" },
+      { key: "Issued", label: "Issued" },
+      { key: "Balance", label: "Balance" },
+    ];
+    const exportData = filtered.map(row => ({
+      ...row,
+      BillDate: row.BillDate ? format(new Date(row.BillDate), "dd MMM yyyy") : "",
+    }));
+    printTable(exportData as unknown as Record<string, unknown>[], headers, "Item Register Report");
+  };
+
+  const handleDownloadPDF = () => {
+    const headers = [
+      { key: "BillDate", label: "Date" },
+      { key: "BillNo", label: "Bill No" },
+      { key: "Party", label: "Party" },
+      { key: "Type", label: "Type" },
+      { key: "Received", label: "Received" },
+      { key: "Issued", label: "Issued" },
+      { key: "Balance", label: "Balance" },
+    ];
+    const exportData = filtered.map(row => ({
+      ...row,
+      BillDate: row.BillDate ? format(new Date(row.BillDate), "dd MMM yyyy") : "",
+    }));
+    exportToPDF(exportData as unknown as Record<string, unknown>[], headers, "Item Register Report", "item-register");
+  };
+
+  const handleExportExcel = () => {
+    const headers = [
+      { key: "BillDate", label: "Date" },
+      { key: "BillNo", label: "Bill No" },
+      { key: "Party", label: "Party" },
+      { key: "Type", label: "Type" },
+      { key: "Received", label: "Received" },
+      { key: "Issued", label: "Issued" },
+      { key: "Balance", label: "Balance" },
+    ];
+    const exportData = filtered.map(row => ({
+      ...row,
+      BillDate: row.BillDate ? format(new Date(row.BillDate), "dd MMM yyyy") : "",
+    }));
+    exportToExcel(exportData as unknown as Record<string, unknown>[], headers, "item-register");
+  };
 
   // Show loading screen until items are loaded
   if (isLoadingItems) {
@@ -309,27 +362,45 @@ export default function ItemRegisterTable() {
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0}>
-                      <FileSpreadsheet className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to Excel</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => window.print()} disabled={filtered.length === 0}>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9" 
+                      disabled={filtered.length === 0}
+                      onClick={handlePrint}
+                    >
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Print</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9" 
+                      disabled={filtered.length === 0}
+                      onClick={handleDownloadPDF}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download PDF</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9" 
+                      disabled={filtered.length === 0}
+                      onClick={handleExportExcel}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export to Excel</TooltipContent>
                 </Tooltip>
               </div>
             </div>

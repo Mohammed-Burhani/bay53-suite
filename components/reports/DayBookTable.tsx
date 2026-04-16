@@ -30,6 +30,7 @@ import {
 import { Download, Search, X, Filter, FileSpreadsheet, Printer, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
 interface DayBookRow {
   billNo: string;
@@ -127,6 +128,52 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
 
   const totalDebit = data.reduce((sum, row) => sum + row.debitAmount, 0);
   const totalCredit = data.reduce((sum, row) => sum + row.creditAmount, 0);
+
+  // Export handlers
+  const handlePrint = () => {
+    const headers = [
+      { key: "billNo", label: "Bill No" },
+      { key: "billDate", label: "Bill Date" },
+      { key: "partyName", label: "Party Name" },
+      { key: "billType", label: "Bill Type" },
+      { key: "billAmount", label: "Bill Amount" },
+      { key: "particular", label: "Particular" },
+      { key: "debitAmount", label: "Debit Amount" },
+      { key: "creditAmount", label: "Credit Amount" },
+      { key: "narration", label: "Narration" },
+    ];
+    printTable(data as unknown as Record<string, unknown>[], headers, "Day Book Report");
+  };
+
+  const handleDownloadPDF = () => {
+    const headers = [
+      { key: "billNo", label: "Bill No" },
+      { key: "billDate", label: "Bill Date" },
+      { key: "partyName", label: "Party Name" },
+      { key: "billType", label: "Bill Type" },
+      { key: "billAmount", label: "Bill Amount" },
+      { key: "particular", label: "Particular" },
+      { key: "debitAmount", label: "Debit Amount" },
+      { key: "creditAmount", label: "Credit Amount" },
+      { key: "narration", label: "Narration" },
+    ];
+    exportToPDF(data as unknown as Record<string, unknown>[], headers, "Day Book Report", "day-book");
+  };
+
+  const handleExportExcel = () => {
+    const headers = [
+      { key: "billNo", label: "Bill No" },
+      { key: "billDate", label: "Bill Date" },
+      { key: "partyName", label: "Party Name" },
+      { key: "billType", label: "Bill Type" },
+      { key: "billAmount", label: "Bill Amount" },
+      { key: "particular", label: "Particular" },
+      { key: "debitAmount", label: "Debit Amount" },
+      { key: "creditAmount", label: "Credit Amount" },
+      { key: "narration", label: "Narration" },
+    ];
+    exportToExcel(data as unknown as Record<string, unknown>[], headers, "day-book");
+  };
 
   return (
     <TooltipProvider>
@@ -272,27 +319,45 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <FileSpreadsheet className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to Excel</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handlePrint}
+                      disabled={data.length === 0}
+                    >
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Print</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleDownloadPDF}
+                      disabled={data.length === 0}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download PDF</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={handleExportExcel}
+                      disabled={data.length === 0}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export to Excel</TooltipContent>
                 </Tooltip>
               </div>
             </div>
