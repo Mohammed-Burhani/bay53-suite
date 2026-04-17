@@ -33,6 +33,7 @@ interface ComboboxProps {
   emptyText?: string
   disabled?: boolean
   className?: string
+  minSearchChars?: number
 }
 
 export function Combobox({
@@ -44,10 +45,26 @@ export function Combobox({
   emptyText = "No option found.",
   disabled = false,
   className,
+  minSearchChars = 0,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchTerm, setSearchTerm] = React.useState("")
 
   const selectedOption = options.find((option) => option.value === value)
+  
+  // Filter options based on search term and min chars
+  const filteredOptions = React.useMemo(() => {
+    if (minSearchChars > 0 && searchTerm.length < minSearchChars) {
+      return []
+    }
+    if (!searchTerm) return options
+    
+    const search = searchTerm.toLowerCase()
+    return options.filter(opt => 
+      opt.label.toLowerCase().includes(search) || 
+      opt.value.toLowerCase().includes(search)
+    )
+  }, [options, searchTerm, minSearchChars])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,30 +83,42 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder={searchPlaceholder} 
+            value={searchTerm}
+            onValueChange={setSearchTerm}
+          />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange?.(currentValue === value ? "" : currentValue)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {minSearchChars > 0 && searchTerm.length < minSearchChars ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Type at least {minSearchChars} characters to search
+              </div>
+            ) : filteredOptions.length === 0 ? (
+              <CommandEmpty>{emptyText}</CommandEmpty>
+            ) : (
+              <CommandGroup className="">
+                {filteredOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={(currentValue) => {
+                      onValueChange?.(currentValue === value ? "" : currentValue)
+                      setOpen(false)
+                      setSearchTerm("")
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
