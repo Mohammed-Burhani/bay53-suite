@@ -19,6 +19,28 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+// Highlight matching text
+function highlightMatch(text: string, search: string) {
+  if (!search) return text
+  
+  const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+  
+  return (
+    <>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-200 dark:bg-yellow-900 font-semibold">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  )
+}
+
 export interface ComboboxOption {
   value: string
   label: string
@@ -114,7 +136,7 @@ export function Combobox({
                         value === option.value ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {option.label}
+                    {highlightMatch(option.label, searchTerm)}
                   </CommandItem>
                 ))}
               </CommandGroup>
