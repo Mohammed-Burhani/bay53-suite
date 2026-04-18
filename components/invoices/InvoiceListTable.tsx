@@ -556,7 +556,7 @@ export function InvoiceListTable({
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="p-4">
           <CardContent className="py-12 text-center">
             <Icon className="mx-auto h-12 w-12 text-muted-foreground/40" />
             <p className="mt-4 text-sm text-muted-foreground">

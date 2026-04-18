@@ -35,6 +35,7 @@ import DataSettings from "@/components/settings/DataSettings";
 import UserManagementSettings from "@/components/settings/UserManagementSettings";
 import TaxSettings from "@/components/settings/TaxSettings";
 import PrintSettings from "@/components/settings/PrintSettings";
+import ProductClassificationSettings from "@/components/settings/ProductClassificationSettings";
 
 interface SettingCategory {
   id: string;
@@ -86,6 +87,13 @@ const settingsCategories: SettingCategory[] = [
     label: "Print Settings",
     description: "Paper size, margins, and print layout",
     icon: Printer,
+    group: "documents"
+  },
+  {
+    id: "classifications",
+    label: "Product Classifications",
+    description: "Customize product column names",
+    icon: FileText,
     group: "documents"
   },
   {
@@ -185,7 +193,7 @@ export default function SettingsPage() {
                 <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Documents
                 </h3>
-                <nav className="space-y-1">
+                <nav className="space-y-1 ">
                   {groupedCategories.documents.map((category) => (
                     <SettingNavItem
                       key={category.id}
@@ -299,6 +307,7 @@ export default function SettingsPage() {
               {activeTab === "invoice" && <InvoiceSettings />}
               {activeTab === "tax" && <TaxSettings />}
               {activeTab === "print" && <PrintSettings />}
+              {activeTab === "classifications" && <ProductClassificationSettings />}
               {activeTab === "notifications" && <NotificationSettings />}
               {activeTab === "security" && <SecuritySettings />}
               {activeTab === "appearance" && <AppearanceSettings />}
@@ -345,7 +354,7 @@ function SettingNavItem({
           )}
         </div>
         <p className={cn(
-          "text-xs mt-0.5 line-clamp-1",
+          "text-xs mt-0.5",
           isActive ? "text-primary-foreground/80" : "text-muted-foreground"
         )}>
           {category.description}
