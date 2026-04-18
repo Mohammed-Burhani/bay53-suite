@@ -383,28 +383,51 @@ export default function CurrentStockReport() {
             </div>
 
             {/* Stock Place Filter */}
-            <div className="space-y-1.5">
+            <div className="space-y-2 pb-4">
               <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                 Stock Place
               </Label>
-              <Select
-                value={selectedStockPlace.toString()}
-                onValueChange={(value) => setSelectedStockPlace(Number(value))}
-                disabled={isLoadingStockPlaces}
-              >
-                <SelectTrigger className="h-9 w-full">
-                  <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Stock Place"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">All Stock Places</SelectItem>
-                  {stockPlaces.map((sp) => (
-                    <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
-                      {sp.name} ({sp.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {selectedStockPlace === 0 ? (
+                  <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5">
+                    All
+                  </Badge>
+                ) : (
+                  <>
+                    {stockPlaces
+                      .filter(sp => sp.sp_ID === selectedStockPlace)
+                      .map((sp) => (
+                        <Badge 
+                          key={sp.sp_ID} 
+                          variant="default" 
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 cursor-pointer"
+                          onClick={() => setSelectedStockPlace(0)}
+                        >
+                          {sp.name} ({sp.code})
+                          <X className="h-3 w-3 ml-1.5" />
+                        </Badge>
+                      ))}
+                  </>
+                )}
+                <Select
+                  value={selectedStockPlace.toString()}
+                  onValueChange={(value) => setSelectedStockPlace(Number(value))}
+                  disabled={isLoadingStockPlaces}
+                >
+                  <SelectTrigger className="h-9 w-[200px]">
+                    <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Change..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">All Stock Places</SelectItem>
+                    {stockPlaces.map((sp) => (
+                      <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
+                        {sp.name} ({sp.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* 6 Item Attribute Filters */}
