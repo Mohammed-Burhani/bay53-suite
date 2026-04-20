@@ -503,6 +503,7 @@ export default function InventoryReportTable() {
                     emptyText="No item codes found."
                     disabled={!itemsLoaded || availableItemCodes.length === 0 || allItem}
                     className="h-9"
+                    minSearchChars={2}
                   />
                 </div>
 

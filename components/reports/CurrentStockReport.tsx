@@ -456,7 +456,7 @@ export default function CurrentStockReport() {
                     emptyText="No item codes found."
                     disabled={!itemsLoaded || availableItemCodes.length === 0}
                     className="h-9"
-                    minSearchChars={3}
+                    minSearchChars={2}
                   />
                 </div>
 
@@ -478,7 +478,6 @@ export default function CurrentStockReport() {
                     emptyText="No names found."
                     disabled={false}
                     className="h-9"
-                    minSearchChars={3}
                   />
                 </div>
 
@@ -500,7 +499,6 @@ export default function CurrentStockReport() {
                     emptyText="No sizes found."
                     disabled={false}
                     className="h-9"
-                    minSearchChars={3}
                   />
                 </div>
 
@@ -522,7 +520,6 @@ export default function CurrentStockReport() {
                     emptyText="No materials found."
                     disabled={false}
                     className="h-9"
-                    minSearchChars={3}
                   />
                 </div>
 
@@ -544,7 +541,6 @@ export default function CurrentStockReport() {
                     emptyText="No qualities found."
                     disabled={false}
                     className="h-9"
-                    minSearchChars={3}
                   />
                 </div>
 
@@ -566,7 +562,6 @@ export default function CurrentStockReport() {
                     emptyText="No brands found."
                     disabled={!itemsLoaded || availableBrands.length === 0}
                     className="h-9"
-                    minSearchChars={3}
                   />
                 </div>
               </div>
