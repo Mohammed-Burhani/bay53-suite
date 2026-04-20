@@ -7,26 +7,73 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, GripVertical, Save, RotateCcw, Tag } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, X, GripVertical, Save, RotateCcw, Tag, Info, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/hooks/useAuth";
 import {
-  getClassificationConfig,
-  saveClassificationConfig,
-  resetClassificationConfig,
-  DEFAULT_CLASSIFICATION_FIELDS,
-  type ClassificationField,
-} from "@/lib/product-classification-config";
+  useClassificationConfig,
+  useInitializeConfig,
+  useBulkUpdateFields,
+  useUpdateClassificationDepth,
+} from "@/lib/hooks/useProductClassification";
+import { toast } from "sonner";
+
+interface LocalClassificationField {
+  id: string;
+  field_id: string;
+  name: string;
+  enabled: boolean;
+  display_order: number;
+  is_custom?: boolean;
+}
 
 export default function ProductClassificationSettings() {
-  const [classifications, setClassifications] = useState<ClassificationField[]>(DEFAULT_CLASSIFICATION_FIELDS);
-  const [classificationDepth, setClassificationDepth] = useState("4");
+  const session = useSession();
+  const organizationId = session?.company?.id || "demo-org";
 
-  useEffect(() => {
-    const config = getClassificationConfig();
-    setClassifications(config.fields);
-    setClassificationDepth(config.classificationDepth.toString());
-  }, []);
+  const { data: config, isLoading, error } = useClassificationConfig(organizationId);
+  const initializeConfig = useInitializeConfig();
+  const bulkUpdateFields = useBulkUpdateFields();
+  const updateDepth = useUpdateClassificationDepth();
+
+  const [classifications, setClassifications] = useState<LocalClassificationField[]>([]);
+  const [classificationDepth, setClassificationDepth] = useState("4");
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showFirstTimeHelp, setShowFirstTimeHelp] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize config if not exists
+  useEffect(() => {
+    if (!isLoading && !config && !error) {
+      setShowFirstTimeHelp(true);
+      initializeConfig.mutate({
+        organization_id: organizationId,
+        classification_depth: 4,
+        created_by: session?.user?.id,
+      });
+    }
+  }, [isLoading, config, error, organizationId, session?.user?.id]);
+
+  // Load config into local state
+  useEffect(() => {
+    if (config) {
+      setClassificationDepth(config.classification_depth.toString());
+      setClassifications(
+        config.fields.map((f) => ({
+          id: f.id,
+          field_id: f.field_id,
+          name: f.field_name,
+          enabled: f.enabled,
+          display_order: f.display_order,
+          is_custom: f.is_custom,
+        }))
+      );
+      setHasChanges(false);
+    }
+  }, [config]);
 
   const handleDepthChange = (newDepth: string) => {
     setClassificationDepth(newDepth);
@@ -37,30 +84,48 @@ export default function ProductClassificationSettings() {
       ...c,
       enabled: idx < depth
     })));
+    setHasChanges(true);
   };
 
   const handleAddClassification = () => {
-    const newId = `custom_${Date.now()}`;
+    const maxOrder = Math.max(...classifications.map(c => c.display_order), 0);
+    const newId = `temp_${Date.now()}`;
     setClassifications([
       ...classifications,
-      { id: newId, name: "New Classification", enabled: true }
+      { 
+        id: newId, 
+        field_id: `custom_${Date.now()}`,
+        name: "New Classification", 
+        enabled: true,
+        display_order: maxOrder + 1,
+        is_custom: true,
+      }
     ]);
+    setHasChanges(true);
   };
 
   const handleRemoveClassification = (id: string) => {
+    const field = classifications.find(c => c.id === id);
+    if (field && !field.is_custom) {
+      toast.error("Cannot delete built-in fields");
+      return;
+    }
     setClassifications(classifications.filter(c => c.id !== id));
+    setHasChanges(true);
   };
 
   const handleToggleClassification = (id: string) => {
     setClassifications(classifications.map(c =>
       c.id === id ? { ...c, enabled: !c.enabled } : c
     ));
+    setHasChanges(true);
   };
 
   const handleRenameClassification = (id: string, newName: string) => {
     setClassifications(classifications.map(c =>
       c.id === id ? { ...c, name: newName } : c
     ));
+    setHasChanges(true);
   };
 
   const handleDragStart = (id: string) => {
@@ -78,31 +143,130 @@ export default function ProductClassificationSettings() {
     const [removed] = newClassifications.splice(draggedIdx, 1);
     newClassifications.splice(targetIdx, 0, removed);
 
+    // Update display orders
+    newClassifications.forEach((c, idx) => {
+      c.display_order = idx + 1;
+    });
+
     setClassifications(newClassifications);
+    setHasChanges(true);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
   };
 
-  const handleSave = () => {
-    saveClassificationConfig({
-      classificationDepth: parseInt(classificationDepth),
-      fields: classifications,
-    });
-    alert("Classification settings saved successfully!");
+  const handleSave = async () => {
+    if (!config) {
+      toast.error("Configuration not loaded");
+      return;
+    }
+
+    // Validation
+    const enabledFields = classifications.filter(c => c.enabled);
+    if (enabledFields.length === 0) {
+      toast.error("At least one field must be enabled");
+      return;
+    }
+
+    const emptyNames = classifications.filter(c => !c.name.trim());
+    if (emptyNames.length > 0) {
+      toast.error("All fields must have a name");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Update depth if changed
+      if (parseInt(classificationDepth) !== config.classification_depth) {
+        await updateDepth.mutateAsync({
+          organizationId,
+          depth: parseInt(classificationDepth),
+          userId: session?.user?.id,
+        });
+      }
+
+      // Bulk update fields
+      await bulkUpdateFields.mutateAsync({
+        configId: config.id,
+        fields: classifications.map((c, idx) => ({
+          field_id: c.field_id,
+          field_name: c.name,
+          display_order: idx + 1,
+          enabled: c.enabled,
+        })),
+        userId: session?.user?.id,
+      });
+
+      setHasChanges(false);
+      setShowFirstTimeHelp(false);
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
-    resetClassificationConfig();
-    setClassifications(DEFAULT_CLASSIFICATION_FIELDS);
-    setClassificationDepth("4");
+    if (config) {
+      setClassifications(
+        config.fields.map((f) => ({
+          id: f.id,
+          field_id: f.field_id,
+          name: f.field_name,
+          enabled: f.enabled,
+          display_order: f.display_order,
+          is_custom: f.is_custom,
+        }))
+      );
+      setClassificationDepth(config.classification_depth.toString());
+      setHasChanges(false);
+    }
   };
 
   const enabledCount = classifications.filter(c => c.enabled).length;
+  const isSaveDisabled = !hasChanges || isSaving || !config;
+  const saveButtonTooltip = !config 
+    ? "Loading configuration..." 
+    : !hasChanges 
+    ? "No changes to save" 
+    : isSaving 
+    ? "Saving changes..." 
+    : "Save your changes";
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load classification settings. Please try again.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* First-time user help */}
+      {showFirstTimeHelp && (
+        <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-sm">
+            <strong>Welcome to Product Classifications!</strong> This feature lets you customize how product information appears throughout your system. 
+            Start by selecting how many classification levels you need, then customize the field names to match your business terminology.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card className="py-4">
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -238,42 +402,98 @@ export default function ProductClassificationSettings() {
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4">
-            <Button onClick={handleSave} className="flex-1">
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
-            <Button onClick={handleReset} variant="outline">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-1">
+                    <Button 
+                      onClick={handleSave} 
+                      className="w-full"
+                      disabled={isSaveDisabled}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {isSaveDisabled && (
+                  <TooltipContent>
+                    <p>{saveButtonTooltip}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Button 
+              onClick={handleReset} 
+              variant="outline"
+              disabled={!hasChanges || isSaving}
+            >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reset to Default
+              Reset
             </Button>
           </div>
+          
+          {hasChanges && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 pt-2">
+              <AlertCircle className="h-3 w-3" />
+              You have unsaved changes
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Usage Info */}
+      {/* Usage Info & Help */}
       <Card className="py-4 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900">
         <CardHeader>
-          <CardTitle className="text-base">Where This Applies</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            How to Use This Feature
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-              <span><strong>Reports:</strong> Current Stock, Inventory Report, Item Register</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-              <span><strong>Invoices:</strong> Product line items and descriptions</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-              <span><strong>Inventory:</strong> Product listings and search results</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-              <span><strong>Stock Management:</strong> Stock in/out forms</span>
-            </li>
-          </ul>
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Quick Start Guide:</h4>
+            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+              <li><strong>Set Classification Depth:</strong> Choose how many product attributes you want to track (1-6 levels)</li>
+              <li><strong>Customize Field Names:</strong> Click on any field name to rename it to match your terminology</li>
+              <li><strong>Reorder Fields:</strong> Drag fields up or down to change their display order</li>
+              <li><strong>Enable/Disable:</strong> Toggle fields on/off based on what you need</li>
+              <li><strong>Add Custom Fields:</strong> Click "Add Field" to create your own classification categories</li>
+              <li><strong>Save Changes:</strong> Click "Save Changes" to apply your configuration</li>
+            </ol>
+          </div>
+
+          <div className="pt-2 border-t">
+            <h4 className="text-sm font-semibold mb-2">Where This Applies:</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                <span><strong>Reports:</strong> Current Stock, Inventory Report, Item Register</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                <span><strong>Invoices:</strong> Product line items and descriptions</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                <span><strong>Inventory:</strong> Product listings and search results</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                <span><strong>Stock Management:</strong> Stock in/out forms</span>
+              </li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </div>
