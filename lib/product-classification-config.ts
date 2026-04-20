@@ -19,12 +19,11 @@ export const DEFAULT_CLASSIFICATION_FIELDS: ClassificationField[] = [
   { id: "item_code", name: "Item Code", enabled: true },
   { id: "item", name: "Item", enabled: true },
   { id: "aliases", name: "Aliases", enabled: true },
-  { id: "size", name: "Size", enabled: true },
-  { id: "material", name: "Material", enabled: false },
-  { id: "quality", name: "Quality", enabled: false },
-  { id: "brand", name: "Brand", enabled: false },
+  { id: "category", name: "Category", enabled: true },
+  { id: "sub_cat", name: "Sub Cat", enabled: false },
+  { id: "size", name: "Size", enabled: false },
+  { id: "ref_no", name: "Ref No.", enabled: false },
   { id: "color", name: "Color", enabled: false },
-  { id: "bar_code", name: "Bar Code", enabled: false },
 ];
 
 export const DEFAULT_CLASSIFICATION_DEPTH = 4;
