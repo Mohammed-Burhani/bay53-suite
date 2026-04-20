@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import {
   Tooltip,
   TooltipContent,
@@ -145,6 +146,7 @@ type SortDir = "asc" | "desc";
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
+  const { getLabel } = useClassificationLabels();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<string>("all");
@@ -816,11 +818,11 @@ export default function InventoryPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField name="barcode" label="Barcode" />
-                      <FormField name="brand" label="Brand" />
+                      <FormField name="brand" label={getLabel('ref_no')} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Category *</label>
+                        <label className="text-sm font-medium">{getLabel('category')} *</label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           value={values.category}

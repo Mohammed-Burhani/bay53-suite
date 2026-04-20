@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { Item } from "@/lib/types/reports.types";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 interface ItemSearchComboboxProps {
   items: Item[];
@@ -42,6 +43,7 @@ export function ItemSearchCombobox({
   className,
   isLoading = false,
 }: ItemSearchComboboxProps) {
+  const { getLabel } = useClassificationLabels();
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
@@ -132,10 +134,10 @@ export function ItemSearchCombobox({
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         {item.item_CodeTxt && (
-                          <span className="font-mono">Code: {item.item_CodeTxt}</span>
+                          <span className="font-mono">{getLabel('item_code')}: {item.item_CodeTxt}</span>
                         )}
-                        {item.sizes && <span>Size: {item.sizes}</span>}
-                        {item.category && <span>Category: {item.category}</span>}
+                        {item.sizes && <span>{getLabel('size')}: {item.sizes}</span>}
+                        {item.category && <span>{getLabel('category')}: {item.category}</span>}
                         {item.type && <span>Type: {item.type}</span>}
                       </div>
                     </div>
