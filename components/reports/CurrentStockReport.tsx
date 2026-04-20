@@ -53,8 +53,11 @@ import { toast } from "sonner";
 import type { CurrentStockItem, ItemAttributes } from "@/lib/types/reports.types";
 import { getAvailableOptions } from "@/lib/utils/item-parser";
 import { exportToExcel, exportToPDF } from "@/lib/utils/report-export";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 export default function CurrentStockReport() {
+  const { getLabel } = useClassificationLabels();
+  
   const [selectedStockPlace, setSelectedStockPlace] = useState<number>(0);
   
   // 6 separate filter states
@@ -447,7 +450,7 @@ export default function CurrentStockReport() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    Item Code
+                    {getLabel('item_code')}
                   </Label>
                   <Combobox
                     options={[
@@ -469,7 +472,7 @@ export default function CurrentStockReport() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    Item Name
+                    {getLabel('item')}
                   </Label>
                   <Combobox
                     options={[
@@ -491,7 +494,7 @@ export default function CurrentStockReport() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                    Size
+                    {getLabel('size')}
                   </Label>
                   <Combobox
                     options={[
@@ -509,11 +512,11 @@ export default function CurrentStockReport() {
                   />
                 </div>
 
-                {/* Material */}
+                {/* Material → Category */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                    Material
+                    {getLabel('category')}
                   </Label>
                   <Combobox
                     options={[
@@ -531,11 +534,11 @@ export default function CurrentStockReport() {
                   />
                 </div>
 
-                {/* Quality */}
+                {/* Quality → Sub Cat */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    Quality
+                    {getLabel('sub_cat')}
                   </Label>
                   <Combobox
                     options={[
@@ -553,11 +556,11 @@ export default function CurrentStockReport() {
                   />
                 </div>
 
-                {/* Brand */}
+                {/* Brand → Ref No */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    Brand
+                    {getLabel('ref_no')}
                   </Label>
                   <Combobox
                     options={[

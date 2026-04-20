@@ -134,12 +134,11 @@ DECLARE
     {"field_id": "item_code", "field_name": "Item Code", "display_order": 1, "enabled": true},
     {"field_id": "item", "field_name": "Item", "display_order": 2, "enabled": true},
     {"field_id": "aliases", "field_name": "Aliases", "display_order": 3, "enabled": true},
-    {"field_id": "size", "field_name": "Size", "display_order": 4, "enabled": true},
-    {"field_id": "material", "field_name": "Material", "display_order": 5, "enabled": false},
-    {"field_id": "quality", "field_name": "Quality", "display_order": 6, "enabled": false},
-    {"field_id": "brand", "field_name": "Brand", "display_order": 7, "enabled": false},
-    {"field_id": "color", "field_name": "Color", "display_order": 8, "enabled": false},
-    {"field_id": "bar_code", "field_name": "Bar Code", "display_order": 9, "enabled": false}
+    {"field_id": "category", "field_name": "Category", "display_order": 4, "enabled": true},
+    {"field_id": "sub_cat", "field_name": "Sub Cat", "display_order": 5, "enabled": false},
+    {"field_id": "size", "field_name": "Size", "display_order": 6, "enabled": false},
+    {"field_id": "ref_no", "field_name": "Ref No.", "display_order": 7, "enabled": false},
+    {"field_id": "color", "field_name": "Color", "display_order": 8, "enabled": false}
   ]'::jsonb;
   v_field JSONB;
 BEGIN

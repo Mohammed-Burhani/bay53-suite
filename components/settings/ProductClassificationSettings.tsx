@@ -61,16 +61,21 @@ export default function ProductClassificationSettings() {
   useEffect(() => {
     if (config) {
       setClassificationDepth(config.classification_depth.toString());
-      setClassifications(
-        config.fields.map((f) => ({
+      
+      // Filter to only show allowed 8 fields
+      const ALLOWED_FIELDS = ['item_code', 'item', 'aliases', 'category', 'sub_cat', 'size', 'ref_no', 'color'];
+      const filteredFields = config.fields
+        .filter(f => ALLOWED_FIELDS.includes(f.field_id))
+        .map((f) => ({
           id: f.id,
           field_id: f.field_id,
           name: f.field_name,
           enabled: f.enabled,
           display_order: f.display_order,
           is_custom: f.is_custom,
-        }))
-      );
+        }));
+      
+      setClassifications(filteredFields);
       setHasChanges(false);
     }
   }, [config]);
@@ -87,22 +92,7 @@ export default function ProductClassificationSettings() {
     setHasChanges(true);
   };
 
-  const handleAddClassification = () => {
-    const maxOrder = Math.max(...classifications.map(c => c.display_order), 0);
-    const newId = `temp_${Date.now()}`;
-    setClassifications([
-      ...classifications,
-      { 
-        id: newId, 
-        field_id: `custom_${Date.now()}`,
-        name: "New Classification", 
-        enabled: true,
-        display_order: maxOrder + 1,
-        is_custom: true,
-      }
-    ]);
-    setHasChanges(true);
-  };
+  // Removed - no custom fields allowed
 
   const handleRemoveClassification = (id: string) => {
     const field = classifications.find(c => c.id === id);
@@ -210,16 +200,20 @@ export default function ProductClassificationSettings() {
 
   const handleReset = () => {
     if (config) {
-      setClassifications(
-        config.fields.map((f) => ({
+      // Filter to only show allowed 8 fields
+      const ALLOWED_FIELDS = ['item_code', 'item', 'aliases', 'category', 'sub_cat', 'size', 'ref_no', 'color'];
+      const filteredFields = config.fields
+        .filter(f => ALLOWED_FIELDS.includes(f.field_id))
+        .map((f) => ({
           id: f.id,
           field_id: f.field_id,
           name: f.field_name,
           enabled: f.enabled,
           display_order: f.display_order,
           is_custom: f.is_custom,
-        }))
-      );
+        }));
+      
+      setClassifications(filteredFields);
       setClassificationDepth(config.classification_depth.toString());
       setHasChanges(false);
     }
@@ -309,15 +303,7 @@ export default function ProductClassificationSettings() {
           {/* Classifications List */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Classification Fields</Label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleAddClassification}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Field
-              </Button>
+              <Label>Classification Fields (Fixed 8 Fields)</Label>
             </div>
 
             <div className="space-y-2">
@@ -362,15 +348,7 @@ export default function ProductClassificationSettings() {
                     {classification.enabled ? "Enabled" : "Disabled"}
                   </Button>
 
-                  {/* Remove Button */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleRemoveClassification(classification.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {/* Remove Button - Hidden (no custom fields) */}
                 </div>
               ))}
             </div>
@@ -468,7 +446,7 @@ export default function ProductClassificationSettings() {
               <li><strong>Customize Field Names:</strong> Click on any field name to rename it to match your terminology</li>
               <li><strong>Reorder Fields:</strong> Drag fields up or down to change their display order</li>
               <li><strong>Enable/Disable:</strong> Toggle fields on/off based on what you need</li>
-              <li><strong>Add Custom Fields:</strong> Click "Add Field" to create your own classification categories</li>
+
               <li><strong>Save Changes:</strong> Click "Save Changes" to apply your configuration</li>
             </ol>
           </div>
