@@ -123,15 +123,7 @@ export default function CurrentStockReport() {
   }, [items, currentFilters, itemsLoaded]);
 
   const handleStock = () => {
-    // At least one filter must be selected
-    const hasFilter = selectedItemCode || selectedName || selectedSize || 
-                      selectedMaterial || selectedQuality || selectedBrand;
-    
-    if (!hasFilter) {
-      toast.error("Please select at least one filter");
-      return;
-    }
-
+    // Allow fetching without filters (fetch all)
     fetchCurrentStock(
       {
         itemCode: selectedItemCode || null,
@@ -484,7 +476,7 @@ export default function CurrentStockReport() {
                     placeholder="Select Name"
                     searchPlaceholder="Search names..."
                     emptyText="No names found."
-                    disabled={!itemsLoaded || availableNames.length === 0}
+                    disabled={false}
                     className="h-9"
                     minSearchChars={3}
                   />
@@ -506,7 +498,7 @@ export default function CurrentStockReport() {
                     placeholder="Select Size"
                     searchPlaceholder="Search sizes..."
                     emptyText="No sizes found."
-                    disabled={!itemsLoaded || availableSizes.length === 0}
+                    disabled={false}
                     className="h-9"
                     minSearchChars={3}
                   />
@@ -528,7 +520,7 @@ export default function CurrentStockReport() {
                     placeholder="Select Material"
                     searchPlaceholder="Search materials..."
                     emptyText="No materials found."
-                    disabled={!itemsLoaded || availableMaterials.length === 0}
+                    disabled={false}
                     className="h-9"
                     minSearchChars={3}
                   />
@@ -550,7 +542,7 @@ export default function CurrentStockReport() {
                     placeholder="Select Quality"
                     searchPlaceholder="Search qualities..."
                     emptyText="No qualities found."
-                    disabled={!itemsLoaded || availableQualities.length === 0}
+                    disabled={false}
                     className="h-9"
                     minSearchChars={3}
                   />

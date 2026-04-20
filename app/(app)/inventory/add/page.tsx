@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 const productSchema = Yup.object().shape({
   name: Yup.string().required("Product name is required").min(2, "Min 2 characters"),
@@ -50,6 +51,7 @@ const emptyProduct: ProductFormValues = {
 export default function AddProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { getLabel } = useClassificationLabels();
 
   const handleSubmit = (values: ProductFormValues) => {
     const product = { 
@@ -94,11 +96,11 @@ export default function AddProductPage() {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField name="barcode" label="Barcode" />
-                    <FormField name="brand" label="Brand" />
+                    <FormField name="brand" label={getLabel('ref_no')} />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Category *</label>
+                      <label className="text-sm font-medium">{getLabel('category')} *</label>
                       <select
                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                         value={values.category}

@@ -32,6 +32,7 @@ import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clo
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 interface PendingItemsTableProps {
   initialData?: Array<{
@@ -51,6 +52,7 @@ interface PendingItemsTableProps {
 }
 
 export default function PendingItemsTable({ initialData = [] }: PendingItemsTableProps) {
+  const { getLabel } = useClassificationLabels();
   const [itemWise, setItemWise] = useState(true);
   const [partyWise, setPartyWise] = useState(true);
   const [billDetail, setBillDetail] = useState(true);
@@ -67,10 +69,10 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
   // Export handlers
   const handlePrint = () => {
     const headers = [
-      { key: "size", label: "Size" },
-      { key: "material", label: "Material" },
-      { key: "quality", label: "Quality" },
-      { key: "brand", label: "Brand" },
+      { key: "size", label: getLabel('size') },
+      { key: "material", label: getLabel('category') },
+      { key: "quality", label: getLabel('sub_cat') },
+      { key: "brand", label: getLabel('ref_no') },
       { key: "type", label: "Type" },
       { key: "party", label: "Party" },
       { key: "billNo", label: "Bill No" },
@@ -85,10 +87,10 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
 
   const handleDownloadPDF = () => {
     const headers = [
-      { key: "size", label: "Size" },
-      { key: "material", label: "Material" },
-      { key: "quality", label: "Quality" },
-      { key: "brand", label: "Brand" },
+      { key: "size", label: getLabel('size') },
+      { key: "material", label: getLabel('category') },
+      { key: "quality", label: getLabel('sub_cat') },
+      { key: "brand", label: getLabel('ref_no') },
       { key: "type", label: "Type" },
       { key: "party", label: "Party" },
       { key: "billNo", label: "Bill No" },
@@ -103,10 +105,10 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
 
   const handleExportExcel = () => {
     const headers = [
-      { key: "size", label: "Size" },
-      { key: "material", label: "Material" },
-      { key: "quality", label: "Quality" },
-      { key: "brand", label: "Brand" },
+      { key: "size", label: getLabel('size') },
+      { key: "material", label: getLabel('category') },
+      { key: "quality", label: getLabel('sub_cat') },
+      { key: "brand", label: getLabel('ref_no') },
       { key: "type", label: "Type" },
       { key: "party", label: "Party" },
       { key: "billNo", label: "Bill No" },
@@ -481,10 +483,10 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
-                    <TableHead className="font-semibold">Size</TableHead>
-                    <TableHead className="font-semibold">Material</TableHead>
-                    <TableHead className="font-semibold">Quality</TableHead>
-                    <TableHead className="font-semibold">Brand</TableHead>
+                    <TableHead className="font-semibold">{getLabel('size')}</TableHead>
+                    <TableHead className="font-semibold">{getLabel('category')}</TableHead>
+                    <TableHead className="font-semibold">{getLabel('sub_cat')}</TableHead>
+                    <TableHead className="font-semibold">{getLabel('ref_no')}</TableHead>
                     <TableHead className="font-semibold">Type</TableHead>
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">Bill No</TableHead>
