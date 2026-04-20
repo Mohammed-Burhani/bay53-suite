@@ -40,7 +40,7 @@ const ClassificationContext = createContext<ClassificationContextType>({
 
 export function ClassificationProvider({ children }: { children: ReactNode }) {
   const session = useSession();
-  const organizationId = session?.company?.id || "demo-org";
+  const organizationId = session?.company?.id?.toString() || "demo-org";
   
   const { data: config, isLoading } = useClassificationConfig(organizationId);
 
