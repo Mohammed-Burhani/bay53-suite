@@ -31,7 +31,7 @@ interface LocalClassificationField {
 
 export default function ProductClassificationSettings() {
   const session = useSession();
-  const organizationId = session?.company?.id || "demo-org";
+  const organizationId = session?.company?.id?.toString() || "demo-org";
 
   const { data: config, isLoading, error } = useClassificationConfig(organizationId);
   const initializeConfig = useInitializeConfig();
@@ -52,10 +52,10 @@ export default function ProductClassificationSettings() {
       initializeConfig.mutate({
         organization_id: organizationId,
         classification_depth: 4,
-        created_by: session?.user?.id,
+        created_by: session?.user?.user_ID?.toString(),
       });
     }
-  }, [isLoading, config, error, organizationId, session?.user?.id]);
+  }, [isLoading, config, error, organizationId, session?.user?.user_ID]);
 
   // Load config into local state
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function ProductClassificationSettings() {
         await updateDepth.mutateAsync({
           organizationId,
           depth: parseInt(classificationDepth),
-          userId: session?.user?.id,
+          userId: session?.user?.user_ID?.toString(),
         });
       }
 
@@ -186,7 +186,7 @@ export default function ProductClassificationSettings() {
           display_order: idx + 1,
           enabled: c.enabled,
         })),
-        userId: session?.user?.id,
+        userId: session?.user?.user_ID?.toString(),
       });
 
       setHasChanges(false);
