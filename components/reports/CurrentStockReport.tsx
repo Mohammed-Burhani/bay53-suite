@@ -28,6 +28,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { 
   Download, 
   Search, 
@@ -44,6 +52,7 @@ import {
   Layers,
   Loader2,
   Lightbulb,
+  SlidersHorizontal,
 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
@@ -71,6 +80,7 @@ export default function CurrentStockReport() {
   const [showReorderDetails, setShowReorderDetails] = useState(false);
   const [rackWise, setRackWise] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination(50);
 
   // Fetch dropdown data with aggressive caching
@@ -349,69 +359,30 @@ export default function CurrentStockReport() {
           </div>
         )}
 
-        {/* Modern Filter Panel */}
+        {/* Compact Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
-                <Filter className="h-4 w-4" />
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-3">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Quick search by item name, category, or stock place..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-9"
+                />
               </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Smart Filters</CardTitle>
-                <CardDescription className="text-xs">
-                  {items.length.toLocaleString()} items loaded • Select filters to narrow down
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
 
-          <CardContent className="p-6 space-y-5">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Quick search by item name, category, or stock place..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10"
-              />
-            </div>
-
-            {/* Stock Place Filter */}
-            <div className="space-y-2 pb-4">
-              <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                Stock Place
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {selectedStockPlace === 0 ? (
-                  <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5">
-                    All
-                  </Badge>
-                ) : (
-                  <>
-                    {stockPlaces
-                      .filter(sp => sp.sp_ID === selectedStockPlace)
-                      .map((sp) => (
-                        <Badge 
-                          key={sp.sp_ID} 
-                          variant="default" 
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 cursor-pointer"
-                          onClick={() => setSelectedStockPlace(0)}
-                        >
-                          {sp.name} ({sp.code})
-                          <X className="h-3 w-3 ml-1.5" />
-                        </Badge>
-                      ))}
-                  </>
-                )}
+              {/* Stock Place + Advanced Filters Button */}
+              <div className="flex flex-wrap items-center gap-2">
                 <Select
                   value={selectedStockPlace.toString()}
                   onValueChange={(value) => setSelectedStockPlace(Number(value))}
                   disabled={isLoadingStockPlaces}
                 >
                   <SelectTrigger className="h-9 w-[200px]">
-                    <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Change..."} />
+                    <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "All Stock Places"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">All Stock Places</SelectItem>
@@ -422,243 +393,274 @@ export default function CurrentStockReport() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
 
-            {/* 6 Item Attribute Filters */}
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="h-4 w-4 text-purple-500" />
-                <Label className="text-sm font-semibold">Item Filters</Label>
-                {hasAnyFilter && (
-                  <Badge variant="secondary" className="ml-auto">
-                    {Object.values(currentFilters).filter(Boolean).length} active
-                  </Badge>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                {/* Item Code */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    {getLabel('item_code')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableItemCodes.map(code => ({ value: code, label: code }))
-                    ]}
-                    value={selectedItemCode || "__all__"}
-                    onValueChange={(val) => setSelectedItemCode(val === "__all__" ? "" : val)}
-                    placeholder="Select Item Code"
-                    searchPlaceholder="Search item codes..."
-                    emptyText="No item codes found."
-                    disabled={!itemsLoaded || availableItemCodes.length === 0}
-                    className="h-9"
-                    minSearchChars={2}
-                  />
-                </div>
-
-                {/* Item Name */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    {getLabel('item')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableNames.map(name => ({ value: name, label: name }))
-                    ]}
-                    value={selectedName || "__all__"}
-                    onValueChange={(val) => setSelectedName(val === "__all__" ? "" : val)}
-                    placeholder="Select Name"
-                    searchPlaceholder="Search names..."
-                    emptyText="No names found."
-                    disabled={false}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Size */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                    {getLabel('size')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableSizes.map(size => ({ value: size, label: size }))
-                    ]}
-                    value={selectedSize || "__all__"}
-                    onValueChange={(val) => setSelectedSize(val === "__all__" ? "" : val)}
-                    placeholder="Select Size"
-                    searchPlaceholder="Search sizes..."
-                    emptyText="No sizes found."
-                    disabled={false}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Material → Category */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                    {getLabel('category')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableMaterials.map(material => ({ value: material, label: material }))
-                    ]}
-                    value={selectedMaterial || "__all__"}
-                    onValueChange={(val) => setSelectedMaterial(val === "__all__" ? "" : val)}
-                    placeholder="Select Material"
-                    searchPlaceholder="Search materials..."
-                    emptyText="No materials found."
-                    disabled={false}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Quality → Sub Cat */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    {getLabel('sub_cat')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableQualities.map(quality => ({ value: quality, label: quality }))
-                    ]}
-                    value={selectedQuality || "__all__"}
-                    onValueChange={(val) => setSelectedQuality(val === "__all__" ? "" : val)}
-                    placeholder="Select Quality"
-                    searchPlaceholder="Search qualities..."
-                    emptyText="No qualities found."
-                    disabled={false}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Brand → Ref No */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    {getLabel('ref_no')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableBrands.map(brand => ({ value: brand, label: brand }))
-                    ]}
-                    value={selectedBrand || "__all__"}
-                    onValueChange={(val) => setSelectedBrand(val === "__all__" ? "" : val)}
-                    placeholder="Select Brand"
-                    searchPlaceholder="Search brands..."
-                    emptyText="No brands found."
-                    disabled={!itemsLoaded || availableBrands.length === 0}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Display Options */}
-            <div className="flex flex-wrap items-center gap-6 pt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="reorder" 
-                  checked={showReorderDetails}
-                  onCheckedChange={(checked) => setShowReorderDetails(checked as boolean)}
-                />
-                <Label htmlFor="reorder" className="cursor-pointer text-sm font-normal">
-                  Show Reorder Details
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="rackwise" 
-                  checked={rackWise}
-                  onCheckedChange={(checked) => setRackWise(checked as boolean)}
-                />
-                <Label htmlFor="rackwise" className="cursor-pointer text-sm font-normal">
-                  Group by Category
-                </Label>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
-              <Button 
-                onClick={handleStock} 
-                disabled={isLoading}
-                size="sm"
-                className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
-              >
-                {isLoadingStock ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-3.5 w-3.5 mr-1.5" />
-                    Apply Filters
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" onClick={handleClear} size="sm" className="h-9">
-                <X className="h-3.5 w-3.5 mr-1.5" />
-                Clear All
-              </Button>
-              <div className="flex-1" />
-              <div className="flex gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('excel')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
-                      <FileSpreadsheet className="h-4 w-4" />
+                <Sheet open={advancedFiltersOpen} onOpenChange={setAdvancedFiltersOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9">
+                      <SlidersHorizontal className="h-4 w-4 mr-2" />
+                      Advanced Filters
+                      {hasAnyFilter && (
+                        <Badge variant="secondary" className="ml-2">
+                          {Object.values(currentFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to Excel</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('csv')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export to CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('pdf')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Print Report</TooltipContent>
-                </Tooltip>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto p-4">
+                    <SheetHeader>
+                      <SheetTitle>Advanced Filters</SheetTitle>
+                      <SheetDescription>
+                        Refine your stock search with detailed filters
+                      </SheetDescription>
+                    </SheetHeader>
+
+                    <div className="space-y-6 mt-6">
+                      {/* 6 Item Attribute Filters */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-purple-500" />
+                          <Label className="text-sm font-semibold">Item Filters</Label>
+                        </div>
+
+                        {/* Item Code */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('item_code')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableItemCodes.map(code => ({ value: code, label: code }))
+                            ]}
+                            value={selectedItemCode || "__all__"}
+                            onValueChange={(val) => setSelectedItemCode(val === "__all__" ? "" : val)}
+                            placeholder="Select Item Code"
+                            searchPlaceholder="Search item codes..."
+                            emptyText="No item codes found."
+                            disabled={!itemsLoaded || availableItemCodes.length === 0}
+                            minSearchChars={2}
+                          />
+                        </div>
+
+                        {/* Item Name */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('item')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableNames.map(name => ({ value: name, label: name }))
+                            ]}
+                            value={selectedName || "__all__"}
+                            onValueChange={(val) => setSelectedName(val === "__all__" ? "" : val)}
+                            placeholder="Select Name"
+                            searchPlaceholder="Search names..."
+                            emptyText="No names found."
+                            disabled={false}
+                          />
+                        </div>
+
+                        {/* Size */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('size')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableSizes.map(size => ({ value: size, label: size }))
+                            ]}
+                            value={selectedSize || "__all__"}
+                            onValueChange={(val) => setSelectedSize(val === "__all__" ? "" : val)}
+                            placeholder="Select Size"
+                            searchPlaceholder="Search sizes..."
+                            emptyText="No sizes found."
+                            disabled={false}
+                          />
+                        </div>
+
+                        {/* Material → Category */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('category')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableMaterials.map(material => ({ value: material, label: material }))
+                            ]}
+                            value={selectedMaterial || "__all__"}
+                            onValueChange={(val) => setSelectedMaterial(val === "__all__" ? "" : val)}
+                            placeholder="Select Material"
+                            searchPlaceholder="Search materials..."
+                            emptyText="No materials found."
+                            disabled={false}
+                          />
+                        </div>
+
+                        {/* Quality → Sub Cat */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('sub_cat')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableQualities.map(quality => ({ value: quality, label: quality }))
+                            ]}
+                            value={selectedQuality || "__all__"}
+                            onValueChange={(val) => setSelectedQuality(val === "__all__" ? "" : val)}
+                            placeholder="Select Quality"
+                            searchPlaceholder="Search qualities..."
+                            emptyText="No qualities found."
+                            disabled={false}
+                          />
+                        </div>
+
+                        {/* Brand → Ref No */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('ref_no')}</Label>
+                          <Combobox
+                            options={[
+                              { value: "__all__", label: "All" },
+                              ...availableBrands.map(brand => ({ value: brand, label: brand }))
+                            ]}
+                            value={selectedBrand || "__all__"}
+                            onValueChange={(val) => setSelectedBrand(val === "__all__" ? "" : val)}
+                            placeholder="Select Brand"
+                            searchPlaceholder="Search brands..."
+                            emptyText="No brands found."
+                            disabled={!itemsLoaded || availableBrands.length === 0}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Display Options */}
+                      <div className="space-y-4 pt-4 border-t">
+                        <Label className="text-sm font-semibold">Display Options</Label>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="reorder" 
+                              checked={showReorderDetails}
+                              onCheckedChange={(checked) => setShowReorderDetails(checked as boolean)}
+                            />
+                            <Label htmlFor="reorder" className="cursor-pointer text-sm font-normal">
+                              Show Reorder Details
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="rackwise" 
+                              checked={rackWise}
+                              onCheckedChange={(checked) => setRackWise(checked as boolean)}
+                            />
+                            <Label htmlFor="rackwise" className="cursor-pointer text-sm font-normal">
+                              Group by Category
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Drawer Actions */}
+                      <div className="flex gap-2 pt-4 border-t">
+                        <Button 
+                          onClick={() => {
+                            handleStock();
+                            setAdvancedFiltersOpen(false);
+                          }}
+                          disabled={isLoading}
+                          className="flex-1"
+                        >
+                          {isLoadingStock ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="h-4 w-4 mr-2" />
+                              Apply
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            handleClear();
+                            setAdvancedFiltersOpen(false);
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                <Button 
+                  onClick={handleStock} 
+                  disabled={isLoading}
+                  size="sm"
+                  className="h-9"
+                >
+                  {isLoadingStock ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-3.5 w-3.5 mr-1.5" />
+                      Apply
+                    </>
+                  )}
+                </Button>
+
+                <Button variant="outline" onClick={handleClear} size="sm" className="h-9">
+                  <X className="h-3.5 w-3.5 mr-1.5" />
+                  Clear
+                </Button>
+
+                <div className="flex-1" />
+
+                {/* Export Buttons */}
+                <div className="flex gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => handleExport('excel')} 
+                        className="h-9 w-9"
+                        disabled={filteredData.length === 0}
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Export to Excel</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => handleExport('csv')} 
+                        className="h-9 w-9"
+                        disabled={filteredData.length === 0}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Export to CSV</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => handleExport('pdf')} 
+                        className="h-9 w-9"
+                        disabled={filteredData.length === 0}
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Print Report</TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </CardContent>

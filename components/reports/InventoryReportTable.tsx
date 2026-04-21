@@ -252,7 +252,7 @@ export default function InventoryReportTable() {
   const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
     const headers = [
       { key: "itename", label: "Item Name" },
-      { key: "category", label: "Category" },
+      { key: "category", label: getLabel("category") },
       { key: "brand", label: "Brand" },
       { key: "opening", label: "Opening" },
       { key: "received", label: "Received" },
