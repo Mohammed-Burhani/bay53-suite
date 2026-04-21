@@ -229,7 +229,7 @@ export default function InventoryPage() {
   };
 
   const exportToCSV = () => {
-    const headers = ["Name", "SKU", "Barcode", "Category", "Brand", "Cost Price", "Selling Price", "MRP", "GST Rate", "HSN Code", "Unit", "Stock", "Low Stock Threshold", "Stock Value"];
+    const headers = ["Name", "SKU", "Barcode", getLabel("category"), "Brand", "Cost Price", "Selling Price", "MRP", "GST Rate", "HSN Code", "Unit", "Stock", "Low Stock Threshold", "Stock Value"];
     const rows = filtered.map(p => [
       p.name,
       p.sku,
@@ -258,7 +258,7 @@ export default function InventoryPage() {
   };
 
   const exportToExcel = () => {
-    const headers = ["Name", "SKU", "Barcode", "Category", "Brand", "Cost Price", "Selling Price", "MRP", "GST Rate", "HSN Code", "Unit", "Stock", "Low Stock Threshold", "Stock Value"];
+    const headers = ["Name", "SKU", "Barcode", getLabel("category"), "Brand", "Cost Price", "Selling Price", "MRP", "GST Rate", "HSN Code", "Unit", "Stock", "Low Stock Threshold", "Stock Value"];
     const rows = filtered.map(p => [
       p.name,
       p.sku,
@@ -442,7 +442,7 @@ export default function InventoryPage() {
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className={`h-9 w-auto min-w-[160px] border-2 transition-all ${categoryFilter !== "all" ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-medium" : "hover:border-muted-foreground/30"}`}>
                   <Package className="mr-2 h-3.5 w-3.5" />
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder={getLabel("category")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
@@ -662,7 +662,7 @@ export default function InventoryPage() {
                       </TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead>
-                        <SortButton label="Category" sortKey="category" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+                        <SortButton label={getLabel("category")} sortKey="category" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
                       </TableHead>
                       <TableHead className="text-right">
                         <SortButton label="Cost" sortKey="costPrice" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="justify-end" />
