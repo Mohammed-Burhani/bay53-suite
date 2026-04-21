@@ -48,12 +48,12 @@ import {
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { Combobox } from "@/components/ui/combobox";
+import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import { useStockPlaces, useItems, useCurrentStock } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import type { CurrentStockItem, ItemAttributes } from "@/lib/types/reports.types";
 import { getAvailableOptions } from "@/lib/utils/item-parser";
 import { exportToExcel, exportToPDF } from "@/lib/utils/report-export";
-import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 export default function CurrentStockReport() {
   const { getLabel } = useClassificationLabels();
@@ -161,7 +161,7 @@ export default function CurrentStockReport() {
   const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
     const headers = [
       { key: "itename", label: "Item Name" },
-      { key: "category", label: "Category" },
+      { key: "category", label: getLabel("category") },
       { key: "brand", label: "Brand" },
       { key: "stock", label: "Stock" },
       { key: "unit", label: "Unit" },
@@ -595,7 +595,7 @@ export default function CurrentStockReport() {
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button 
                 onClick={handleStock} 
-                disabled={isLoading || !hasAnyFilter}
+                disabled={isLoading}
                 size="sm"
                 className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
               >
@@ -853,7 +853,7 @@ export default function CurrentStockReport() {
               <Button 
                 onClick={handleStock}
                 size="lg"
-                disabled={isLoading || !hasAnyFilter}
+                disabled={isLoading}
                 className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {isLoadingStock ? (
