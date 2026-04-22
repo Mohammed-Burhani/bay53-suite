@@ -28,8 +28,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import { Download, Search, X, Filter, FileSpreadsheet, Printer, AlertCircle, Clock, CheckCircle, SlidersHorizontal } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
@@ -60,6 +68,7 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
   const [data] = useState(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const totalPending = data.reduce((sum, item) => sum + item.pendingQty, 0);
@@ -158,19 +167,7 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Pending Items Filters</CardTitle>
-                <CardDescription className="text-xs">Track unfulfilled and partially fulfilled orders</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-4 space-y-3">
             {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -178,244 +175,191 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                 placeholder="Quick search by order number, party, or item..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10"
+                className="pl-10 h-9"
               />
             </div>
 
-            {/* Filter Grid - First Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Rack No
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Racks" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Racks</SelectItem>
-                    <SelectItem value="a1">A1</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date */}
+              <Select defaultValue="none">
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="current_month">Current Month</SelectItem>
+                  <SelectItem value="range">Range</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="half_yearly">Half Yearly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  ISDN No
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All ISDNs" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All ISDNs</SelectItem>
-                    <SelectItem value="123">123456</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Bill Type */}
+              <Select defaultValue="sales_invoice">
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales_invoice">Sales Invoice</SelectItem>
+                  <SelectItem value="purchase">Purchase</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                  Bound
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="hardcover">Hardcover</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Advanced Filters Drawer */}
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Advanced Filters
+                    {[itemWise, partyWise, billDetail, dateWise].filter(Boolean).length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {[itemWise, partyWise, billDetail, dateWise].filter(Boolean).length}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[400px] overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Advanced Filters</SheetTitle>
+                    <SheetDescription>Additional filter options for pending items</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-5 mt-6">
+                    {/* Additional Selects */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Rack No</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Racks" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Racks</SelectItem>
+                            <SelectItem value="a1">A1</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">ISDN No</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All ISDNs" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All ISDNs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Bound</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Types" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="hardcover">Hardcover</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Weight</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Weights" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Weights</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Publication</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Publishers" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Publishers</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Color</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Colors" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Colors</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Bill From</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Sources" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Sources</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Party</Label>
+                        <Select>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="All Parties" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Parties</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-sm">Batch Code</Label>
+                        <Input placeholder="Enter batch code" className="h-9" />
+                      </div>
+                    </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Weight
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Weights" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Weights</SelectItem>
-                    <SelectItem value="500g">500g</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                    {/* Display Options */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <Label className="text-sm font-semibold">Display Options</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="allitem" />
+                          <Label htmlFor="allitem" className="cursor-pointer text-sm font-normal">All Item</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="itemwise" checked={itemWise} onCheckedChange={(c) => setItemWise(c as boolean)} />
+                          <Label htmlFor="itemwise" className="cursor-pointer text-sm font-normal">Item Wise</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="inventory" />
+                          <Label htmlFor="inventory" className="cursor-pointer text-sm font-normal">Inventory</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="reorder" />
+                          <Label htmlFor="reorder" className="cursor-pointer text-sm font-normal">Re-order Details</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="billtypewise" />
+                          <Label htmlFor="billtypewise" className="cursor-pointer text-sm font-normal">Bill Type Wise</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="stockplacewise" />
+                          <Label htmlFor="stockplacewise" className="cursor-pointer text-sm font-normal">Stock Place Wise</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="batchcodewise" />
+                          <Label htmlFor="batchcodewise" className="cursor-pointer text-sm font-normal">Batch Code Wise</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="partywise" checked={partyWise} onCheckedChange={(c) => setPartyWise(c as boolean)} />
+                          <Label htmlFor="partywise" className="cursor-pointer text-sm font-normal">Party Wise</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="billdetail" checked={billDetail} onCheckedChange={(c) => setBillDetail(c as boolean)} />
+                          <Label htmlFor="billdetail" className="cursor-pointer text-sm font-normal">Bill Detail</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="datewise" checked={dateWise} onCheckedChange={(c) => setDateWise(c as boolean)} />
+                          <Label htmlFor="datewise" className="cursor-pointer text-sm font-normal">Date Wise</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-            {/* Second Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                  Publication
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Publishers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Publishers</SelectItem>
-                    <SelectItem value="abc">ABC Pub</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  Color
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Colors" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Colors</SelectItem>
-                    <SelectItem value="red">Red</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  Bill From
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Sources" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="supplier1">Supplier 1</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  Party
-                </Label>
-                <Select>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Parties" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Parties</SelectItem>
-                    <SelectItem value="party1">Party 1</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Third Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Date
-                </Label>
-                <Select defaultValue="none">
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="half_yearly">Half Yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-lime-500" />
-                  Bill Type
-                </Label>
-                <Select defaultValue="sales_invoice">
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales_invoice">Sales Invoice</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500" />
-                  Batch Code
-                </Label>
-                <Input placeholder="Enter batch code" className="h-9" />
-              </div>
-            </div>
-
-            {/* Display Options */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="allitem" />
-                <Label htmlFor="allitem" className="cursor-pointer text-sm font-normal">All Item</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="itemwise" checked={itemWise} onCheckedChange={(c) => setItemWise(c as boolean)} />
-                <Label htmlFor="itemwise" className="cursor-pointer text-sm font-normal">Item Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="inventory" />
-                <Label htmlFor="inventory" className="cursor-pointer text-sm font-normal">Inventory</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="reorder" />
-                <Label htmlFor="reorder" className="cursor-pointer text-sm font-normal">Re-order Details</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="billtypewise" />
-                <Label htmlFor="billtypewise" className="cursor-pointer text-sm font-normal">Bill Type Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="stockplacewise" />
-                <Label htmlFor="stockplacewise" className="cursor-pointer text-sm font-normal">Stock Place Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="batchcodewise" />
-                <Label htmlFor="batchcodewise" className="cursor-pointer text-sm font-normal">Batch Code Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="partywise" checked={partyWise} onCheckedChange={(c) => setPartyWise(c as boolean)} />
-                <Label htmlFor="partywise" className="cursor-pointer text-sm font-normal">Party Wise</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="billdetail" checked={billDetail} onCheckedChange={(c) => setBillDetail(c as boolean)} />
-                <Label htmlFor="billdetail" className="cursor-pointer text-sm font-normal">Bill Detail</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="datewise" checked={dateWise} onCheckedChange={(c) => setDateWise(c as boolean)} />
-                <Label htmlFor="datewise" className="cursor-pointer text-sm font-normal">Date Wise</Label>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
-              <Button 
-                disabled={isLoading}
-                size="sm"
-                className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white h-9"
-              >
+              <Button disabled={isLoading} size="sm" className="h-9">
                 <Search className="h-3.5 w-3.5 mr-1.5" />
                 {isLoading ? "Loading..." : "Search"}
               </Button>
@@ -423,17 +367,13 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                 <X className="h-3.5 w-3.5 mr-1.5" />
                 Clear
               </Button>
+
               <div className="flex-1" />
+
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handlePrint}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handlePrint} disabled={data.length === 0}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -441,13 +381,7 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleDownloadPDF}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDownloadPDF} disabled={data.length === 0}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -455,13 +389,7 @@ export default function PendingItemsTable({ initialData = [] }: PendingItemsTabl
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleExportExcel}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleExportExcel} disabled={data.length === 0}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

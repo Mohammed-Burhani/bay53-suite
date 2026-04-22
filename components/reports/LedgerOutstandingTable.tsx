@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,8 +20,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X, Download, FileSpreadsheet } from "lucide-react";
+import { Printer, Search, Filter, Receipt, TrendingUp, AlertTriangle, Loader2, X, Download, FileSpreadsheet, SlidersHorizontal } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useLedgerOutstanding } from "@/lib/hooks/useReports";
 import type { LedgerOutstandingItem } from "@/lib/types/reports.types";
 import { LedgerSearchInput } from "./LedgerSearchInput";
@@ -31,6 +40,7 @@ import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-expor
 
 export default function LedgerOutstandingTable() {
   const { ledgerOutstanding, setLedgerOutstandingFilters } = useReportFiltersStore();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { 
     detailed, 
     selectedLedgerIds, 
@@ -206,20 +216,8 @@ export default function LedgerOutstandingTable() {
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Ledger Outstandings</CardTitle>
-                <CardDescription className="text-xs">View outstandings by ledger</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Ledger Selection */}
               <LedgerSearchInput
                 selectedLedgerIds={selectedLedgerIds}
@@ -252,27 +250,41 @@ export default function LedgerOutstandingTable() {
                 label="Date"
                 financialYearStart={4}
               />
-
-              {/* Detailed checkbox */}
-              <div className="space-y-1.5 flex items-end">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="detailed"
-                    checked={detailed}
-                    onCheckedChange={(c) => setLedgerOutstandingFilters({ detailed: c as boolean })}
-                  />
-                  <Label htmlFor="detailed" className="cursor-pointer text-sm font-normal">Detailed</Label>
-                </div>
-              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Options Drawer */}
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Options
+                    {detailed && <Badge variant="secondary" className="ml-2">1</Badge>}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[320px]">
+                  <SheetHeader>
+                    <SheetTitle>Display Options</SheetTitle>
+                    <SheetDescription>Configure report display settings</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="detailed"
+                        checked={detailed}
+                        onCheckedChange={(c) => setLedgerOutstandingFilters({ detailed: c as boolean })}
+                      />
+                      <Label htmlFor="detailed" className="cursor-pointer text-sm font-normal">Detailed</Label>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               <Button
                 onClick={handleSearch}
                 disabled={isPending || selectedLedgerIds.length === 0}
                 size="sm"
-                className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
+                className="h-9"
               >
                 {isPending ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -299,18 +311,14 @@ export default function LedgerOutstandingTable() {
                 className="h-9"
               >
                 <X className="h-3.5 w-3.5 mr-1.5" />
-                Clear Filters
+                Clear
               </Button>
+
               <div className="flex-1" />
+
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-9 w-9" 
-                    onClick={handlePrint}
-                    disabled={rows.length === 0}
-                  >
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={handlePrint} disabled={rows.length === 0}>
                     <Printer className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -318,13 +326,7 @@ export default function LedgerOutstandingTable() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-9 w-9" 
-                    onClick={handleDownloadPDF}
-                    disabled={rows.length === 0}
-                  >
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDownloadPDF} disabled={rows.length === 0}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -332,13 +334,7 @@ export default function LedgerOutstandingTable() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-9 w-9" 
-                    onClick={handleExportExcel}
-                    disabled={rows.length === 0}
-                  >
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleExportExcel} disabled={rows.length === 0}>
                     <FileSpreadsheet className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>

@@ -21,8 +21,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, TrendingUp, TrendingDown, Loader2, Lightbulb } from "lucide-react";
+import { Download, Search, X, Filter, FileSpreadsheet, Printer, Package, TrendingUp, TrendingDown, Loader2, Lightbulb, SlidersHorizontal } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useItemRegister, useItems } from "@/lib/hooks/useReports";
 import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
 import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
@@ -53,6 +61,7 @@ export default function ItemRegisterTable() {
 
   const { mutate: fetchItemRegister, data, isPending, error, reset } = useItemRegister();
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleDateChange = (from: string | null, to: string | null) => {
     setCalculatedFromDate(from);
@@ -262,19 +271,7 @@ export default function ItemRegisterTable() {
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Item Register Filters</CardTitle>
-                <CardDescription className="text-xs">Track item-wise stock movement</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-4 space-y-3">
             {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -282,18 +279,13 @@ export default function ItemRegisterTable() {
                 placeholder="Quick search by party or bill no..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10"
+                className="pl-10 h-9"
               />
             </div>
 
-            {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Item Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Item <span className="text-red-500">*</span>
-                </Label>
+              <div className="flex-1 min-w-[200px]">
                 <ItemSearchCombobox
                   items={items}
                   value={selectedItemId}
@@ -304,48 +296,62 @@ export default function ItemRegisterTable() {
                 />
               </div>
 
-              {/* Opening Stock Checkbox */}
-              <div className="space-y-1.5 flex items-end">
-                <div className="flex items-center space-x-2 h-9">
-                  <Checkbox 
-                    id="openingstock" 
-                    checked={isOpeningStock}
-                    onCheckedChange={(c) => setIsOpeningStock(c as boolean)}
-                  />
-                  <Label htmlFor="openingstock" className="cursor-pointer text-sm font-normal">
-                    Include Opening Stock
-                  </Label>
-                </div>
+              {/* Date Range Filter inline */}
+              <div className="w-[200px]">
+                <DateRangeFilter
+                  dateType={dateType}
+                  selectedMonth={selectedMonth}
+                  selectedQuarter={selectedQuarter}
+                  selectedHalfYear={selectedHalfYear}
+                  selectedYear={selectedYear}
+                  fromDate={fromDate}
+                  toDate={toDate}
+                  onDateTypeChange={setDateType}
+                  onSelectedMonthChange={setSelectedMonth}
+                  onSelectedQuarterChange={setSelectedQuarter}
+                  onSelectedHalfYearChange={setSelectedHalfYear}
+                  onSelectedYearChange={setSelectedYear}
+                  onFromDateChange={setFromDate}
+                  onToDateChange={setToDate}
+                  onDateChange={handleDateChange}
+                  label="Date Range"
+                />
               </div>
-            </div>
 
-            {/* Date Range Filter */}
-            <DateRangeFilter
-              dateType={dateType}
-              selectedMonth={selectedMonth}
-              selectedQuarter={selectedQuarter}
-              selectedHalfYear={selectedHalfYear}
-              selectedYear={selectedYear}
-              fromDate={fromDate}
-              toDate={toDate}
-              onDateTypeChange={setDateType}
-              onSelectedMonthChange={setSelectedMonth}
-              onSelectedQuarterChange={setSelectedQuarter}
-              onSelectedHalfYearChange={setSelectedHalfYear}
-              onSelectedYearChange={setSelectedYear}
-              onFromDateChange={setFromDate}
-              onToDateChange={setToDate}
-              onDateChange={handleDateChange}
-              label="Date Range"
-            />
+              {/* Advanced Filters Drawer */}
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Options
+                    {isOpeningStock && <Badge variant="secondary" className="ml-2">1</Badge>}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[320px]">
+                  <SheetHeader>
+                    <SheetTitle>Display Options</SheetTitle>
+                    <SheetDescription>Configure report display settings</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="openingstock"
+                        checked={isOpeningStock}
+                        onCheckedChange={(c) => setIsOpeningStock(c as boolean)}
+                      />
+                      <Label htmlFor="openingstock" className="cursor-pointer text-sm font-normal">
+                        Include Opening Stock
+                      </Label>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
               <Button
                 onClick={handleSearch}
                 disabled={isPending || !selectedItemId}
                 size="sm"
-                className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
+                className="h-9"
               >
                 {isPending ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -358,17 +364,13 @@ export default function ItemRegisterTable() {
                 <X className="h-3.5 w-3.5 mr-1.5" />
                 Clear
               </Button>
+
               <div className="flex-1" />
+
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9" 
-                      disabled={filtered.length === 0}
-                      onClick={handlePrint}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0} onClick={handlePrint}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -376,13 +378,7 @@ export default function ItemRegisterTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9" 
-                      disabled={filtered.length === 0}
-                      onClick={handleDownloadPDF}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0} onClick={handleDownloadPDF}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -390,13 +386,7 @@ export default function ItemRegisterTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9" 
-                      disabled={filtered.length === 0}
-                      onClick={handleExportExcel}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={filtered.length === 0} onClick={handleExportExcel}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

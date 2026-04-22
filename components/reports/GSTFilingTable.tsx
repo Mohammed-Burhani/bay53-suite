@@ -28,8 +28,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3, Printer } from "lucide-react";
+import { Download, FileSpreadsheet, Filter, FileText, Receipt, Package2, BarChart3, Printer, SlidersHorizontal } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
@@ -45,6 +53,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
   const [reportType, setReportType] = useState("b2b");
   const [dateType, setDateType] = useState("yearly");
   const [data] = useState<GSTFilingRow[]>(initialData);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { currentPage, pageSize, setCurrentPage, setPageSize, getPaginatedData } = usePagination(50);
 
   const totalInvoices = data.length;
@@ -213,116 +222,79 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">GST Filing Filters</CardTitle>
-                <CardDescription className="text-xs">Configure report parameters for GST filing</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date */}
+              <Select value={dateType} onValueChange={setDateType}>
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="current_month">Current Month</SelectItem>
+                  <SelectItem value="range">Range</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="half_yearly">Half Yearly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <CardContent className="p-6 space-y-5">
-            {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  Date
-                </Label>
-                <Select value={dateType} onValueChange={setDateType}>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="half_yearly">Half Yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Transaction Type */}
+              <Select defaultValue="sales">
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="purchase">Purchase</SelectItem>
+                  <SelectItem value="sales_return">Sales Return</SelectItem>
+                  <SelectItem value="purchase_return">Purchase Return</SelectItem>
+                  <SelectItem value="exempted_sales">Exempted Sales</SelectItem>
+                  <SelectItem value="exempted_purchase">Exempted Purchase</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expense</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {dateType === "yearly" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    Year
-                  </Label>
-                  <Input type="number" defaultValue={new Date().getFullYear()} className="h-9 w-full" />
-                </div>
-              )}
+              {/* Report Type Drawer */}
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Report Type
+                    <span className="ml-2 text-xs font-semibold uppercase">{reportType}</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[320px]">
+                  <SheetHeader>
+                    <SheetTitle>Report Type</SheetTitle>
+                    <SheetDescription>Select GST report format</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <RadioGroup value={reportType} onValueChange={setReportType} className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: "b2b", label: "B2B" },
+                        { value: "b2cl", label: "B2CL" },
+                        { value: "b2cs", label: "B2CS" },
+                        { value: "hsn", label: "HSN" },
+                      ].map(({ value, label }) => (
+                        <div key={value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={value} id={`gst-${value}`} />
+                          <Label htmlFor={`gst-${value}`} className="cursor-pointer font-normal text-sm">{label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                  Transaction Type
-                </Label>
-                <Select defaultValue="sales">
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="sales_return">Sales Return</SelectItem>
-                    <SelectItem value="purchase_return">Purchase Return</SelectItem>
-                    <SelectItem value="exempted_sales">Exempted Sales</SelectItem>
-                    <SelectItem value="exempted_purchase">Exempted Purchase</SelectItem>
-                    <SelectItem value="exempted_sales_return">Exempted Sales Return</SelectItem>
-                    <SelectItem value="exempted_purchase_return">Exempted Purchase Return</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Report Type Radio Group */}
-            <div className="space-y-2 pt-2">
-              <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                Report Type
-              </Label>
-              <RadioGroup value={reportType} onValueChange={setReportType} className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="b2b" id="b2b" />
-                  <Label htmlFor="b2b" className="cursor-pointer font-normal text-sm">B2B</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="b2cl" id="b2cl" />
-                  <Label htmlFor="b2cl" className="cursor-pointer font-normal text-sm">B2CL</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="b2cs" id="b2cs" />
-                  <Label htmlFor="b2cs" className="cursor-pointer font-normal text-sm">B2CS</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hsn" id="hsn" />
-                  <Label htmlFor="hsn" className="cursor-pointer font-normal text-sm">HSN</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Export Buttons */}
-            <div className="flex items-center gap-2 pt-3 border-t">
               <div className="flex-1" />
+
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handlePrint}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handlePrint} disabled={data.length === 0}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -330,13 +302,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleDownloadPDF}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDownloadPDF} disabled={data.length === 0}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -344,13 +310,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleExportExcel}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleExportExcel} disabled={data.length === 0}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

@@ -40,8 +40,17 @@ import {
   Lightbulb,
   BarChart3,
   TrendingUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { Combobox } from "@/components/ui/combobox";
 import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
@@ -104,6 +113,7 @@ export default function InventoryReportTable() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination(50);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Fetch dropdown data
   const { data: stockPlaces = [], isLoading: isLoadingStockPlaces } = useStockPlaces();
@@ -446,21 +456,7 @@ export default function InventoryReportTable() {
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Inventory Report Filters</CardTitle>
-                <CardDescription className="text-xs">
-                  {items.length.toLocaleString()} items loaded • Configure filters to generate report
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-4 space-y-3">
             {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -468,479 +464,265 @@ export default function InventoryReportTable() {
                 placeholder="Quick search in results..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10"
+                className="pl-10 h-9"
               />
             </div>
 
-            {/* 6 Item Attribute Filters */}
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="h-4 w-4 text-purple-500" />
-                <Label className="text-sm font-semibold">Item Filters</Label>
-                {hasAnyItemFilter && (
-                  <Badge variant="secondary" className="ml-auto">
-                    {Object.values(currentFilters).filter(Boolean).length} active
-                  </Badge>
-                )}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Range */}
+              <div className="w-[200px]">
+                <DateRangeFilter
+                  dateType={dateType}
+                  selectedMonth={selectedMonth}
+                  selectedQuarter={selectedQuarter}
+                  selectedHalfYear={selectedHalfYear}
+                  selectedYear={selectedYear}
+                  fromDate={fromDate || ""}
+                  toDate={toDate || ""}
+                  onDateTypeChange={setDateType}
+                  onSelectedMonthChange={setSelectedMonth}
+                  onSelectedQuarterChange={setSelectedQuarter}
+                  onSelectedHalfYearChange={setSelectedHalfYear}
+                  onSelectedYearChange={setSelectedYear}
+                  onFromDateChange={(date) => setFromDate(date)}
+                  onToDateChange={(date) => setToDate(date)}
+                  onDateChange={(from, to) => {
+                    setCalculatedFromDate(from);
+                    setCalculatedToDate(to);
+                  }}
+                  label="Date Range"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                {/* Item Code */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    {getLabel('item_code')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableItemCodes.map(code => ({ value: code, label: code }))
-                    ]}
-                    value={selectedItemCode || "__all__"}
-                    onValueChange={(val) => setSelectedItemCode(val === "__all__" ? "" : val)}
-                    placeholder="Select Item Code"
-                    searchPlaceholder="Search item codes..."
-                    emptyText="No item codes found."
-                    disabled={!itemsLoaded || availableItemCodes.length === 0 || allItem}
-                    className="h-9"
-                    minSearchChars={2}
-                  />
-                </div>
-
-                {/* Item Name */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    {getLabel('item')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableNames.map(name => ({ value: name, label: name }))
-                    ]}
-                    value={selectedName || "__all__"}
-                    onValueChange={(val) => setSelectedName(val === "__all__" ? "" : val)}
-                    placeholder="Select Name"
-                    searchPlaceholder="Search names..."
-                    emptyText="No names found."
-                    disabled={!itemsLoaded || availableNames.length === 0 || allItem}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Size */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                    {getLabel('size')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableSizes.map(size => ({ value: size, label: size }))
-                    ]}
-                    value={selectedSize || "__all__"}
-                    onValueChange={(val) => setSelectedSize(val === "__all__" ? "" : val)}
-                    placeholder="Select Size"
-                    searchPlaceholder="Search sizes..."
-                    emptyText="No sizes found."
-                    disabled={!itemsLoaded || availableSizes.length === 0 || allItem}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Material → Category */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                    {getLabel('category')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableMaterials.map(material => ({ value: material, label: material }))
-                    ]}
-                    value={selectedMaterial || "__all__"}
-                    onValueChange={(val) => setSelectedMaterial(val === "__all__" ? "" : val)}
-                    placeholder="Select Material"
-                    searchPlaceholder="Search materials..."
-                    emptyText="No materials found."
-                    disabled={!itemsLoaded || availableMaterials.length === 0 || allItem}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Quality → Sub Cat */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    {getLabel('sub_cat')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableQualities.map(quality => ({ value: quality, label: quality }))
-                    ]}
-                    value={selectedQuality || "__all__"}
-                    onValueChange={(val) => setSelectedQuality(val === "__all__" ? "" : val)}
-                    placeholder="Select Quality"
-                    searchPlaceholder="Search qualities..."
-                    emptyText="No qualities found."
-                    disabled={!itemsLoaded || availableQualities.length === 0 || allItem}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Brand → Ref No */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    {getLabel('ref_no')}
-                  </Label>
-                  <Combobox
-                    options={[
-                      { value: "__all__", label: "All" },
-                      ...availableBrands.map(brand => ({ value: brand, label: brand }))
-                    ]}
-                    value={selectedBrand || "__all__"}
-                    onValueChange={(val) => setSelectedBrand(val === "__all__" ? "" : val)}
-                    placeholder="Select Brand"
-                    searchPlaceholder="Search brands..."
-                    emptyText="No brands found."
-                    disabled={!itemsLoaded || availableBrands.length === 0 || allItem}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Date Range Filter */}
-            <div className="space-y-3 pt-2 border-t">
-              <DateRangeFilter
-                dateType={dateType}
-                selectedMonth={selectedMonth}
-                selectedQuarter={selectedQuarter}
-                selectedHalfYear={selectedHalfYear}
-                selectedYear={selectedYear}
-                fromDate={fromDate || ""}
-                toDate={toDate || ""}
-                onDateTypeChange={setDateType}
-                onSelectedMonthChange={setSelectedMonth}
-                onSelectedQuarterChange={setSelectedQuarter}
-                onSelectedHalfYearChange={setSelectedHalfYear}
-                onSelectedYearChange={setSelectedYear}
-                onFromDateChange={(date) => setFromDate(date)}
-                onToDateChange={(date) => setToDate(date)}
-                onDateChange={(from, to) => {
-                  setCalculatedFromDate(from);
-                  setCalculatedToDate(to);
-                }}
-                label="Date Range"
-              />
-            </div>
-
-            {/* Other Filters */}
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center gap-2 mb-2">
-                <Filter className="h-4 w-4 text-indigo-500" />
-                <Label className="text-sm font-semibold">Additional Filters</Label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
-                {/* Bill Type */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-lime-500" />
-                    Bill Type
-                  </Label>
-                  <Select
-                    value={billType.toString()}
-                    onValueChange={(value) => setBillType(Number(value))}
-                    disabled={billTypeWise || isLoadingInvoiceTypes}
-                  >
-                    <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder={isLoadingInvoiceTypes ? "Loading..." : "Select Bill Type"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">All Types</SelectItem>
-                      {invoiceTypes.map((type) => (
-                        <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
-                          {type.typeName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Bill From (Stock Place API) */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                    Bill From
-                  </Label>
-                  <Select
-                    value={billFrom.toString()}
-                    onValueChange={(value) => setBillFrom(Number(value))}
-                    disabled={isLoadingStockPlaces || stockPlaceWise}
-                  >
-                    <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "Select Bill From"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">All Sources</SelectItem>
-                      {stockPlaces.map((sp) => (
-                        <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
-                          {sp.name} ({sp.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Party */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                    Party
-                  </Label>
-                  <Select
-                    value={party.toString()}
-                    onValueChange={(value) => setParty(Number(value))}
-                    disabled={isLoadingLedgers || partyWise}
-                  >
-                    <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder={isLoadingLedgers ? "Loading..." : "Select Party"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">All Parties</SelectItem>
-                      {ledgers.map((ledger) => (
-                        <SelectItem key={ledger.ledger_id} value={ledger.ledger_id.toString()}>
-                          {ledger.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Salesman */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                    Salesman
-                  </Label>
-                  <Input
-                    placeholder="Enter salesman"
-                    value={salesman}
-                    onChange={(e) => setSalesman(e.target.value)}
-                    disabled={billDetail}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Batch Code */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500" />
-                    Batch Code
-                  </Label>
-                  <Input
-                    placeholder="Enter batch code"
-                    value={batchCode}
-                    onChange={(e) => setBatchCode(e.target.value)}
-                    disabled={batchCodeWise}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* Area */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Area
-                  </Label>
-                  <Input
-                    placeholder="Enter area"
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    disabled={areaWise}
-                    className="h-9"
-                  />
-                </div>
-
-                {/* City */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                    City
-                  </Label>
-                  <Input
-                    placeholder="Enter city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    disabled={cityWise}
-                    className="h-9"
-                  />
-                </div>
-
-
-              </div>
-            </div>
-
-            {/* Paired Checkbox Options */}
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="h-4 w-4 text-green-500" />
-                <Label className="text-sm font-semibold">Report Options</Label>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="allitem" 
-                    checked={allItem}
-                    onCheckedChange={(checked) => setAllItem(checked as boolean)}
-                  />
-                  <Label htmlFor="allitem" className="cursor-pointer text-sm font-normal">
-                    All Item
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="itemwise" 
-                    checked={itemWise}
-                    onCheckedChange={(checked) => setItemWise(checked as boolean)}
-                  />
-                  <Label htmlFor="itemwise" className="cursor-pointer text-sm font-normal">
-                    Item Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="billtypewise" 
-                    checked={billTypeWise}
-                    onCheckedChange={(checked) => setBillTypeWise(checked as boolean)}
-                  />
-                  <Label htmlFor="billtypewise" className="cursor-pointer text-sm font-normal">
-                    Bill Type Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="stockplacewise" 
-                    checked={stockPlaceWise}
-                    onCheckedChange={(checked) => setStockPlaceWise(checked as boolean)}
-                  />
-                  <Label htmlFor="stockplacewise" className="cursor-pointer text-sm font-normal">
-                    Stock Place Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="batchcodewise" 
-                    checked={batchCodeWise}
-                    onCheckedChange={(checked) => setBatchCodeWise(checked as boolean)}
-                  />
-                  <Label htmlFor="batchcodewise" className="cursor-pointer text-sm font-normal">
-                    Batch Code Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="partywise" 
-                    checked={partyWise}
-                    onCheckedChange={(checked) => setPartyWise(checked as boolean)}
-                  />
-                  <Label htmlFor="partywise" className="cursor-pointer text-sm font-normal">
-                    Party Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="billdetail" 
-                    checked={billDetail}
-                    onCheckedChange={(checked) => setBillDetail(checked as boolean)}
-                  />
-                  <Label htmlFor="billdetail" className="cursor-pointer text-sm font-normal">
-                    Bill Detail
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="datewise" 
-                    checked={dateWise}
-                    onCheckedChange={(checked) => setDateWise(checked as boolean)}
-                  />
-                  <Label htmlFor="datewise" className="cursor-pointer text-sm font-normal">
-                    Date Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="areawise" 
-                    checked={areaWise}
-                    onCheckedChange={(checked) => setAreaWise(checked as boolean)}
-                  />
-                  <Label htmlFor="areawise" className="cursor-pointer text-sm font-normal">
-                    Area Wise
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="citywise" 
-                    checked={cityWise}
-                    onCheckedChange={(checked) => setCityWise(checked as boolean)}
-                  />
-                  <Label htmlFor="citywise" className="cursor-pointer text-sm font-normal">
-                    City Wise
-                  </Label>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
-              <Button 
-                onClick={handleSearch} 
-                disabled={isLoading}
-                size="sm"
-                className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
+              {/* Bill Type */}
+              <Select
+                value={billType.toString()}
+                onValueChange={(value) => setBillType(Number(value))}
+                disabled={billTypeWise || isLoadingInvoiceTypes}
               >
-                {isLoadingReport ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-3.5 w-3.5 mr-1.5" />
-                    Generate Report
-                  </>
-                )}
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder={isLoadingInvoiceTypes ? "Loading..." : "Bill Type"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All Types</SelectItem>
+                  {invoiceTypes.map((type) => (
+                    <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
+                      {type.typeName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Advanced Filters Drawer */}
+              <Sheet open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Advanced Filters
+                    {(hasAnyItemFilter || [itemWise, stockPlaceWise, partyWise, dateWise, billTypeWise, batchCodeWise, areaWise, cityWise].filter(Boolean).length > 0) && (
+                      <Badge variant="secondary" className="ml-2">
+                        {Object.values(currentFilters).filter(Boolean).length + [itemWise, stockPlaceWise, partyWise, dateWise, billTypeWise, batchCodeWise, areaWise, cityWise].filter(Boolean).length}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[420px] sm:w-[540px] overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Advanced Filters</SheetTitle>
+                    <SheetDescription>Item filters, additional options, and report settings</SheetDescription>
+                  </SheetHeader>
+
+                  <div className="space-y-6 mt-6">
+                    {/* 6 Item Attribute Filters */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-purple-500" />
+                        <Label className="text-sm font-semibold">Item Filters</Label>
+                        <div className="flex items-center space-x-2 ml-auto">
+                          <Checkbox id="allitem" checked={allItem} onCheckedChange={(checked) => setAllItem(checked as boolean)} />
+                          <Label htmlFor="allitem" className="cursor-pointer text-sm font-normal">All Item</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('item_code')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableItemCodes.map(code => ({ value: code, label: code }))]}
+                            value={selectedItemCode || "__all__"}
+                            onValueChange={(val) => setSelectedItemCode(val === "__all__" ? "" : val)}
+                            placeholder="Select Item Code"
+                            searchPlaceholder="Search item codes..."
+                            emptyText="No item codes found."
+                            disabled={!itemsLoaded || availableItemCodes.length === 0 || allItem}
+                            minSearchChars={2}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('item')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableNames.map(name => ({ value: name, label: name }))]}
+                            value={selectedName || "__all__"}
+                            onValueChange={(val) => setSelectedName(val === "__all__" ? "" : val)}
+                            placeholder="Select Name"
+                            searchPlaceholder="Search names..."
+                            emptyText="No names found."
+                            disabled={!itemsLoaded || availableNames.length === 0 || allItem}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('size')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableSizes.map(size => ({ value: size, label: size }))]}
+                            value={selectedSize || "__all__"}
+                            onValueChange={(val) => setSelectedSize(val === "__all__" ? "" : val)}
+                            placeholder="Select Size"
+                            searchPlaceholder="Search sizes..."
+                            emptyText="No sizes found."
+                            disabled={!itemsLoaded || availableSizes.length === 0 || allItem}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('category')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableMaterials.map(material => ({ value: material, label: material }))]}
+                            value={selectedMaterial || "__all__"}
+                            onValueChange={(val) => setSelectedMaterial(val === "__all__" ? "" : val)}
+                            placeholder="Select Material"
+                            searchPlaceholder="Search materials..."
+                            emptyText="No materials found."
+                            disabled={!itemsLoaded || availableMaterials.length === 0 || allItem}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('sub_cat')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableQualities.map(quality => ({ value: quality, label: quality }))]}
+                            value={selectedQuality || "__all__"}
+                            onValueChange={(val) => setSelectedQuality(val === "__all__" ? "" : val)}
+                            placeholder="Select Quality"
+                            searchPlaceholder="Search qualities..."
+                            emptyText="No qualities found."
+                            disabled={!itemsLoaded || availableQualities.length === 0 || allItem}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">{getLabel('ref_no')}</Label>
+                          <Combobox
+                            options={[{ value: "__all__", label: "All" }, ...availableBrands.map(brand => ({ value: brand, label: brand }))]}
+                            value={selectedBrand || "__all__"}
+                            onValueChange={(val) => setSelectedBrand(val === "__all__" ? "" : val)}
+                            placeholder="Select Brand"
+                            searchPlaceholder="Search brands..."
+                            emptyText="No brands found."
+                            disabled={!itemsLoaded || availableBrands.length === 0 || allItem}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Filters */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <Label className="text-sm font-semibold">Additional Filters</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Bill From</Label>
+                          <Select value={billFrom.toString()} onValueChange={(value) => setBillFrom(Number(value))} disabled={isLoadingStockPlaces || stockPlaceWise}>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="All Sources" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">All Sources</SelectItem>
+                              {stockPlaces.map((sp) => (
+                                <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>{sp.name} ({sp.code})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Party</Label>
+                          <Select value={party.toString()} onValueChange={(value) => setParty(Number(value))} disabled={isLoadingLedgers || partyWise}>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="All Parties" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">All Parties</SelectItem>
+                              {ledgers.map((ledger) => (
+                                <SelectItem key={ledger.ledger_id} value={ledger.ledger_id.toString()}>{ledger.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Salesman</Label>
+                          <Input placeholder="Enter salesman" value={salesman} onChange={(e) => setSalesman(e.target.value)} disabled={billDetail} className="h-9" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Batch Code</Label>
+                          <Input placeholder="Enter batch code" value={batchCode} onChange={(e) => setBatchCode(e.target.value)} disabled={batchCodeWise} className="h-9" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Area</Label>
+                          <Input placeholder="Enter area" value={area} onChange={(e) => setArea(e.target.value)} disabled={areaWise} className="h-9" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">City</Label>
+                          <Input placeholder="Enter city" value={city} onChange={(e) => setCity(e.target.value)} disabled={cityWise} className="h-9" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Report Options */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <Label className="text-sm font-semibold">Report Options</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { id: "itemwise", label: "Item Wise", checked: itemWise, onChange: setItemWise },
+                          { id: "billtypewise", label: "Bill Type Wise", checked: billTypeWise, onChange: setBillTypeWise },
+                          { id: "stockplacewise", label: "Stock Place Wise", checked: stockPlaceWise, onChange: setStockPlaceWise },
+                          { id: "batchcodewise", label: "Batch Code Wise", checked: batchCodeWise, onChange: setBatchCodeWise },
+                          { id: "partywise", label: "Party Wise", checked: partyWise, onChange: setPartyWise },
+                          { id: "billdetail", label: "Bill Detail", checked: billDetail, onChange: setBillDetail },
+                          { id: "datewise", label: "Date Wise", checked: dateWise, onChange: setDateWise },
+                          { id: "areawise", label: "Area Wise", checked: areaWise, onChange: setAreaWise },
+                          { id: "citywise", label: "City Wise", checked: cityWise, onChange: setCityWise },
+                          { id: "inventory", label: "Inventory", checked: inventory, onChange: setInventory },
+                          { id: "reorderdetails", label: "Re-order Details", checked: reorderDetails, onChange: setReorderDetails },
+                        ].map(({ id, label, checked, onChange }) => (
+                          <div key={id} className="flex items-center space-x-2">
+                            <Checkbox id={id} checked={checked} onCheckedChange={(c) => onChange(c as boolean)} />
+                            <Label htmlFor={id} className="cursor-pointer text-sm font-normal">{label}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Drawer Actions */}
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button onClick={() => { handleSearch(); setAdvancedOpen(false); }} disabled={isLoading} className="flex-1">
+                        {isLoadingReport ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                        {isLoadingReport ? "Loading..." : "Apply"}
+                      </Button>
+                      <Button variant="outline" onClick={() => { handleClear(); setAdvancedOpen(false); }}>
+                        <X className="h-4 w-4 mr-2" />
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <Button onClick={handleSearch} disabled={isLoading} size="sm" className="h-9">
+                {isLoadingReport ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
+                {isLoadingReport ? "Loading..." : "Generate"}
               </Button>
               <Button variant="outline" onClick={handleClear} size="sm" className="h-9">
                 <X className="h-3.5 w-3.5 mr-1.5" />
-                Clear All
+                Clear
               </Button>
+
               <div className="flex-1" />
+
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('excel')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
+                    <Button variant="outline" size="icon" onClick={() => handleExport('excel')} className="h-9 w-9" disabled={filteredData.length === 0}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -948,13 +730,7 @@ export default function InventoryReportTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('csv')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
+                    <Button variant="outline" size="icon" onClick={() => handleExport('csv')} className="h-9 w-9" disabled={filteredData.length === 0}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -962,13 +738,7 @@ export default function InventoryReportTable() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleExport('pdf')} 
-                      className="h-9 w-9"
-                      disabled={filteredData.length === 0}
-                    >
+                    <Button variant="outline" size="icon" onClick={() => handleExport('pdf')} className="h-9 w-9" disabled={filteredData.length === 0}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -1120,4 +890,4 @@ export default function InventoryReportTable() {
       />
     </TooltipProvider>
   );
-}
+}
