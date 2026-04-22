@@ -19,6 +19,7 @@ import {
   useUpdateClassificationDepth,
 } from "@/lib/hooks/useProductClassification";
 import { toast } from "sonner";
+import { saveLabels, getDefaultLabels, type ClassificationLabels } from "@/lib/product-classification-storage";
 
 interface LocalClassificationField {
   id: string;
@@ -188,6 +189,19 @@ export default function ProductClassificationSettings() {
         })),
         userId: session?.user?.user_ID?.toString(),
       });
+
+      // Immediately update localStorage so all components see new labels
+      const ALLOWED_FIELDS = ['item_code', 'item', 'aliases', 'category', 'sub_cat', 'size', 'ref_no', 'color'];
+      const defaults = getDefaultLabels();
+      const newLabels: ClassificationLabels = { ...defaults };
+      classifications
+        .filter(c => ALLOWED_FIELDS.includes(c.field_id))
+        .forEach(c => {
+          if (c.field_id in newLabels) {
+            newLabels[c.field_id as keyof ClassificationLabels] = c.name;
+          }
+        });
+      saveLabels(newLabels);
 
       setHasChanges(false);
       setShowFirstTimeHelp(false);

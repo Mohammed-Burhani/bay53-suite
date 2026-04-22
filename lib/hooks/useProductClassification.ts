@@ -14,8 +14,8 @@ export function useClassificationConfig(organizationId: string) {
   return useQuery({
     queryKey: ['classification-config', organizationId],
     queryFn: () => productClassificationService.getConfig(organizationId),
-    enabled: !!organizationId,
-    staleTime: 1000 * 30, // 30 seconds - refresh labels quickly after changes
+    enabled: !!organizationId && organizationId !== "",
+    staleTime: 0, // Always fetch fresh - localStorage handles instant display
   });
 }
 
