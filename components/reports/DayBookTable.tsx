@@ -40,6 +40,8 @@ import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
+
+interface DayBookRow {
   billNo: string;
   billDate: string;
   partyName: string;
