@@ -27,12 +27,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Download, Search, X, Filter, FileSpreadsheet, Printer, Calendar, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, Search, X, Filter, FileSpreadsheet, Printer, Calendar, TrendingUp, TrendingDown, SlidersHorizontal } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
-import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 
-interface DayBookRow {
+import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
   billNo: string;
   billDate: string;
   partyName: string;
@@ -125,6 +132,7 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
   const [transactionType, setTransactionType] = useState("sales");
   const [data] = useState<DayBookRow[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const totalDebit = data.reduce((sum, row) => sum + row.debitAmount, 0);
   const totalCredit = data.reduce((sum, row) => sum + row.creditAmount, 0);
@@ -212,102 +220,64 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
 
         {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                <Filter className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-semibold">Day Book Filters</CardTitle>
-                <CardDescription className="text-xs">Daily transaction register</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Select */}
+              <Select defaultValue="yearly">
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="current_month">Current Month</SelectItem>
+                  <SelectItem value="range">Range</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="half_yearly">Half Yearly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <CardContent className="p-6 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Date
-                </Label>
-                <Select defaultValue="yearly">
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="current_month">Current Month</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="half_yearly">Half Yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Advanced Filters Drawer */}
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Transaction Type
+                    <span className="ml-2 text-xs text-muted-foreground capitalize">({transactionType.replace('_', ' ')})</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[360px]">
+                  <SheetHeader>
+                    <SheetTitle>Transaction Type</SheetTitle>
+                    <SheetDescription>Select the type of transactions to view</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <RadioGroup value={transactionType} onValueChange={setTransactionType} className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: "sales", label: "Sales" },
+                        { value: "purchase", label: "Purchase" },
+                        { value: "sales_return", label: "Sales Return" },
+                        { value: "purchase_return", label: "Purchase Return" },
+                        { value: "receipt", label: "Receipt" },
+                        { value: "payment", label: "Payment" },
+                        { value: "credit_note", label: "Credit Note" },
+                        { value: "debit_note", label: "Debit Note" },
+                        { value: "journal", label: "Journal" },
+                        { value: "contra", label: "Contra" },
+                        { value: "all", label: "All" },
+                      ].map(({ value, label }) => (
+                        <div key={value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={value} id={value} />
+                          <Label htmlFor={value} className="cursor-pointer font-normal text-sm">{label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                  Transaction Type
-                </Label>
-                <RadioGroup value={transactionType} onValueChange={setTransactionType} className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sales" id="sales" />
-                    <Label htmlFor="sales" className="cursor-pointer font-normal text-sm">Sales</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="purchase" id="purchase" />
-                    <Label htmlFor="purchase" className="cursor-pointer font-normal text-sm">Purchase</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sales_return" id="sales_return" />
-                    <Label htmlFor="sales_return" className="cursor-pointer font-normal text-sm">Sales Return</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="purchase_return" id="purchase_return" />
-                    <Label htmlFor="purchase_return" className="cursor-pointer font-normal text-sm">Purchase Return</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="receipt" id="receipt" />
-                    <Label htmlFor="receipt" className="cursor-pointer font-normal text-sm">Receipt</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="payment" id="payment" />
-                    <Label htmlFor="payment" className="cursor-pointer font-normal text-sm">Payment</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="credit_note" id="credit_note" />
-                    <Label htmlFor="credit_note" className="cursor-pointer font-normal text-sm">Credit Note</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="debit_note" id="debit_note" />
-                    <Label htmlFor="debit_note" className="cursor-pointer font-normal text-sm">Debit Note</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="journal" id="journal" />
-                    <Label htmlFor="journal" className="cursor-pointer font-normal text-sm">Journal</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="contra" id="contra" />
-                    <Label htmlFor="contra" className="cursor-pointer font-normal text-sm">Contra</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="all" id="all" />
-                    <Label htmlFor="all" className="cursor-pointer font-normal text-sm">All</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
-              <Button 
-                disabled={isLoading}
-                size="sm"
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white h-9"
-              >
+              <Button disabled={isLoading} size="sm" className="h-9">
                 <Search className="h-3.5 w-3.5 mr-1.5" />
                 {isLoading ? "Loading..." : "Register"}
               </Button>
@@ -315,17 +285,13 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
                 <X className="h-3.5 w-3.5 mr-1.5" />
                 Clear
               </Button>
+
               <div className="flex-1" />
+
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handlePrint}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handlePrint} disabled={data.length === 0}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -333,13 +299,7 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleDownloadPDF}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDownloadPDF} disabled={data.length === 0}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -347,13 +307,7 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-9 w-9"
-                      onClick={handleExportExcel}
-                      disabled={data.length === 0}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleExportExcel} disabled={data.length === 0}>
                       <FileSpreadsheet className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
