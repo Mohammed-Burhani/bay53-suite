@@ -24,9 +24,9 @@ import {
   Search,
   FileText,
   Loader2,
-  Filter,
   X,
   ChevronsUpDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
@@ -40,6 +40,14 @@ import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface InvoiceListTableProps {
   title: string;
@@ -179,15 +187,13 @@ export function InvoiceListTable({
   const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
 
   const isLoading = isLoadingTypes || isLoadingStockPlaces || isLoadingInvoices;
-  const hasFilters = 
-    selectedInvType !== 0 || 
-    (selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0)) || 
-    calculatedFromDate || 
-    calculatedToDate || 
-    billNo || 
-    invoiceNo || 
-    itemName ||
-    selectedLedgerIds.length > 0;
+  const advancedFilterCount = [
+    showInvoiceTypeFilter && selectedInvType !== invType,
+    selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0),
+    billNo,
+    itemName,
+    selectedLedgerIds.length > 0,
+  ].filter(Boolean).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -211,20 +217,6 @@ export function InvoiceListTable({
 
       {/* Filter Panel */}
       <Card className="border shadow-sm">
-        <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${iconColor} text-white`}>
-              <Filter className="h-4 w-4" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-semibold">Filters</CardTitle>
-              <CardDescription className="text-xs">
-                Search and filter invoices
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-
         <CardContent className="p-4 space-y-3">
           {/* Quick Search */}
           <div className="relative">
@@ -237,214 +229,219 @@ export function InvoiceListTable({
             />
           </div>
 
-          {/* Filter Grid */}
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${showInvoiceTypeFilter ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
-            {/* Invoice Type - Only show if showInvoiceTypeFilter is true */}
-            {showInvoiceTypeFilter && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Invoice Type</label>
-                <Select
-                  value={selectedInvType.toString()}
-                  onValueChange={(value) => setSelectedInvType(Number(value))}
-                  disabled={isLoadingTypes}
-                >
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">All Types</SelectItem>
-                    {invoiceTypes.map((type) => (
-                      <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
-                        {type.typeName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Invoice Number (Numeric) */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Invoice Number</label>
+          <div className="flex flex-wrap items-end gap-2">
+            {/* Invoice Number */}
+            <div className="w-[160px]">
               <Input
                 type="number"
-                placeholder="Enter invoice number"
+                placeholder="Invoice No."
                 value={invoiceNo}
                 onChange={(e) => setInvoiceNo(e.target.value)}
                 className="h-9"
               />
             </div>
 
-            {/* Bill Number (Alphanumeric) */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bill Number</label>
-              <Input
-                placeholder="Enter bill number"
-                value={billNo}
-                onChange={(e) => setBillNo(e.target.value)}
-                className="h-9"
+            {/* Date Range */}
+            <div className={`w-[200px] ${isInvoiceNoEntered ? "opacity-50 pointer-events-none" : ""}`}>
+              <DateRangeFilter
+                dateType={dateType}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedHalfYear={selectedHalfYear}
+                selectedYear={selectedYear}
+                fromDate={fromDate}
+                toDate={toDate}
+                onDateTypeChange={setDateType}
+                onSelectedMonthChange={setSelectedMonth}
+                onSelectedQuarterChange={setSelectedQuarter}
+                onSelectedHalfYearChange={setSelectedHalfYear}
+                onSelectedYearChange={setSelectedYear}
+                onFromDateChange={setFromDate}
+                onToDateChange={setToDate}
+                onDateChange={handleDateChange}
+                label={isInvoiceNoEntered ? "Date (disabled)" : "Date Range"}
               />
             </div>
 
-            {/* Item Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Item Name</label>
-              <Input
-                placeholder="Enter item name"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                className="h-9"
-              />
-            </div>
-          </div>
+            {/* Advanced Filters Drawer */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filters
+                  {advancedFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-2">{advancedFilterCount}</Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[400px] sm:w-[480px] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Advanced Filters</SheetTitle>
+                  <SheetDescription>Narrow down invoices with additional filters</SheetDescription>
+                </SheetHeader>
 
-          {/* Stock Place Multi-Select */}
-          <div className="pt-2 border-t">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Stock Places</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full h-9 justify-between font-normal"
-                    disabled={isLoadingStockPlaces}
-                  >
-                    {selectedStockPlaceIds.length === 0 || (selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) ? (
-                      <span className="text-muted-foreground">All Stock Places</span>
-                    ) : (
-                      <span className="truncate">
-                        {selectedStockPlaceIds.length} stock place{selectedStockPlaceIds.length > 1 ? "s" : ""} selected
-                      </span>
+                <div className="space-y-5 mt-6">
+                  {/* Invoice Type */}
+                  {showInvoiceTypeFilter && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Invoice Type</label>
+                      <Select
+                        value={selectedInvType.toString()}
+                        onValueChange={(value) => setSelectedInvType(Number(value))}
+                        disabled={isLoadingTypes}
+                      >
+                        <SelectTrigger className="h-9 w-full">
+                          <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">All Types</SelectItem>
+                          {invoiceTypes.map((type) => (
+                            <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
+                              {type.typeName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Bill Number */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Bill Number</label>
+                    <Input
+                      placeholder="Enter bill number"
+                      value={billNo}
+                      onChange={(e) => setBillNo(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+
+                  {/* Item Name */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      placeholder="Enter item name"
+                      value={itemName}
+                      onChange={(e) => setItemName(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+
+                  {/* Stock Places */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Stock Places</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full h-9 justify-between font-normal"
+                          disabled={isLoadingStockPlaces}
+                        >
+                          {selectedStockPlaceIds.length === 0 || (selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) ? (
+                            <span className="text-muted-foreground">All Stock Places</span>
+                          ) : (
+                            <span className="truncate">
+                              {selectedStockPlaceIds.length} place{selectedStockPlaceIds.length > 1 ? "s" : ""} selected
+                            </span>
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search stock places..." />
+                          <CommandList>
+                            <CommandEmpty>No stock places found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem onSelect={() => setSelectedStockPlaceIds([0])}>
+                                <Checkbox
+                                  checked={selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0}
+                                  className="mr-2"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">All Stock Places</div>
+                                </div>
+                              </CommandItem>
+                              {stockPlaces.map((sp) => (
+                                <CommandItem
+                                  key={sp.sp_ID}
+                                  onSelect={() => {
+                                    setSelectedStockPlaceIds((prev) => {
+                                      const filtered = prev.filter(id => id !== 0);
+                                      if (prev.includes(sp.sp_ID)) {
+                                        const newIds = filtered.filter((id) => id !== sp.sp_ID);
+                                        return newIds.length === 0 ? [0] : newIds;
+                                      } else {
+                                        return [...filtered, sp.sp_ID];
+                                      }
+                                    });
+                                  }}
+                                >
+                                  <Checkbox
+                                    checked={selectedStockPlaceIds.includes(sp.sp_ID)}
+                                    className="mr-2"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium">{sp.name}</div>
+                                    <div className="text-xs text-muted-foreground">Code: {sp.code}</div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {selectedStockPlaceIds.map((spId) => {
+                          if (spId === 0) return null;
+                          const sp = stockPlaces.find((s) => s.sp_ID === spId);
+                          if (!sp) return null;
+                          return (
+                            <Badge key={spId} variant="secondary" className="text-xs gap-1 pr-1">
+                              <span>{sp.name}</span>
+                              <button
+                                type="button"
+                                className="ml-1 rounded-sm hover:bg-destructive/20 hover:text-destructive"
+                                onClick={() => {
+                                  setSelectedStockPlaceIds((prev) => {
+                                    const newIds = prev.filter((id) => id !== spId);
+                                    return newIds.length === 0 ? [0] : newIds;
+                                  });
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
                     )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search stock places..." />
-                    <CommandList>
-                      <CommandEmpty>No stock places found.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          onSelect={() => {
-                            setSelectedStockPlaceIds([0]);
-                          }}
-                        >
-                          <Checkbox
-                            checked={selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0}
-                            className="mr-2"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">All Stock Places</div>
-                            <div className="text-xs text-muted-foreground">Show all</div>
-                          </div>
-                        </CommandItem>
-                        {stockPlaces.map((sp) => (
-                          <CommandItem
-                            key={sp.sp_ID}
-                            onSelect={() => {
-                              setSelectedStockPlaceIds((prev) => {
-                                // Remove 0 if it exists when selecting a specific stock place
-                                const filtered = prev.filter(id => id !== 0);
-                                
-                                if (prev.includes(sp.sp_ID)) {
-                                  const newIds = filtered.filter((id) => id !== sp.sp_ID);
-                                  // If no stock places selected, default to [0]
-                                  return newIds.length === 0 ? [0] : newIds;
-                                } else {
-                                  return [...filtered, sp.sp_ID];
-                                }
-                              });
-                            }}
-                          >
-                            <Checkbox
-                              checked={selectedStockPlaceIds.includes(sp.sp_ID)}
-                              className="mr-2"
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium">{sp.name}</div>
-                              <div className="text-xs text-muted-foreground">Code: {sp.code}</div>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0) && (
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {selectedStockPlaceIds.map((spId) => {
-                    if (spId === 0) return null;
-                    const sp = stockPlaces.find((s) => s.sp_ID === spId);
-                    if (!sp) return null;
-                    return (
-                      <Badge key={spId} variant="secondary" className="text-xs gap-1 pr-1">
-                        <span>{sp.name}</span>
-                        <button
-                          type="button"
-                          className="ml-1 rounded-sm hover:bg-destructive/20 hover:text-destructive"
-                          onClick={() => {
-                            setSelectedStockPlaceIds((prev) => {
-                              const newIds = prev.filter((id) => id !== spId);
-                              return newIds.length === 0 ? [0] : newIds;
-                            });
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
+                  </div>
+
+                  {/* Party / Ledger */}
+                  <div className="space-y-2">
+                    <LedgerSearchInput
+                      selectedLedgerIds={selectedLedgerIds}
+                      onLedgerIdsChange={setSelectedLedgerIds}
+                      selectedLedgers={selectedLedgers}
+                      onSelectedLedgersChange={setSelectedLedgers}
+                      label="Party (Ledger)"
+                      placeholder="Search and select party..."
+                      groups={null}
+                      multiSelect={false}
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </SheetContent>
+            </Sheet>
 
-          {/* Date Range Filter */}
-          <div className="pt-2 border-t">
-            <DateRangeFilter
-              dateType={dateType}
-              selectedMonth={selectedMonth}
-              selectedQuarter={selectedQuarter}
-              selectedHalfYear={selectedHalfYear}
-              selectedYear={selectedYear}
-              fromDate={fromDate}
-              toDate={toDate}
-              onDateTypeChange={setDateType}
-              onSelectedMonthChange={setSelectedMonth}
-              onSelectedQuarterChange={setSelectedQuarter}
-              onSelectedHalfYearChange={setSelectedHalfYear}
-              onSelectedYearChange={setSelectedYear}
-              onFromDateChange={setFromDate}
-              onToDateChange={setToDate}
-              onDateChange={handleDateChange}
-              label={isInvoiceNoEntered ? "Date Range (Disabled)" : "Date Range"}
-              className={isInvoiceNoEntered ? "opacity-50 pointer-events-none" : ""}
-            />
-          </div>
-
-          {/* Ledger Search */}
-          <div className="pt-2 border-t">
-            <LedgerSearchInput
-              selectedLedgerIds={selectedLedgerIds}
-              onLedgerIdsChange={setSelectedLedgerIds}
-              selectedLedgers={selectedLedgers}
-              onSelectedLedgersChange={setSelectedLedgers}
-              label="Party (Ledger)"
-              placeholder="Search and select party..."
-              groups={null}
-              multiSelect={false}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
             <Button
               onClick={handleSearch}
               disabled={isLoading}
               size="sm"
-              className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-9"
+              className="h-9"
             >
               {isLoadingInvoices ? (
                 <>
@@ -454,28 +451,14 @@ export function InvoiceListTable({
               ) : (
                 <>
                   <Search className="h-3.5 w-3.5 mr-1.5" />
-                  Search Invoices
+                  Search
                 </>
               )}
             </Button>
             <Button variant="outline" onClick={handleClear} size="sm" className="h-9">
               <X className="h-3.5 w-3.5 mr-1.5" />
-              Clear Filters
+              Clear
             </Button>
-            {hasFilters && (
-              <Badge variant="secondary" className="ml-2">
-                {[
-                  selectedInvType !== 0, 
-                  selectedStockPlaceIds.length > 0 && !(selectedStockPlaceIds.length === 1 && selectedStockPlaceIds[0] === 0), 
-                  calculatedFromDate, 
-                  calculatedToDate, 
-                  billNo, 
-                  invoiceNo, 
-                  itemName,
-                  selectedLedgerIds.length > 0
-                ].filter(Boolean).length} filters active
-              </Badge>
-            )}
           </div>
         </CardContent>
       </Card>
