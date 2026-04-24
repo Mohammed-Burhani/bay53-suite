@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const partySchema = Yup.object().shape({
-  name: Yup.string().required("Name is required").min(2, "Min 2 characters"),
+  name: Yup.string().required("Name is required").min(3, "Min 3 characters"),
   type: Yup.string().required("Type is required"),
   phone: Yup.string().required("Phone is required").matches(/^[0-9]{10}$/, "Must be 10 digits"),
   email: Yup.string().email("Invalid email"),

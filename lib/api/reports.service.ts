@@ -26,6 +26,8 @@ import type {
   InventoryReportItem,
   InvoiceType,
   InvoiceTypeSearchPayload,
+  PendingItemsPayload,
+  PendingItemsItem,
 } from "@/lib/types/reports.types";
 
 export const reportsService = {
@@ -71,4 +73,8 @@ export const reportsService = {
   searchInvoiceTypes: async (payload: InvoiceTypeSearchPayload): Promise<InvoiceType[]> => {
     return apiClient.post<InvoiceType[]>("/InvoiceType/Search", payload);
   },
+
+  // Pending Items API
+  getPendingItems: (payload: PendingItemsPayload) =>
+    apiClient.post<PendingItemsItem[]>("/Report/PendingItems", payload),
 };

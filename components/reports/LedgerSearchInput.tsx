@@ -61,7 +61,7 @@ export function LedgerSearchInput({
   
   // Filter ledgers on frontend - search anywhere in the name (case-insensitive)
   const searchResults = useMemo(() => {
-    if (ledgerSearchTerm.length < 2) return [];
+    if (ledgerSearchTerm.length < 3) return [];
     const searchLower = ledgerSearchTerm.toLowerCase();
     return allLedgers.filter(ledger => 
       ledger.name.toLowerCase().includes(searchLower)
@@ -190,9 +190,9 @@ export function LedgerSearchInput({
                   <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
                   Loading ledgers...
                 </div>
-              ) : ledgerSearchTerm.length < 2 ? (
+              ) : ledgerSearchTerm.length < 3 ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">
-                  Type at least 2 characters to search
+                  Type at least 3 characters to search
                 </div>
               ) : Object.keys(groupedLedgers).length === 0 ? (
                 <CommandEmpty>No ledgers found.</CommandEmpty>

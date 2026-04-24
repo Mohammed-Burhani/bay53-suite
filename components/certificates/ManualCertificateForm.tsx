@@ -153,7 +153,7 @@ export function ManualCertificateForm({
   const { data: allCustomers = [], isLoading: customersLoading } = useLedgersByGroup([16, 17]);
   
   // Filter customers on frontend based on debounced search term
-  const filteredCustomers = debouncedSearchTerm.length >= 2
+  const filteredCustomers = debouncedSearchTerm.length >= 3
     ? allCustomers.filter(customer => 
         customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       )
@@ -342,7 +342,7 @@ export function ManualCertificateForm({
                         setCustomerSearchTerm(value);
                         setValue("customer_name", value);
                         // Open popover when user types
-                        if (value.length >= 2) {
+                        if (value.length >= 3) {
                           setCustomerSearchOpen(true);
                         }
                       }}
@@ -350,7 +350,7 @@ export function ManualCertificateForm({
                       className="pr-10"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                      {customersLoading && debouncedSearchTerm.length >= 2 ? (
+                      {customersLoading && debouncedSearchTerm.length >= 3 ? (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       ) : (
                         <Search className="h-4 w-4 text-muted-foreground" />
@@ -361,9 +361,9 @@ export function ManualCertificateForm({
                 <PopoverContent className="w-[500px] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                   <Command shouldFilter={false}>
                     <CommandList>
-                      {customerSearchTerm.length < 2 ? (
+                      {customerSearchTerm.length < 3 ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
-                          Type at least 2 characters to search
+                          Type at least 3 characters to search
                         </div>
                       ) : customersLoading || customerSearchTerm !== debouncedSearchTerm ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">

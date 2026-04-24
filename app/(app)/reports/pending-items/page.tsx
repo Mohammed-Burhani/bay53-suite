@@ -1,9 +1,6 @@
 import PendingItemsTable from "@/components/reports/PendingItemsTable";
 
 export default function PendingItemsPage() {
-  // Fetch data here using server-side methods
-  // const data = await fetchPendingItemsData();
-
   return (
     <div className="flex flex-col gap-6 p-6">
       <div>

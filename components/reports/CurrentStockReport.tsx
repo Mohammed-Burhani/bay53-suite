@@ -436,7 +436,7 @@ export default function CurrentStockReport() {
                             searchPlaceholder="Search item codes..."
                             emptyText="No item codes found."
                             disabled={!itemsLoaded || availableItemCodes.length === 0}
-                            minSearchChars={2}
+                            minSearchChars={3}
                           />
                         </div>
 
