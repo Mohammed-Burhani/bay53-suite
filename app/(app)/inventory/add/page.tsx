@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 
 const productSchema = Yup.object().shape({
-  name: Yup.string().required("Product name is required").min(2, "Min 2 characters"),
+  name: Yup.string().required("Product name is required").min(3, "Min 3 characters"),
   sku: Yup.string().required("SKU is required"),
   barcode: Yup.string(),
   category: Yup.string().required("Category is required"),

@@ -14,6 +14,7 @@ import type {
   Group,
   CurrentStockPayload,
   InventoryReportPayload,
+  PendingItemsPayload,
 } from "@/lib/types/reports.types";
 
 // Fetch all ledgers for a group (no search term, fetch once)
@@ -198,5 +199,18 @@ export function useInvoiceTypes() {
     enabled: !!sessionId,
     staleTime: Infinity, // Cache indefinitely - invoice types rarely change
     gcTime: Infinity, // Keep in cache forever
+  });
+}
+
+// ==================== Pending Items Hooks ====================
+
+// Fetch pending items report
+export function usePendingItems() {
+  return useMutation({
+    mutationFn: (filters: Omit<PendingItemsPayload, "sessionId">) => {
+      const sessionId = auth.getSessionId();
+      if (!sessionId) throw new Error("No session");
+      return reportsService.getPendingItems({ ...filters, sessionId });
+    },
   });
 }

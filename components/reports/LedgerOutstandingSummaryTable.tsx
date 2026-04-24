@@ -89,7 +89,7 @@ export default function LedgerOutstandingSummaryTable() {
   const { data: allLedgers = [], isLoading: ledgersLoading } = useLedgersByGroup(groupsForLedgerFetch);
   
   // Filter ledgers on frontend based on search term - only show results when user types
-  const searchResults = ledgerSearchTerm.length >= 2
+  const searchResults = ledgerSearchTerm.length >= 3
     ? allLedgers.filter(ledger => 
         ledger.name.toLowerCase().includes(ledgerSearchTerm.toLowerCase())
       )
@@ -373,9 +373,9 @@ export default function LedgerOutstandingSummaryTable() {
                         <div className="py-6 text-center text-sm text-muted-foreground">
                           No ledgers found in this group
                         </div>
-                      ) : ledgerSearchTerm.length < 2 ? (
+                      ) : ledgerSearchTerm.length < 3 ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
-                          Type at least 2 characters to search
+                          Type at least 3 characters to search
                         </div>
                       ) : searchResults.length === 0 ? (
                         <CommandEmpty>No ledgers match your search.</CommandEmpty>

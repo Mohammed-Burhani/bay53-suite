@@ -555,7 +555,7 @@ export default function InventoryReportTable() {
                             searchPlaceholder="Search item codes..."
                             emptyText="No item codes found."
                             disabled={!itemsLoaded || availableItemCodes.length === 0 || allItem}
-                            minSearchChars={2}
+                            minSearchChars={3}
                           />
                         </div>
                         <div className="space-y-2">
@@ -890,4 +890,4 @@ export default function InventoryReportTable() {
       />
     </TooltipProvider>
   );
-}
+}
