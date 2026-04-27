@@ -354,7 +354,7 @@ export default function LedgerOutstandingSummaryTable() {
                             ? "Select a group first to search ledgers..."
                             : ledgersLoading
                             ? "Loading ledgers..."
-                            : "Type company name or ledger name (min 2 chars)..."
+                            : "Type company name or ledger name (min 3 chars)..."
                         }
                         value={ledgerSearchTerm}
                         onValueChange={setLedgerSearchTerm}

@@ -180,7 +180,7 @@ export function LedgerSearchInput({
         <PopoverContent className="w-[400px] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Type to search ledgers (min 2 chars)..."
+              placeholder="Type to search ledgers (min 3 chars)..."
               value={ledgerSearchTerm}
               onValueChange={setLedgerSearchTerm}
             />
