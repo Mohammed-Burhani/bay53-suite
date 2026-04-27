@@ -42,7 +42,8 @@ import { TablePagination, usePagination } from "@/components/ui/table-pagination
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import { Combobox } from "@/components/ui/combobox";
-import { useStockPlaces, useItems, usePendingItems } from "@/lib/hooks/useReports";
+import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
+import { useStockPlaces, useItems, usePendingItems, useLedgersByGroup, useInvoiceTypes } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import type { ItemAttributes } from "@/lib/types/reports.types";
 import { getAvailableOptions } from "@/lib/utils/item-parser";
@@ -50,27 +51,63 @@ import { getAvailableOptions } from "@/lib/utils/item-parser";
 export default function PendingItemsTable() {
   const { getLabel } = useClassificationLabels();
   
-  const [selectedStockPlace, setSelectedStockPlace] = useState<number>(0);
-  
-  // 6 separate filter states
+  // 6 Item Filters (same as Inventory Report)
   const [selectedItemCode, setSelectedItemCode] = useState<string>("");
   const [selectedName, setSelectedName] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedMaterial, setSelectedMaterial] = useState<string>("");
   const [selectedQuality, setSelectedQuality] = useState<string>("");
   const [selectedBrand, setSelectedBrand] = useState<string>("");
-  
+
+  // Paired Checkbox Filters
+  const [allItem, setAllItem] = useState(true); // Default to true
   const [itemWise, setItemWise] = useState(false);
+  const [inventory, setInventory] = useState(false);
+  const [reorderDetails, setReorderDetails] = useState(false);
+
+  const [billTypeWise, setBillTypeWise] = useState(false);
+  const [billType, setBillType] = useState<number>(0);
+
+  const [stockPlaceWise, setStockPlaceWise] = useState(false);
+  const [billFrom, setBillFrom] = useState<number>(0);
+
+  const [batchCodeWise, setBatchCodeWise] = useState(false);
+  const [batchCode, setBatchCode] = useState<string>("");
+
   const [partyWise, setPartyWise] = useState(false);
+  const [party, setParty] = useState<number>(0);
+
   const [billDetail, setBillDetail] = useState(false);
+  const [salesman, setSalesman] = useState<string>("");
+
   const [dateWise, setDateWise] = useState(false);
+  
+  // Date Range Filter states
+  const [dateType, setDateType] = useState<DateFilterType>("none");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedHalfYear, setSelectedHalfYear] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
+  const [calculatedFromDate, setCalculatedFromDate] = useState<string | null>(null);
+  const [calculatedToDate, setCalculatedToDate] = useState<string | null>(null);
+
+  const [areaWise, setAreaWise] = useState(false);
+  const [area, setArea] = useState<string>("");
+
+  const [cityWise, setCityWise] = useState(false);
+  const [city, setCity] = useState<string>("");
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination(50);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Fetch dropdown data
   const { data: stockPlaces = [], isLoading: isLoadingStockPlaces } = useStockPlaces();
   const { data: items = [], isLoading: isLoadingItems, isSuccess: itemsLoaded } = useItems();
+  const { data: ledgers = [], isLoading: isLoadingLedgers } = useLedgersByGroup([16, 17]);
+  const { data: invoiceTypes = [], isLoading: isLoadingInvoiceTypes } = useInvoiceTypes();
 
   // Fetch pending items mutation
   const { mutate: fetchPendingItems, data: pendingData = [], isPending: isLoadingPending } = usePendingItems();
@@ -117,6 +154,23 @@ export default function PendingItemsTable() {
   }, [items, currentFilters, itemsLoaded]);
 
   const handleSearch = () => {
+    // Check if at least one item filter is selected when allItem is false
+    if (!allItem) {
+      const hasFilter = selectedItemCode || selectedName || selectedSize || 
+                        selectedMaterial || selectedQuality || selectedBrand;
+      
+      if (!hasFilter) {
+        toast.error("Please select at least one item filter or check 'All Item'");
+        return;
+      }
+    }
+
+    // When billTypeWise is NOT checked, force user to select a specific bill type (not "All")
+    if (!billTypeWise && billType === 0) {
+      toast.error("Please select a specific Bill Type or check 'Bill Type Wise'");
+      return;
+    }
+
     fetchPendingItems(
       {
         brand: selectedBrand || null,
@@ -125,7 +179,7 @@ export default function PendingItemsTable() {
         item_CodeTxt: selectedItemCode || null,
         name: selectedName || null,
         itemWise,
-        spId: selectedStockPlace,
+        spId: billFrom || undefined,
         ledgerWise: partyWise,
         billDetailsReq: billDetail,
         dateWise,
@@ -144,13 +198,40 @@ export default function PendingItemsTable() {
   };
 
   const handleClear = () => {
-    setSelectedStockPlace(0);
     setSelectedItemCode("");
     setSelectedName("");
     setSelectedSize("");
     setSelectedMaterial("");
     setSelectedQuality("");
     setSelectedBrand("");
+    setAllItem(true); // Reset to default true
+    setItemWise(false);
+    setInventory(false);
+    setReorderDetails(false);
+    setBillTypeWise(false);
+    setBillType(0);
+    setStockPlaceWise(false);
+    setBillFrom(0);
+    setBatchCodeWise(false);
+    setBatchCode("");
+    setPartyWise(false);
+    setParty(0);
+    setBillDetail(false);
+    setSalesman("");
+    setDateWise(false);
+    setDateType("none");
+    setSelectedMonth("");
+    setSelectedQuarter("");
+    setSelectedHalfYear("");
+    setSelectedYear("");
+    setFromDate(null);
+    setToDate(null);
+    setCalculatedFromDate(null);
+    setCalculatedToDate(null);
+    setAreaWise(false);
+    setArea("");
+    setCityWise(false);
+    setCity("");
     setSearchTerm("");
   };
 
@@ -178,9 +259,9 @@ export default function PendingItemsTable() {
   const endIndex = startIndex + pageSize;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
-  const isLoading = isLoadingStockPlaces || isLoadingItems || isLoadingPending;
-  const hasAnyFilter = selectedItemCode || selectedName || selectedSize || 
-                       selectedMaterial || selectedQuality || selectedBrand;
+  const isLoading = isLoadingStockPlaces || isLoadingItems || isLoadingLedgers || isLoadingInvoiceTypes || isLoadingPending;
+  const hasAnyItemFilter = selectedItemCode || selectedName || selectedSize || 
+                           selectedMaterial || selectedQuality || selectedBrand;
 
   // Loading tips to show while items are loading
   const loadingTips = [
@@ -314,49 +395,74 @@ export default function PendingItemsTable() {
           </div>
         )}
 
-        {/* Compact Filter Panel */}
+        {/* Filter Panel */}
         <Card className="border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-3">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Quick search by order number, party, or item..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-9"
+          <CardContent className="p-4 space-y-3">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Quick search in results..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-9"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Range */}
+              <div className="w-[200px]">
+                <DateRangeFilter
+                  dateType={dateType}
+                  selectedMonth={selectedMonth}
+                  selectedQuarter={selectedQuarter}
+                  selectedHalfYear={selectedHalfYear}
+                  selectedYear={selectedYear}
+                  fromDate={fromDate || ""}
+                  toDate={toDate || ""}
+                  onDateTypeChange={setDateType}
+                  onSelectedMonthChange={setSelectedMonth}
+                  onSelectedQuarterChange={setSelectedQuarter}
+                  onSelectedHalfYearChange={setSelectedHalfYear}
+                  onSelectedYearChange={setSelectedYear}
+                  onFromDateChange={(date) => setFromDate(date)}
+                  onToDateChange={(date) => setToDate(date)}
+                  onDateChange={(from, to) => {
+                    setCalculatedFromDate(from);
+                    setCalculatedToDate(to);
+                  }}
+                  label="Date Range"
                 />
               </div>
 
-              {/* Stock Place + Advanced Filters Button */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Select
-                  value={selectedStockPlace.toString()}
-                  onValueChange={(value) => setSelectedStockPlace(Number(value))}
-                  disabled={isLoadingStockPlaces}
-                >
-                  <SelectTrigger className="h-9 w-[200px]">
-                    <SelectValue placeholder={isLoadingStockPlaces ? "Loading..." : "All Stock Places"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">All Stock Places</SelectItem>
-                    {stockPlaces.map((sp) => (
-                      <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>
-                        {sp.name} ({sp.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Bill Type */}
+              <Select
+                value={billType.toString()}
+                onValueChange={(value) => setBillType(Number(value))}
+                disabled={billTypeWise || isLoadingInvoiceTypes}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder={isLoadingInvoiceTypes ? "Loading..." : "Bill Type"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All Types</SelectItem>
+                  {invoiceTypes.map((type) => (
+                    <SelectItem key={type.invTypeId} value={type.invTypeId.toString()}>
+                      {type.typeName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-                  <SheetTrigger asChild>
+              {/* Advanced Filters Drawer */}
+              <Sheet open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                  <SheetTrigger asChild className="mt-2">
                     <Button variant="outline" size="sm" className="h-9">
                       <SlidersHorizontal className="h-4 w-4 mr-2" />
                       Advanced Filters
-                      {hasAnyFilter && (
+                      {(hasAnyItemFilter || [itemWise, stockPlaceWise, partyWise, dateWise, billTypeWise, batchCodeWise, areaWise, cityWise].filter(Boolean).length > 0) && (
                         <Badge variant="secondary" className="ml-2">
-                          {Object.values(currentFilters).filter(Boolean).length}
+                          {Object.values(currentFilters).filter(Boolean).length + [itemWise, stockPlaceWise, partyWise, dateWise, billTypeWise, batchCodeWise, areaWise, cityWise].filter(Boolean).length}
                         </Badge>
                       )}
                     </Button>
@@ -481,82 +587,85 @@ export default function PendingItemsTable() {
                         </div>
                       </div>
 
-                      {/* Display Options */}
+                      {/* Additional Filters */}
                       <div className="space-y-4 pt-4 border-t">
-                        <Label className="text-sm font-semibold">Display Options</Label>
-                        <div className="space-y-3">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="itemwise" 
-                              checked={itemWise}
-                              onCheckedChange={(checked) => setItemWise(checked as boolean)}
-                            />
-                            <Label htmlFor="itemwise" className="cursor-pointer text-sm font-normal">
-                              Item Wise
-                            </Label>
+                        <Label className="text-sm font-semibold">Additional Filters</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm">Bill From</Label>
+                            <Select value={billFrom.toString()} onValueChange={(value) => setBillFrom(Number(value))} disabled={isLoadingStockPlaces || stockPlaceWise}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="All Sources" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">All Sources</SelectItem>
+                                {stockPlaces.map((sp) => (
+                                  <SelectItem key={sp.sp_ID} value={sp.sp_ID.toString()}>{sp.name} ({sp.code})</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="partywise" 
-                              checked={partyWise}
-                              onCheckedChange={(checked) => setPartyWise(checked as boolean)}
-                            />
-                            <Label htmlFor="partywise" className="cursor-pointer text-sm font-normal">
-                              Party Wise
-                            </Label>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Party</Label>
+                            <Select value={party.toString()} onValueChange={(value) => setParty(Number(value))} disabled={isLoadingLedgers || partyWise}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="All Parties" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">All Parties</SelectItem>
+                                {ledgers.map((ledger) => (
+                                  <SelectItem key={ledger.ledger_id} value={ledger.ledger_id.toString()}>{ledger.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="billdetail" 
-                              checked={billDetail}
-                              onCheckedChange={(checked) => setBillDetail(checked as boolean)}
-                            />
-                            <Label htmlFor="billdetail" className="cursor-pointer text-sm font-normal">
-                              Bill Detail
-                            </Label>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Salesman</Label>
+                            <Input placeholder="Enter salesman" value={salesman} onChange={(e) => setSalesman(e.target.value)} disabled={billDetail} className="h-9" />
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="datewise" 
-                              checked={dateWise}
-                              onCheckedChange={(checked) => setDateWise(checked as boolean)}
-                            />
-                            <Label htmlFor="datewise" className="cursor-pointer text-sm font-normal">
-                              Date Wise
-                            </Label>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Batch Code</Label>
+                            <Input placeholder="Enter batch code" value={batchCode} onChange={(e) => setBatchCode(e.target.value)} disabled={batchCodeWise} className="h-9" />
                           </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Area</Label>
+                            <Input placeholder="Enter area" value={area} onChange={(e) => setArea(e.target.value)} disabled={areaWise} className="h-9" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm">City</Label>
+                            <Input placeholder="Enter city" value={city} onChange={(e) => setCity(e.target.value)} disabled={cityWise} className="h-9" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Report Options */}
+                      <div className="space-y-3 pt-4 border-t">
+                        <Label className="text-sm font-semibold">Report Options</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { id: "itemwise", label: "Item Wise", checked: itemWise, onChange: setItemWise },
+                            { id: "billtypewise", label: "Bill Type Wise", checked: billTypeWise, onChange: setBillTypeWise },
+                            { id: "stockplacewise", label: "Stock Place Wise", checked: stockPlaceWise, onChange: setStockPlaceWise },
+                            { id: "batchcodewise", label: "Batch Code Wise", checked: batchCodeWise, onChange: setBatchCodeWise },
+                            { id: "partywise", label: "Party Wise", checked: partyWise, onChange: setPartyWise },
+                            { id: "billdetail", label: "Bill Detail", checked: billDetail, onChange: setBillDetail },
+                            { id: "datewise", label: "Date Wise", checked: dateWise, onChange: setDateWise },
+                            { id: "areawise", label: "Area Wise", checked: areaWise, onChange: setAreaWise },
+                            { id: "citywise", label: "City Wise", checked: cityWise, onChange: setCityWise },
+                            { id: "inventory", label: "Inventory", checked: inventory, onChange: setInventory },
+                            { id: "reorderdetails", label: "Re-order Details", checked: reorderDetails, onChange: setReorderDetails },
+                          ].map(({ id, label, checked, onChange }) => (
+                            <div key={id} className="flex items-center space-x-2">
+                              <Checkbox id={id} checked={checked} onCheckedChange={(c) => onChange(c as boolean)} />
+                              <Label htmlFor={id} className="cursor-pointer text-sm font-normal">{label}</Label>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
                       {/* Drawer Actions */}
                       <div className="flex gap-2 pt-4 border-t">
-                        <Button 
-                          onClick={() => {
-                            handleSearch();
-                            setDrawerOpen(false);
-                          }}
-                          disabled={isLoading}
-                          className="flex-1"
-                        >
-                          {isLoadingPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Loading...
-                            </>
-                          ) : (
-                            <>
-                              <Search className="h-4 w-4 mr-2" />
-                              Apply
-                            </>
-                          )}
+                        <Button onClick={() => { handleSearch(); setAdvancedOpen(false); }} disabled={isLoading} className="flex-1">
+                          {isLoadingPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                          {isLoadingPending ? "Loading..." : "Apply"}
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            handleClear();
-                            setDrawerOpen(false);
-                          }}
-                        >
+                        <Button variant="outline" onClick={() => { handleClear(); setAdvancedOpen(false); }}>
                           <X className="h-4 w-4 mr-2" />
                           Clear
                         </Button>
@@ -636,7 +745,6 @@ export default function PendingItemsTable() {
                     <TooltipContent>Print Report</TooltipContent>
                   </Tooltip>
                 </div>
-              </div>
             </div>
           </CardContent>
         </Card>
