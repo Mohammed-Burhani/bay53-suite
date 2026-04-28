@@ -1,20 +1,13 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getDashboardMetrics, formatCurrency } from "@/lib/store";
+import { formatCurrency } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Package,
   TrendingUp,
-  TrendingDown,
-  Users,
-  AlertTriangle,
   IndianRupee,
-  ArrowUpRight,
-  ArrowDownRight,
-  ShoppingCart,
-  Truck,
+  Warehouse,
 } from "lucide-react";
 import {
   BarChart,
@@ -28,18 +21,219 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { useCurrentStock } from "@/lib/hooks/useReports";
+import { auth } from "@/lib/auth";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe", "#f5f3ff", "#818cf8"];
 
+const CACHE_KEY = "dashboard_analytics_cache";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 min
+
+const LOADING_MESSAGES = [
+  "Gathering inventory data...",
+  "Analyzing stock levels...",
+  "Crunching the numbers...",
+  "Scraping up old records...",
+  "Calculating metrics...",
+  "Almost there...",
+];
+
+const MESSAGE_DURATION = 3000; // 3s per message
+
+interface CachedData {
+  data: any[];
+  timestamp: number;
+}
+
+function LoadingToast({ message, progress }: { message: string; progress: number }) {
+  return (
+    <div className="flex flex-col gap-2 min-w-[300px]">
+      <div className="flex items-center gap-3">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <span className="text-sm font-medium">{message}</span>
+      </div>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all duration-300 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { data } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: () => getDashboardMetrics(),
-  });
+  const sessionId = auth.getSessionId();
+  const [cachedData, setCachedData] = useState<any[] | null>(null);
+  const [toastId, setToastId] = useState<string | number | undefined>();
+  const [messageIndex, setMessageIndex] = useState(0);
+  
+  // Fetch current stock data
+  const currentStockMutation = useCurrentStock();
 
-  if (!data) return null;
+  // Load from cache on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp }: CachedData = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        
+        if (age < CACHE_DURATION && data?.length > 0) {
+          // Use cached data
+          setCachedData(data);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Cache read error:", e);
+    }
+  }, []);
 
-  const { metrics, recentSales, salesByDay, topProducts, categoryBreakdown } = data;
+  useEffect(() => {
+    if (sessionId && !currentStockMutation.data && !cachedData && !toastId) {
+      // Show custom toast with progress
+      const id = toast.custom(
+        () => (
+          <div className="pointer-events-auto flex w-full max-w-md rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-xl backdrop-saturate-150">
+            <LoadingToast message={LOADING_MESSAGES[0]} progress={0} />
+          </div>
+        ),
+        { duration: Infinity }
+      );
+      setToastId(id);
+      setMessageIndex(0);
+      
+      // Fetch current stock (all items, all stock places)
+      currentStockMutation.mutate({
+        itemCode: null,
+        name: null,
+        size: null,
+        material: null,
+        quality: null,
+        brand: null,
+        spId: 0, // 0 = all stock places
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, cachedData]);
+
+  // Rotate loading messages + update progress
+  useEffect(() => {
+    if (!currentStockMutation.isPending || !toastId) return;
+    
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => {
+        const next = (prev + 1) % LOADING_MESSAGES.length;
+        const newProgress = ((next + 1) / LOADING_MESSAGES.length) * 100;
+        
+        toast.custom(
+          () => (
+            <div className="pointer-events-auto flex w-full max-w-md rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-xl backdrop-saturate-150">
+              <LoadingToast message={LOADING_MESSAGES[next]} progress={newProgress} />
+            </div>
+          ),
+          { id: toastId, duration: Infinity }
+        );
+        
+        return next;
+      });
+    }, MESSAGE_DURATION);
+    
+    return () => clearInterval(interval);
+  }, [currentStockMutation.isPending, toastId]);
+
+  // Cache data when loaded + dismiss toast
+  useEffect(() => {
+    if (currentStockMutation.data && currentStockMutation.data.length > 0) {
+      try {
+        const cacheData: CachedData = {
+          data: currentStockMutation.data,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        setCachedData(currentStockMutation.data);
+        
+        if (toastId) {
+          // Dismiss loading toast
+          toast.dismiss(toastId);
+          setToastId(undefined);
+          
+          // Show success
+          toast.success("Dashboard loaded!", { duration: 2000 });
+        }
+      } catch (e) {
+        console.error("Cache write error:", e);
+        if (toastId) {
+          toast.dismiss(toastId);
+          setToastId(undefined);
+        }
+      }
+    }
+  }, [currentStockMutation.data, toastId]);
+
+  const currentStockData = useMemo(() => 
+    cachedData || currentStockMutation.data || [], 
+    [cachedData, currentStockMutation.data]
+  );
+
+  // Calculate metrics from real data
+  const metrics = useMemo(() => {
+    const totalItems = currentStockData.length;
+    const totalStockValue = currentStockData.reduce((sum, item) => 
+      sum + (item.total * item.stdSellRate), 0
+    );
+    
+    // Group by category
+    const categoryMap = new Map<string, number>();
+    currentStockData.forEach(item => {
+      const cat = item.category || 'Uncategorized';
+      categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+    });
+
+    // Group by brand
+    const brandMap = new Map<string, number>();
+    currentStockData.forEach(item => {
+      const brand = item.brand || 'No Brand';
+      brandMap.set(brand, (brandMap.get(brand) || 0) + item.total);
+    });
+
+    return {
+      totalItems,
+      totalStockValue,
+      categoryCount: categoryMap.size,
+      brandCount: brandMap.size,
+      categoryBreakdown: Array.from(categoryMap.entries()).map(([category, count]) => ({
+        category,
+        count,
+      })),
+      brandBreakdown: Array.from(brandMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([brand, quantity]) => ({
+          brand,
+          quantity,
+        })),
+    };
+  }, [currentStockData]);
+
+  // Top items by stock value
+  const topItemsByValue = useMemo(() => {
+    return [...currentStockData]
+      .map(item => ({
+        name: item.itename,
+        value: item.total * item.stdSellRate,
+        quantity: item.total,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [currentStockData]);
+
+  const isLoading = currentStockMutation.isPending && !currentStockMutation.data && !cachedData;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -53,79 +247,96 @@ export default function DashboardPage() {
 
       {/* Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Today's Sales"
-          value={formatCurrency(metrics.totalSalesToday || 28468.48)}
-          subtitle="from invoices today"
-          icon={<TrendingUp className="h-5 w-5" />}
-          trend="+12.5%"
-          trendUp
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
-          borderColor="border-l-emerald-500"
-        />
-        <MetricCard
-          title="Monthly Sales"
-          value={formatCurrency(metrics.totalSalesMonth)}
-          subtitle="this month"
-          icon={<IndianRupee className="h-5 w-5" />}
-          trend="+8.2%"
-          trendUp
-          iconBg="bg-indigo-100"
-          iconColor="text-indigo-600"
-          borderColor="border-l-indigo-500"
-        />
-        <MetricCard
-          title="Total Products"
-          value={String(metrics.totalProducts)}
-          subtitle={`${metrics.lowStockCount} low stock items`}
-          icon={<Package className="h-5 w-5" />}
-          alert={metrics.lowStockCount > 0}
-          iconBg="bg-violet-100"
-          iconColor="text-violet-600"
-          borderColor="border-l-violet-500"
-        />
-        <MetricCard
-          title="Receivables"
-          value={formatCurrency(metrics.receivables)}
-          subtitle={`Payables: ${formatCurrency(metrics.payables)}`}
-          icon={<Users className="h-5 w-5" />}
-          iconBg="bg-amber-100"
-          iconColor="text-amber-600"
-          borderColor="border-l-amber-500"
-        />
+        {isLoading ? (
+          <>
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title="Total Items"
+              value={String(metrics.totalItems)}
+              subtitle="in inventory"
+              icon={<Package className="h-5 w-5" />}
+              iconBg="bg-violet-100"
+              iconColor="text-violet-600"
+              borderColor="border-l-violet-500"
+            />
+            <MetricCard
+              title="Stock Value"
+              value={formatCurrency(metrics.totalStockValue)}
+              subtitle="total inventory value"
+              icon={<IndianRupee className="h-5 w-5" />}
+              iconBg="bg-emerald-100"
+              iconColor="text-emerald-600"
+              borderColor="border-l-emerald-500"
+            />
+            <MetricCard
+              title="Categories"
+              value={String(metrics.categoryCount)}
+              subtitle="product categories"
+              icon={<Warehouse className="h-5 w-5" />}
+              iconBg="bg-indigo-100"
+              iconColor="text-indigo-600"
+              borderColor="border-l-indigo-500"
+            />
+            <MetricCard
+              title="Brands"
+              value={String(metrics.brandCount)}
+              subtitle="unique brands"
+              icon={<TrendingUp className="h-5 w-5" />}
+              iconBg="bg-amber-100"
+              iconColor="text-amber-600"
+              borderColor="border-l-amber-500"
+            />
+          </>
+        )}
       </div>
 
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
-        {/* Sales Chart */}
+        {/* Brand Distribution */}
         <Card className="lg:col-span-4 py-4">
           <CardHeader className="">
-            <CardTitle className="text-base font-semibold">Sales (Last 7 Days)</CardTitle>
+            <CardTitle className="text-base font-semibold">Stock by Brand</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesByDay}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="day" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip
-                    formatter={(value: number | undefined) => [formatCurrency(value || 0), "Sales"]}
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--card))",
-                    }}
-                  />
-                  <Bar dataKey="amount" fill="#6366f1" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-[240px] w-full" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metrics.brandBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="brand" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `${v}`}
+                    />
+                    <Tooltip
+                      formatter={(value: number | undefined) => [`${value || 0} units`, "Quantity"]}
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "hsl(var(--card))",
+                      }}
+                    />
+                    <Bar dataKey="quantity" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -137,176 +348,155 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="count"
-                    nameKey="category"
-                  >
-                    {categoryBreakdown.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number | undefined, name: string | undefined) => [
-                      `${value || 0} items`,
-                      name || "",
-                    ]}
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--card))",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {categoryBreakdown.slice(0, 5).map((cat, i) => (
-                <div key={cat.category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <div
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
-                  />
-                  {cat.category}
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-[160px] w-full rounded-full mx-auto max-w-[160px]" />
+                  <div className="flex flex-wrap gap-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={metrics.categoryBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="count"
+                        nameKey="category"
+                      >
+                        {metrics.categoryBreakdown.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number | undefined, name: string | undefined) => [
+                          `${value || 0} items`,
+                          name || "",
+                        ]}
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "1px solid hsl(var(--border))",
+                          backgroundColor: "hsl(var(--card))",
+                          fontSize: "12px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {metrics.categoryBreakdown.slice(0, 5).map((cat, i) => (
+                      <div key={cat.category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                        />
+                        {cat.category}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Bottom Row */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Recent Sales */}
-        <Card className="py-4!">
+      <div className="grid gap-4 lg:grid-cols-1">
+        {/* Top Items by Value */}
+        <Card className="py-4">
           <CardHeader className="">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <div className="rounded-lg bg-cyan-100 p-1.5">
-                <ShoppingCart className="h-3.5 w-3.5 text-cyan-600" />
+              <div className="rounded-lg bg-violet-100 p-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-violet-600" />
               </div>
-              Recent Sales
+              Top Items by Stock Value
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4">
-              {recentSales.map((sale) => (
-                <div
-                  key={sale.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{sale.partyName}</span>
-                    <span className="text-xs text-muted-foreground">{sale.invoiceNumber}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        sale.status === "paid"
-                          ? "default"
-                          : sale.status === "partial"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                      className={`text-xs ${sale.status === "paid" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : ""}`}
-                    >
-                      {sale.status}
-                    </Badge>
-                    <span className="text-sm font-semibold">{formatCurrency(sale.grandTotal)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Products + Low Stock */}
-        <div className="flex flex-col gap-4">
-          <Card className="py-4!">
-            <CardHeader className="">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <div className="rounded-lg bg-violet-100 p-1.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-violet-600" />
-                </div>
-                Top Selling Products
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            {isLoading ? (
               <div className="space-y-2">
-                {topProducts.map((product, i) => (
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topItemsByValue.map((item, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/30 transition-colors"
                   >
-                    <span className="text-muted-foreground">
-                      <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-600">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-600">
                         {i + 1}
                       </span>
-                      {product.name}
-                    </span>
-                    <span className="font-medium">{formatCurrency(product.revenue)}</span>
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="text-xs text-muted-foreground">({item.quantity} units)</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(item.value)}</span>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-amber-200 bg-linear-to-br from-amber-50 to-orange-50/50 dark:border-amber-800 dark:bg-amber-950/20 dark:from-amber-950/20 dark:to-transparent py-4">
-            <CardHeader className="pb-0!">
-              <CardTitle className="text-base font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <div className="rounded-lg bg-amber-200/60 p-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                </div>
-                Low Stock Alert ({metrics.lowStockCount} items)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="">
-              <p className="text-xs text-amber-600 dark:text-amber-500">
-                {metrics.lowStockCount} products are below their minimum stock threshold.
-                Visit Inventory to review and reorder.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <QuickStat
-          label="Customers"
-          value={String(metrics.totalCustomers)}
-          icon={<Users className="h-4 w-4" />}
-          bg="bg-blue-100"
-          color="text-blue-600"
-        />
-        <QuickStat
-          label="Suppliers"
-          value={String(metrics.totalSuppliers)}
-          icon={<Truck className="h-4 w-4" />}
-          bg="bg-emerald-100"
-          color="text-emerald-600"
-        />
-        <QuickStat
-          label="Purchases (Month)"
-          value={formatCurrency(metrics.totalPurchasesMonth)}
-          icon={<ArrowDownRight className="h-4 w-4" />}
-          bg="bg-orange-100"
-          color="text-orange-600"
-        />
-        <QuickStat
-          label="Payables"
-          value={formatCurrency(metrics.payables)}
-          icon={<TrendingDown className="h-4 w-4" />}
-          bg="bg-red-100"
-          color="text-red-600"
-        />
+        {isLoading ? (
+          <>
+            <QuickStatSkeleton />
+            <QuickStatSkeleton />
+            <QuickStatSkeleton />
+            <QuickStatSkeleton />
+          </>
+        ) : (
+          <>
+            <QuickStat
+              label="Avg Item Value"
+              value={formatCurrency(metrics.totalItems > 0 ? metrics.totalStockValue / metrics.totalItems : 0)}
+              icon={<IndianRupee className="h-4 w-4" />}
+              bg="bg-blue-100"
+              color="text-blue-600"
+            />
+            <QuickStat
+              label="Total Categories"
+              value={String(metrics.categoryCount)}
+              icon={<Package className="h-4 w-4" />}
+              bg="bg-emerald-100"
+              color="text-emerald-600"
+            />
+            <QuickStat
+              label="Total Brands"
+              value={String(metrics.brandCount)}
+              icon={<Warehouse className="h-4 w-4" />}
+              bg="bg-orange-100"
+              color="text-orange-600"
+            />
+            <QuickStat
+              label="Inventory Items"
+              value={String(metrics.totalItems)}
+              icon={<TrendingUp className="h-4 w-4" />}
+              bg="bg-violet-100"
+              color="text-violet-600"
+            />
+          </>
+        )}
       </div>
     </div>
   );
@@ -317,9 +507,6 @@ function MetricCard({
   value,
   subtitle,
   icon,
-  trend,
-  trendUp,
-  alert,
   iconBg,
   iconColor,
   borderColor,
@@ -328,9 +515,6 @@ function MetricCard({
   value: string;
   subtitle: string;
   icon: React.ReactNode;
-  trend?: string;
-  trendUp?: boolean;
-  alert?: boolean;
   iconBg: string;
   iconColor: string;
   borderColor: string;
@@ -346,17 +530,6 @@ function MetricCard({
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <span className="text-2xl font-bold tracking-tight">{value}</span>
-          {trend && (
-            <span
-              className={`flex items-center text-xs font-medium ${
-                trendUp ? "text-emerald-600" : "text-red-500"
-              }`}
-            >
-              {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {trend}
-            </span>
-          )}
-          {alert && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
       </CardContent>
@@ -384,6 +557,37 @@ function QuickStat({
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
           <p className="text-base font-semibold">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MetricCardSkeleton() {
+  return (
+    <Card className="border-l-4 border-l-muted p-4">
+      <CardContent className="">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-9 rounded-xl" />
+        </div>
+        <div className="mt-2">
+          <Skeleton className="h-8 w-20" />
+        </div>
+        <Skeleton className="mt-1 h-3 w-32" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickStatSkeleton() {
+  return (
+    <Card className="p-4">
+      <CardContent className="flex items-center gap-3">
+        <Skeleton className="h-10 w-10 rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-4 w-16" />
         </div>
       </CardContent>
     </Card>
