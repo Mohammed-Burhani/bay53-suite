@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInvoiceChat } from "@/lib/hooks/useInvoiceChat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export interface ModuleAIAssistantProps {
   moduleName: string;
@@ -149,9 +151,17 @@ export function ModuleAIAssistant({
                           : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                       )}
                     >
-                      <p className="text-sm whitespace-pre-wrap wrap-break-word">
-                        {message.text}
-                      </p>
+                      {message.role === "model" ? (
+                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.text}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap wrap-break-word">
+                          {message.text}
+                        </p>
+                      )}
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString([], {
                           hour: "2-digit",
