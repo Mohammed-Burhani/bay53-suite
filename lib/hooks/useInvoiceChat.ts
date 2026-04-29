@@ -56,6 +56,7 @@ Rules:
 - If no data loaded: Tell user to click "Search" button to load invoices first
 - Be concise and clear
 - Format numbers as currency (₹)
+- Use markdown formatting: **bold**, ## headings, - lists, > quotes
 - If asked for a list, show max 5 items unless specified
 - Today's date: ${new Date().toDateString()}
 - Invoice type context: ${invoiceType}
