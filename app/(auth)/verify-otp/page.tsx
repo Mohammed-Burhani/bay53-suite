@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/hooks/useAuth";
 import OTPForm from "@/components/auth/OTPForm";
 
-export default function VerifyOTPPage() {
+function VerifyOTPContent() {
   const session = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,5 +30,17 @@ export default function VerifyOTPPage() {
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
       <OTPForm userName={userName} devOtp={devOtp} />
     </div>
+  );
+}
+
+export default function VerifyOTPPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    }>
+      <VerifyOTPContent />
+    </Suspense>
   );
 }
