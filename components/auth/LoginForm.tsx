@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +24,15 @@ export default function LoginForm() {
     defaultValues: { userName: "", password: "" },
   });
 
-  const onSubmit = (data: LoginPayload) => login(data);
+  const onSubmit = (data: LoginPayload) => {
+    login(data, {
+      onSuccess: () => {
+        toast.success("OTP Sent", {
+          description: "A verification code has been sent to your email",
+        });
+      },
+    });
+  };
 
   return (
     <Card className="w-full max-w-md shadow-lg border-0 py-4">
@@ -89,6 +98,8 @@ export default function LoginForm() {
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
+
+
 
           {/* API Error */}
           {error && (

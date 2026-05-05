@@ -5,6 +5,13 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface LoginResponse {
+  user: AuthUser;
+  company: AuthCompany;
+  roles: AuthRole[];
+  rights: AuthRight[];
+}
+
 export interface AuthUser {
   user_ID: number;
   first_Name: string;
@@ -55,7 +62,22 @@ export interface AuthRight {
   bindToSPCode: number;
 }
 
-export interface LoginResponse {
+export interface GenerateOtpPayload {
+  userName: string;
+}
+
+export interface GenerateOtpResponse {
+  message: string;
+  expiresInMinutes: number;
+  otp: string;
+}
+
+export interface VerifyOtpPayload {
+  userName: string;
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
   user: AuthUser;
   company: AuthCompany;
   roles: AuthRole[];
