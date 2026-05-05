@@ -3,6 +3,7 @@
 import { formatCurrency } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Package,
   TrendingUp,
@@ -12,6 +13,8 @@ import {
   Users,
   ShoppingCart,
   AlertCircle,
+  Search,
+  Loader2,
 } from "lucide-react";
 import {
   BarChart,
@@ -33,6 +36,7 @@ import { useInvoiceSearch } from "@/lib/hooks/useInvoices";
 import { auth } from "@/lib/auth";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe", "#f5f3ff", "#818cf8"];
 
@@ -82,6 +86,10 @@ export default function DashboardPage() {
   const [toastId, setToastId] = useState<string | number | undefined>();
   const [messageIndex, setMessageIndex] = useState(0);
   
+  // Ledger/Invoice analytics state
+  const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
+  const [selectedLedgers, setSelectedLedgers] = useState<Array<{ ledger_id: number; name: string; group: string | null }>>([]);
+  
   // Fetch data
   const currentStockMutation = useCurrentStock();
   const invoiceSearchMutation = useInvoiceSearch();
@@ -121,6 +129,8 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Don't auto-fetch on mount - user must select ledgers first
+  // Stock data can still auto-fetch
   useEffect(() => {
     if (sessionId && !currentStockMutation.data && !cachedStockData && !toastId) {
       // Show custom toast with progress
@@ -135,7 +145,7 @@ export default function DashboardPage() {
       setToastId(id);
       setMessageIndex(0);
       
-      // Fetch all data in parallel
+      // Fetch stock data
       currentStockMutation.mutate({
         itemCode: null,
         name: null,
@@ -144,46 +154,6 @@ export default function DashboardPage() {
         quality: null,
         brand: null,
         spId: 0,
-      });
-      
-      // Fetch last 30 days invoices
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(today.getDate() - 30);
-      
-      invoiceSearchMutation.mutate({
-        pageSize: 0,
-        pageNumber: 0,
-        invType: 0, // All types
-        fromDate: thirtyDaysAgo.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }).replace(/\//g, '/').replace(',', ''),
-        toDate: today.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }).replace(/\//g, '/').replace(',', ''),
-        invoiceNo: null,
-        bill_No: null,
-        spIds: [],
-        partyName: null,
-        itemName: null,
-      });
-      
-      // Fetch ledger outstanding summary (groups 16, 17 = customers/suppliers)
-      ledgerOutstandingMutation.mutate({
-        groupId: 0,
-        ledgers: [],
-        fromDate: null,
-        toDate: null,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,38 +184,21 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [currentStockMutation.isPending, toastId]);
 
-  // Cache data when loaded + dismiss toast
+  // Cache stock data when loaded + dismiss toast
   useEffect(() => {
-    const allLoaded = 
-      currentStockMutation.data && 
-      invoiceSearchMutation.data && 
-      ledgerOutstandingMutation.data;
-    
-    if (allLoaded) {
+    if (currentStockMutation.data) {
       try {
         localStorage.setItem(CACHE_KEY_STOCK, JSON.stringify({
           data: currentStockMutation.data,
           timestamp: Date.now(),
         }));
         
-        localStorage.setItem(CACHE_KEY_INVOICES, JSON.stringify({
-          data: invoiceSearchMutation.data.list,
-          timestamp: Date.now(),
-        }));
-        
-        localStorage.setItem(CACHE_KEY_LEDGER, JSON.stringify({
-          data: ledgerOutstandingMutation.data,
-          timestamp: Date.now(),
-        }));
-        
         setCachedStockData(currentStockMutation.data);
-        setCachedInvoiceData(invoiceSearchMutation.data.list);
-        setCachedLedgerData(ledgerOutstandingMutation.data);
         
         if (toastId) {
           toast.dismiss(toastId);
           setToastId(undefined);
-          toast.success("Dashboard loaded!", { duration: 2000 });
+          toast.success("Stock data loaded!", { duration: 2000 });
         }
       } catch (e) {
         console.error("Cache write error:", e);
@@ -255,7 +208,85 @@ export default function DashboardPage() {
         }
       }
     }
-  }, [currentStockMutation.data, invoiceSearchMutation.data, ledgerOutstandingMutation.data, toastId]);
+  }, [currentStockMutation.data, toastId]);
+
+  // Cache invoice data when loaded
+  useEffect(() => {
+    if (invoiceSearchMutation.data) {
+      try {
+        localStorage.setItem(CACHE_KEY_INVOICES, JSON.stringify({
+          data: invoiceSearchMutation.data.list,
+          timestamp: Date.now(),
+        }));
+        setCachedInvoiceData(invoiceSearchMutation.data.list);
+      } catch (e) {
+        console.error("Cache write error:", e);
+      }
+    }
+  }, [invoiceSearchMutation.data]);
+
+  // Cache ledger data when loaded
+  useEffect(() => {
+    if (ledgerOutstandingMutation.data) {
+      try {
+        localStorage.setItem(CACHE_KEY_LEDGER, JSON.stringify({
+          data: ledgerOutstandingMutation.data,
+          timestamp: Date.now(),
+        }));
+        setCachedLedgerData(ledgerOutstandingMutation.data);
+      } catch (e) {
+        console.error("Cache write error:", e);
+      }
+    }
+  }, [ledgerOutstandingMutation.data]);
+
+  // Handler to generate ledger/invoice analytics
+  const handleGenerateAnalytics = () => {
+    if (selectedLedgerIds.length === 0) {
+      toast.error("Please select at least one ledger");
+      return;
+    }
+
+    // Fetch last 30 days invoices with selected ledgers
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    invoiceSearchMutation.mutate({
+      pageSize: 0,
+      pageNumber: 0,
+      invType: 0, // All types
+      fromDate: thirtyDaysAgo.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).replace(/\//g, '/').replace(',', ''),
+      toDate: today.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).replace(/\//g, '/').replace(',', ''),
+      invoiceNo: null,
+      bill_No: null,
+      spIds: [0], // Pass 0 in spId array
+      partyName: null,
+      itemName: null,
+    });
+    
+    // Fetch ledger outstanding summary for selected ledgers
+    ledgerOutstandingMutation.mutate({
+      groupId: 16,
+      ledgers: selectedLedgerIds,
+      fromDate: null,
+      toDate: null,
+    });
+  };
 
   const currentStockData = useMemo(() => 
     cachedStockData || currentStockMutation.data || [], 
@@ -437,6 +468,46 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Ledger/Invoice Analytics Selector */}
+      <Card className="border shadow-sm">
+        <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
+          <CardTitle className="text-base font-semibold">Ledger & Invoice Analytics</CardTitle>
+          <p className="text-xs text-muted-foreground">Select ledgers to generate invoice and outstanding analytics</p>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <LedgerSearchInput
+                selectedLedgerIds={selectedLedgerIds}
+                onLedgerIdsChange={setSelectedLedgerIds}
+                label="Select Ledgers"
+                placeholder="Search and select ledgers..."
+                required={false}
+                multiSelect={true}
+                groups={[16, 17]} // Customers & Suppliers
+                selectedLedgers={selectedLedgers}
+                onSelectedLedgersChange={setSelectedLedgers}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleGenerateAnalytics}
+                disabled={selectedLedgerIds.length === 0 || invoiceSearchMutation.isPending || ledgerOutstandingMutation.isPending}
+                size="sm"
+                className="h-9"
+              >
+                {(invoiceSearchMutation.isPending || ledgerOutstandingMutation.isPending) ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Search className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Generate Report
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Invoice Trend Chart */}
       <Card className="py-4">

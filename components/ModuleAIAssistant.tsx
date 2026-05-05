@@ -19,11 +19,13 @@ import remarkGfm from "remark-gfm";
 export interface ModuleAIAssistantProps {
   moduleName: string;
   moduleData: Record<string, unknown>;
+  onAgenticAction?: (action: string, params: Record<string, unknown>) => Promise<void>;
 }
 
 export function ModuleAIAssistant({
   moduleName,
   moduleData,
+  onAgenticAction,
 }: ModuleAIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
