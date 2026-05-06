@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { useLogin } from "@/lib/hooks/useAuth";
 import type { LoginPayload } from "@/lib/types/auth.types";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: login, isPending, error } = useLogin();
 
@@ -74,7 +76,16 @@ export default function LoginForm() {
 
           {/* Password */}
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="text-sm text-primary hover:underline underline-offset-4"
+              >
+                Forgot password?
+              </button>
+            </div>
             <div className="relative">
               <Input
                 id="password"
