@@ -26,18 +26,14 @@ function VerifyOTPContent() {
   // Don't render if already authenticated or no userName
   if (session || !userName) return null;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <OTPForm userName={userName} devOtp={devOtp} />
-    </div>
-  );
+  return <OTPForm userName={userName} devOtp={devOtp} />;
 }
 
 export default function VerifyOTPPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: "var(--bay-teal)" }} />
       </div>
     }>
       <VerifyOTPContent />
