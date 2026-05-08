@@ -46,6 +46,13 @@
   --radius: 0.625rem;
   --background: oklch(0.98 0.005 270);
   --foreground: oklch(0.18 0.02 280);
+  
+  /* BAY53 Brand Colors */
+  --bay-coral: #f07050;
+  --bay-teal: #4dd9ac;
+  --bay-violet: #7b8ff5;
+  --bay-dark: #0a0a0f;
+  --bay-surface: #f8f9fc;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.02 280);
   --popover: oklch(1 0 0);
@@ -134,5 +141,43 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* BAY53 Login Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    33% { transform: translateY(-20px) translateX(10px); }
+    66% { transform: translateY(10px) translateX(-10px); }
+  }
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-float {
+    animation: float 20s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float 25s ease-in-out infinite;
+    animation-delay: -5s;
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out;
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, var(--bay-coral), var(--bay-teal), var(--bay-violet));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
