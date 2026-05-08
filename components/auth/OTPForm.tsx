@@ -64,7 +64,7 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
   const securityFeatures = [
     { icon: Shield, title: "Secure Authentication", desc: "Military-grade encryption protects your data" },
     { icon: Mail, title: "Email Verification", desc: "OTP sent directly to your registered email" },
-    { icon: Clock, title: "Time-Limited Code", desc: "Codes expire after 10 minutes for security" },
+    { icon: Clock, title: "Time-Limited Code", desc: "Codes expire after 5 minutes for security" },
   ];
 
   return (
@@ -200,12 +200,12 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
                   disabled={isPending}
                 >
                   <InputOTPGroup className="gap-4">
-                    <InputOTPSlot index={0} className="size-14! text-lg rounded-xl! border-gray-300" />
-                    <InputOTPSlot index={1} className="size-14! text-lg rounded-xl! border-gray-300" />
-                    <InputOTPSlot index={2} className="size-14! text-lg rounded-xl! border-gray-300" />
-                    <InputOTPSlot index={3} className="size-14! text-lg rounded-xl! border-gray-300" />
-                    <InputOTPSlot index={4} className="size-14! text-lg rounded-xl! border-gray-300" />
-                    <InputOTPSlot index={5} className="size-14! text-lg rounded-xl! border-gray-300" />
+                    <InputOTPSlot index={0} className="size-14! text-lg rounded-2xl! border-gray-300" />
+                    <InputOTPSlot index={1} className="size-14! text-lg rounded-2xl! border-gray-300" />
+                    <InputOTPSlot index={2} className="size-14! text-lg rounded-2xl! border-gray-300" />
+                    <InputOTPSlot index={3} className="size-14! text-lg rounded-2xl! border-gray-300" />
+                    <InputOTPSlot index={4} className="size-14! text-lg rounded-2xl! border-gray-300" />
+                    <InputOTPSlot index={5} className="size-14! text-lg rounded-2xl! border-gray-300" />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -257,7 +257,7 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
             }}
           >
             <p className="text-xs text-gray-600">
-              🔒 This code expires in 10 minutes for your security
+              🔒 This code expires in 5 minutes for your security
             </p>
           </div>
         </div>
