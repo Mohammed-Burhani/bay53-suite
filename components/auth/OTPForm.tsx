@@ -19,10 +19,46 @@ interface OTPFormProps {
 export default function OTPForm({ userName, devOtp }: OTPFormProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+  const [otpExpirySeconds, setOtpExpirySeconds] = useState(300); // 5 minutes = 300 seconds
+  const [resendCooldown, setResendCooldown] = useState(0); // 30 second cooldown
   const router = useRouter();
   const { mutate: verifyOtp, isPending } = useVerifyOtp();
   const { mutate: generateOtp, isPending: isResending } = useGenerateOtp();
   const isDev = process.env.NODE_ENV === 'development';
+
+  // OTP expiry countdown (5 minutes)
+  useEffect(() => {
+    if (otpExpirySeconds <= 0) return;
+    
+    const timer = setInterval(() => {
+      setOtpExpirySeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [otpExpirySeconds]);
+
+  // Resend cooldown (30 seconds)
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleComplete = (value: string) => {
     setError("");
@@ -53,6 +89,8 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
           });
           setOtp("");
           setError("");
+          setOtpExpirySeconds(300); // Reset to 5 minutes
+          setResendCooldown(30); // Start 30 second cooldown
         },
         onError: () => {
           toast.error("Failed to resend OTP. Please try again.");
@@ -61,11 +99,20 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
     );
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const securityFeatures = [
     { icon: Shield, title: "Secure Authentication", desc: "Military-grade encryption protects your data" },
     { icon: Mail, title: "Email Verification", desc: "OTP sent directly to your registered email" },
     { icon: Clock, title: "Time-Limited Code", desc: "Codes expire after 5 minutes for security" },
   ];
+
+  // Calculate progress percentage for resend cooldown
+  const resendProgress = resendCooldown > 0 ? ((30 - resendCooldown) / 30) * 100 : 100;
 
   return (
     <div className="min-h-screen flex">
@@ -197,9 +244,9 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
                       handleComplete(value);
                     }
                   }}
-                  disabled={isPending}
+                  disabled={isPending || otpExpirySeconds === 0}
                 >
-                  <InputOTPGroup className="gap-4">
+                  <InputOTPGroup className="gap-4!">
                     <InputOTPSlot index={0} className="size-14! text-lg rounded-2xl! border-gray-300" />
                     <InputOTPSlot index={1} className="size-14! text-lg rounded-2xl! border-gray-300" />
                     <InputOTPSlot index={2} className="size-14! text-lg rounded-2xl! border-gray-300" />
@@ -212,6 +259,11 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
               {error && (
                 <p className="text-sm text-red-600 text-center">{error}</p>
               )}
+              {otpExpirySeconds === 0 && (
+                <p className="text-sm text-red-600 text-center font-medium">
+                  OTP has expired. Please request a new one.
+                </p>
+              )}
             </div>
 
             {/* Loading state */}
@@ -222,16 +274,55 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
               </div>
             )}
 
-            {/* Resend OTP */}
-            <div className="text-center">
+            {/* Resend OTP with Countdown */}
+            <div className="flex items-center justify-center gap-3">
+              {resendCooldown > 0 && (
+                <div className="relative w-8 h-8">
+                  {/* Background circle */}
+                  <svg className="w-8 h-8 transform -rotate-90">
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      className="text-gray-200"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      stroke="url(#gradient)"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 14}`}
+                      strokeDashoffset={`${2 * Math.PI * 14 * (1 - resendProgress / 100)}`}
+                      className="transition-all duration-1000"
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style={{ stopColor: "var(--bay-coral)" }} />
+                        <stop offset="50%" style={{ stopColor: "var(--bay-teal)" }} />
+                        <stop offset="100%" style={{ stopColor: "var(--bay-violet)" }} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">
+                    {resendCooldown}
+                  </span>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleResendOTP}
-                disabled={isResending || isPending}
-                className="text-sm transition-colors underline-offset-4 hover:underline disabled:opacity-50"
-                style={{ color: "var(--bay-teal)" }}
+                disabled={isResending || isPending || resendCooldown > 0}
+                className="text-sm transition-colors underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: resendCooldown > 0 ? "#9ca3af" : "var(--bay-teal)" }}
               >
-                {isResending ? "Sending..." : "Didn't receive the code? Resend OTP"}
+                {isResending ? "Sending..." : resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Didn't receive the code? Resend OTP"}
               </button>
             </div>
 
@@ -248,16 +339,16 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
             </Button>
           </form>
 
-          {/* Security Note */}
+          {/* Security Note with Timer */}
           <div 
             className="p-4 rounded-xl border text-center"
             style={{ 
               background: "linear-gradient(135deg, rgba(240, 112, 80, 0.05), rgba(77, 217, 172, 0.05), rgba(123, 143, 245, 0.05))",
-              borderColor: "rgba(77, 217, 172, 0.2)"
+              borderColor: otpExpirySeconds <= 60 ? "rgba(239, 68, 68, 0.3)" : "rgba(77, 217, 172, 0.2)"
             }}
           >
-            <p className="text-xs text-gray-600">
-              🔒 This code expires in 5 minutes for your security
+            <p className={`text-xs font-medium ${otpExpirySeconds <= 60 ? "text-red-600" : "text-gray-600"}`}>
+              🔒 Code expires in {formatTime(otpExpirySeconds)}
             </p>
           </div>
         </div>
