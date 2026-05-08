@@ -40,28 +40,34 @@ function InputOTPSlot({
   index,
   className,
   ...props
-}: React.ComponentProps<"div"> & {
-  index: number
-}) {
+}: React.ComponentProps<"div"> & { index: number }) {
   const inputOTPContext = React.useContext(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {}
 
   return (
     <div
-      data-slot="input-otp-slot"
-      data-active={isActive}
       className={cn(
-        "data-[active=true]:border-ring data-[active=true]:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30 border-input relative flex h-12 w-12 items-center justify-center rounded-xl border text-sm shadow-xs transition-all outline-none data-[active=true]:z-10 data-[active=true]:ring-[3px]",
+        "relative p-[2px]",
+        // Gradient border always visible, brighter when active
+        isActive
+          ? "bg-gradient-to-br from-[#f07050] via-[#4dd9ac] to-[#7b8ff5] shadow-lg shadow-[#7b8ff5]/30"
+          : "bg-gradient-to-br from-[#f07050]/40 via-[#4dd9ac]/40 to-[#7b8ff5]/40",
         className
       )}
-      {...props}
     >
-      {char}
-      {hasFakeCaret && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="animate-caret-blink bg-foreground h-4 w-px duration-1000" />
-        </div>
-      )}
+      <div
+        data-slot="input-otp-slot"
+        data-active={isActive}
+        className="relative flex h-13 w-13 items-center justify-center rounded-xl bg-white dark:bg-zinc-950 text-sm font-medium transition-all outline-none"
+        {...props}
+      >
+        {char}
+        {hasFakeCaret && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="animate-caret-blink bg-foreground h-4 w-px duration-1000" />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
