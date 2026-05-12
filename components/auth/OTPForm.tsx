@@ -24,7 +24,7 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
   const router = useRouter();
   const { mutate: verifyOtp, isPending } = useVerifyOtp();
   const { mutate: generateOtp, isPending: isResending } = useGenerateOtp();
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NEXT_PUBLIC_NODE_ENV === 'development';
 
   // OTP expiry countdown (5 minutes)
   useEffect(() => {
