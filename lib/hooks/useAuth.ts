@@ -24,7 +24,7 @@ export function useLogin() {
         const otpResponse = await authService.generateOtp({ userName: variables.userName });
         
         // In dev mode, pass OTP in URL for testing
-        const isDev = process.env.NODE_ENV === 'development';
+        const isDev = process.env.NEXT_PUBLIC_NODE_ENV === 'development';
         const otpParam = isDev ? `&otp=${otpResponse.otp}` : '';
         
         // Redirect to OTP page
@@ -65,7 +65,7 @@ export function useGenerateOtp() {
     mutationFn: (payload: { userName: string }) => authService.generateOtp(payload),
     onSuccess: (data, variables) => {
       // In dev mode, pass OTP in URL for testing (resend case)
-      const isDev = process.env.NODE_ENV === 'development';
+      const isDev = process.env.NEXT_PUBLIC_NODE_ENV === 'development';
       const otpParam = isDev ? `&otp=${data.otp}` : '';
       router.push(`/verify-otp?userName=${encodeURIComponent(variables.userName)}${otpParam}`);
     },
