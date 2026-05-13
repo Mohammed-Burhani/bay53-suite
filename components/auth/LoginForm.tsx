@@ -308,6 +308,30 @@ export default function LoginForm() {
               )}
             </Button>
 
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">Don&apos;t have an account?</span>
+              </div>
+            </div>
+
+            {/* Signup Link */}
+            <Button
+              type="button"
+              onClick={() => router.push("/signup")}
+              variant="outline"
+              className="w-full h-11 rounded-xl font-semibold border-2 transition-all duration-200 hover:scale-[1.02]"
+              style={{ 
+                borderColor: "var(--bay-coral)",
+                color: "var(--bay-coral)"
+              }}
+            >
+              Create new account
+            </Button>
+
             {/* Admin Contact */}
             <p className="text-center text-xs text-gray-500">
               Need access? Contact your administrator
