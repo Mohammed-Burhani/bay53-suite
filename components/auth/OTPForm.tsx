@@ -21,6 +21,7 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
   const [error, setError] = useState("");
   const [otpExpirySeconds, setOtpExpirySeconds] = useState(300); // 5 minutes = 300 seconds
   const [resendCooldown, setResendCooldown] = useState(0); // 30 second cooldown
+  const [showDevOtp, setShowDevOtp] = useState(false);
   const router = useRouter();
   const { mutate: verifyOtp, isPending } = useVerifyOtp();
   const { mutate: generateOtp, isPending: isResending } = useGenerateOtp();
@@ -220,12 +221,25 @@ export default function OTPForm({ userName, devOtp }: OTPFormProps) {
           <form onSubmit={(e) => e.preventDefault()} className="space-y-6" noValidate>
             {/* Dev Mode OTP Display */}
             {isDev && devOtp && (
-              <Alert className="bg-yellow-50 border-yellow-200">
-                <AlertDescription className="text-sm">
-                  <strong className="font-semibold">Dev Mode:</strong> OTP is{" "}
-                  <code className="px-2 py-1 bg-yellow-100 rounded font-mono font-bold">{devOtp}</code>
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer w-fit">
+                  <input
+                    type="checkbox"
+                    checked={showDevOtp}
+                    onChange={(e) => setShowDevOtp(e.target.checked)}
+                    className="w-3 h-3 rounded border-gray-300"
+                  />
+                  Show OTP
+                </label>
+                {showDevOtp && (
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <AlertDescription className="text-sm">
+                      <strong className="font-semibold">Dev Mode:</strong> OTP is{" "}
+                      <code className="px-2 py-1 bg-yellow-100 rounded font-mono font-bold">{devOtp}</code>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             )}
 
             {/* OTP Input */}
