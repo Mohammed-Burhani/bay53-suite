@@ -99,3 +99,18 @@ export interface CheckSessionPayload {
 export interface CheckSessionResponse {
   message: string;
 }
+
+export interface GoogleAuthPayload {
+  email: string;
+  name: string;
+  googleId: string;
+  picture?: string;
+}
+
+export interface GoogleAuthResponse {
+  user: AuthUser;
+  company: AuthCompany;
+  roles: AuthRole[];
+  rights: AuthRight[];
+  isNewUser: boolean;
+}

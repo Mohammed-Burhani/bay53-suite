@@ -5,36 +5,21 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, BarChart3, Package, Users, Brain, FileText } from "lucide-react";
 import Image from "next/image";
-import { createClient } from "@/supabase/client";
+import { useGoogleSignup } from "@/lib/hooks/useAuth";
 import { toast } from "sonner";
 
 export default function SignupForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+  const { mutate: googleSignup, isPending: isLoading } = useGoogleSignup();
 
-  const handleGoogleSignup = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) {
+  const handleGoogleSignup = () => {
+    googleSignup(undefined, {
+      onError: (error: any) => {
         toast.error("Signup failed", {
-          description: error.message,
+          description: error.message || "Please try again",
         });
-      }
-    } catch (err) {
-      toast.error("Something went wrong", {
-        description: "Please try again later",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+      },
+    });
   };
 
   const features = [
