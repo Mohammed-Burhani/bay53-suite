@@ -10,7 +10,9 @@ import type {
   VerifyOtpPayload, 
   VerifyOtpResponse,
   CheckSessionPayload, 
-  CheckSessionResponse 
+  CheckSessionResponse,
+  GoogleAuthPayload,
+  GoogleAuthResponse
 } from "@/lib/types/auth.types";
 
 export const authService = {
@@ -25,4 +27,7 @@ export const authService = {
   
   checkSession: (payload: CheckSessionPayload) =>
     apiClient.post<CheckSessionResponse>("/Auth/CheckSession", payload),
+  
+  googleAuth: (payload: GoogleAuthPayload) =>
+    apiClient.post<GoogleAuthResponse>("/Auth/GoogleAuth", payload),
 };

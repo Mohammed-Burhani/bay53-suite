@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/api/auth.service";
 import { auth } from "@/lib/auth";
+import { createClient } from "@/supabase/client";
 import type { AuthSession, LoginPayload, VerifyOtpPayload } from "@/lib/types/auth.types";
 
 export function useSession(): AuthSession | null {
@@ -81,4 +82,42 @@ export function useLogout() {
     queryClient.clear();
     router.push("/login");
   };
+}
+
+export function useGoogleLogin() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useGoogleSignup() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+  });
 }
