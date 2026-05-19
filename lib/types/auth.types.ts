@@ -114,3 +114,25 @@ export interface GoogleAuthResponse {
   rights: AuthRight[];
   isNewUser: boolean;
 }
+
+export interface CompanySetupPayload {
+  companyName: string;
+  country: string;
+  address: string;
+  email: string;
+  phoneNumber: string;
+  contactPerson: string;
+  gstNumber: string;
+  state: string;
+  pinCode: string;
+  currency: string;
+  logo?: File | null;
+  natureOfBusiness: "Retail" | "Wholesale" | "Distribution" | "Trading" | "Manufacturing" | "Fabrication";
+}
+
+export interface CompanySetupResponse {
+  user: AuthUser;
+  company: AuthCompany;
+  roles: AuthRole[];
+  rights: AuthRight[];
+}
