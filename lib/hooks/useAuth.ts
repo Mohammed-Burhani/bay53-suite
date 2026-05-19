@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import { authService } from "@/lib/api/auth.service";
 import { auth } from "@/lib/auth";
 import { createClient } from "@/supabase/client";
-import type { AuthSession, LoginPayload, VerifyOtpPayload } from "@/lib/types/auth.types";
+import { onboardingService } from "@/lib/services/onboarding.service";
+import type { AuthSession, LoginPayload, VerifyOtpPayload, CompanySetupPayload } from "@/lib/types/auth.types";
 
 export function useSession(): AuthSession | null {
   return auth.getSession();
@@ -85,8 +86,6 @@ export function useLogout() {
 }
 
 export function useGoogleLogin() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: async () => {
       const supabase = createClient();
@@ -104,8 +103,6 @@ export function useGoogleLogin() {
 }
 
 export function useGoogleSignup() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: async () => {
       const supabase = createClient();
@@ -118,6 +115,21 @@ export function useGoogleSignup() {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useCompanySetup() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async (payload: CompanySetupPayload) => {
+      const { user, organization } = await onboardingService.setupCompany(payload);
+      return { user, organization };
+    },
+    onSuccess: () => {
+      // Session created by Supabase auth.signUp, just redirect
+      router.push("/dashboard");
     },
   });
 }

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, BarChart3, Package, Users, Brain, FileText } from "lucide-react";
+import { Loader2, Sparkles, BarChart3, Package, Users, Brain, FileText, Mail } from "lucide-react";
 import Image from "next/image";
 import { useGoogleSignup } from "@/lib/hooks/useAuth";
 import { toast } from "sonner";
@@ -14,12 +13,16 @@ export default function SignupForm() {
 
   const handleGoogleSignup = () => {
     googleSignup(undefined, {
-      onError: (error: any) => {
+      onError: (err) => {
         toast.error("Signup failed", {
-          description: error.message || "Please try again",
+          description: err.message || "Please try again",
         });
       },
     });
+  };
+
+  const handleManualSignup = () => {
+    router.push("/company-setup");
   };
 
   const features = [
@@ -33,7 +36,7 @@ export default function SignupForm() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Brand & Features */}
-      <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden bg-gradient-to-br from-orange-50 via-teal-50 to-blue-50 border-r-2 border-gray-200">
+      <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden bg-linear-to-br from-orange-50 via-teal-50 to-blue-50 border-r-2 border-gray-200">
         {/* Animated Background Orbs */}
         <div className="absolute inset-0 overflow-hidden">
           <div 
@@ -121,8 +124,9 @@ export default function SignupForm() {
             <p className="text-sm text-gray-600">Get started with BAY53 today</p>
           </div>
 
-          {/* Google Signup Button */}
-          <div className="space-y-5">
+          {/* Signup Options */}
+          <div className="space-y-4">
+            {/* Google Signup */}
             <Button 
               type="button"
               onClick={handleGoogleSignup}
@@ -157,6 +161,30 @@ export default function SignupForm() {
                   Continue with Google
                 </>
               )}
+            </Button>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">Or</span>
+              </div>
+            </div>
+
+            {/* Manual Signup */}
+            <Button
+              type="button"
+              onClick={handleManualSignup}
+              className="w-full h-11 rounded-xl font-semibold text-white border-0 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+              style={{ 
+                background: `linear-gradient(135deg, var(--bay-coral), var(--bay-teal), var(--bay-violet))`,
+                boxShadow: "0 4px 12px rgba(77, 217, 172, 0.3)"
+              }}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Sign up with Email
             </Button>
 
             {/* Divider */}

@@ -1,5 +1,6 @@
 import { createClient } from "@/supabase/server";
 import { NextResponse } from "next/server";
+import { onboardingService } from "@/lib/services/onboarding.service";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -7,46 +8,25 @@ export async function GET(request: Request) {
   const origin = requestUrl.origin;
 
   if (code) {
-    const supabase = await createClient(); 
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.session) {
       const user = data.user;
       
-      // Call backend to register/login Google user
+      // Handle Google OAuth user in Supabase
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/Auth/GoogleAuth`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            accept: "*/*",
-          },
-          body: JSON.stringify({
-            email: user.email,
-            name: user.user_metadata?.full_name || user.email?.split("@")[0],
-            googleId: user.id,
-            picture: user.user_metadata?.avatar_url,
-          }),
+        const result = await onboardingService.handleGoogleUser({
+          email: user.email!,
+          name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          googleId: user.id,
+          picture: user.user_metadata?.avatar_url,
         });
 
-        if (response.ok) {
-          const authData = await response.json();
-          
-          // Store session in localStorage via redirect with data
-          // Use URL params to pass session data (will be picked up by client)
-          const sessionData = encodeURIComponent(JSON.stringify({
-            user: authData.user,
-            company: authData.company,
-            roles: authData.roles,
-            rights: authData.rights,
-          }));
-          
-          return NextResponse.redirect(
-            `${origin}/auth/success?session=${sessionData}&isNew=${authData.isNewUser}`
-          );
-        }
+        // Always redirect to dashboard (company setup not required)
+        return NextResponse.redirect(`${origin}/dashboard`);
       } catch (err) {
-        console.error("Backend auth error:", err);
+        console.error("Onboarding error:", err);
       }
     }
   }
