@@ -31,6 +31,10 @@ export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
   // Certificates
   "/certificates": { title: "Certificates" },
   
+  // Master
+  "/master/groups": { title: "Groups" },
+  "/master/groups/create": { title: "Create Group" },
+
   // Reports
   "/reports": { title: "Reports" },
   "/reports/current-stock": { title: "Current Stock" },

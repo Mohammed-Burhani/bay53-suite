@@ -29,6 +29,8 @@ import {
   Settings,
   LogOut,
   Search,
+  Database,
+  FolderTree,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -166,6 +168,16 @@ const NAV_MODULES: NavModule[] = [
     subItems: [
       { href: "/certificates", label: "All Certificates", icon: List },
       { href: "/sales/certificates", label: "Invoice Certificates", icon: Receipt },
+    ],
+  },
+  {
+    id: "master",
+    label: "Master",
+    icon: Database,
+    color: "text-amber-400",
+    activeBg: "bg-amber-500/20",
+    subItems: [
+      { href: "/master/groups", label: "Groups", icon: FolderTree },
     ],
   },
   {
