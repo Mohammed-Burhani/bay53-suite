@@ -79,6 +79,18 @@ const NAV_MODULES: NavModule[] = [
     ],
   },
   {
+    id: "pos",
+    label: "POS",
+    icon: ShoppingCart,
+    color: "text-teal-400",
+    activeBg: "bg-teal-500/20",
+    subItems: [
+      { href: "/pos", label: "Point of Sale", icon: ShoppingCart },
+      { href: "/pos/inventory", label: "Inventory", icon: Package },
+      { href: "/pos/history", label: "POS History", icon: Receipt },
+    ],
+  },
+  {
     id: "invoices",
     label: "All Invoices",
     icon: Receipt,
