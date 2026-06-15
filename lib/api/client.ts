@@ -34,6 +34,12 @@ async function request<T>(
     headers["Authorization"] = sessionId;
   }
 
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[.NET API] ${options.method ?? "GET"} ${url}`, {
+      body: options.body ? JSON.parse(options.body as string) : undefined,
+    });
+  }
+
   const response = await fetch(url, { ...options, headers });
 
   // Handle response
