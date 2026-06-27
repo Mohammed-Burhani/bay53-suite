@@ -27,9 +27,19 @@ import {
   X,
   ChevronsUpDown,
   SlidersHorizontal,
+  Eye,
+  Edit,
+  Printer,
+  Mail,
+  Copy,
+  Download,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
+import { useRouter } from "next/navigation";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { useInvoiceSearch } from "@/lib/hooks/useInvoices";
@@ -64,6 +74,8 @@ export function InvoiceListTable({
   icon: Icon = FileText,
   iconColor = "bg-indigo-500",
 }: InvoiceListTableProps) {
+  const router = useRouter();
+  
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedInvType, setSelectedInvType] = useState<number>(invType);
@@ -194,6 +206,89 @@ export function InvoiceListTable({
     itemName,
     selectedLedgerIds.length > 0,
   ].filter(Boolean).length;
+
+  // Context menu handlers
+  const handleViewInvoice = (invoice: any) => {
+    toast.info(`View invoice: ${invoice.billNo}`);
+    // router.push(`/invoices/${invoice.invCode}`);
+  };
+
+  const handleEditInvoice = (invoice: any) => {
+    toast.info(`Edit invoice: ${invoice.billNo}`);
+    // router.push(`/invoices/${invoice.invCode}/edit`);
+  };
+
+  const handlePrintInvoice = (invoice: any) => {
+    toast.info(`Print invoice: ${invoice.billNo}`);
+  };
+
+  const handleEmailInvoice = (invoice: any) => {
+    toast.info(`Email invoice: ${invoice.billNo}`);
+  };
+
+  const handleDuplicateInvoice = (invoice: any) => {
+    toast.info(`Duplicate invoice: ${invoice.billNo}`);
+  };
+
+  const handleDownloadPDF = (invoice: any) => {
+    toast.info(`Download PDF: ${invoice.billNo}`);
+  };
+
+  const handleConvertToReturn = (invoice: any) => {
+    toast.info(`Convert to return: ${invoice.billNo}`);
+  };
+
+  const handleCancelInvoice = (invoice: any) => {
+    toast.warning(`Cancel invoice: ${invoice.billNo}`);
+  };
+
+  const getInvoiceContextMenu = (invoice: any): ContextMenuItem[] => [
+    {
+      label: "View Invoice",
+      icon: Eye,
+      onClick: () => handleViewInvoice(invoice),
+      shortcut: "⌘V",
+    },
+    {
+      label: "Edit",
+      icon: Edit,
+      onClick: () => handleEditInvoice(invoice),
+    },
+    {
+      label: "Print",
+      icon: Printer,
+      onClick: () => handlePrintInvoice(invoice),
+      shortcut: "⌘P",
+    },
+    {
+      label: "Email Invoice",
+      icon: Mail,
+      onClick: () => handleEmailInvoice(invoice),
+      variant: "success",
+    },
+    {
+      label: "Download PDF",
+      icon: Download,
+      onClick: () => handleDownloadPDF(invoice),
+    },
+    {
+      label: "Duplicate",
+      icon: Copy,
+      onClick: () => handleDuplicateInvoice(invoice),
+      divider: true,
+    },
+    {
+      label: "Convert to Return",
+      icon: RotateCcw,
+      onClick: () => handleConvertToReturn(invoice),
+    },
+    {
+      label: "Cancel Invoice",
+      icon: XCircle,
+      onClick: () => handleCancelInvoice(invoice),
+      variant: "danger",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -492,34 +587,36 @@ export function InvoiceListTable({
                 </TableHeader>
                 <TableBody>
                   {paginatedInvoices.map((invoice) => (
-                    <TableRow key={invoice.invCode} className="hover:bg-muted/50">
-                      <TableCell className="font-mono text-sm">{invoice.billNo}</TableCell>
-                      <TableCell className="text-sm">
-                        {invoice.date ? (
-                          (() => {
-                            try {
-                              const date = new Date(invoice.date);
-                              return format(date, "dd MMM yyyy");
-                            } catch {
-                              return invoice.date;
-                            }
-                          })()
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">{invoice.partyName}</TableCell>
-                      <TableCell className="text-sm">{invoice.stockPlace}</TableCell>
-                      <TableCell className="text-sm">{invoice.city || "-"}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(invoice.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {invoice.recBy || "N/A"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
+                    <ContextMenu key={invoice.invCode} items={getInvoiceContextMenu(invoice)}>
+                      <TableRow className="hover:bg-muted/50 cursor-context-menu">
+                        <TableCell className="font-mono text-sm">{invoice.billNo}</TableCell>
+                        <TableCell className="text-sm">
+                          {invoice.date ? (
+                            (() => {
+                              try {
+                                const date = new Date(invoice.date);
+                                return format(date, "dd MMM yyyy");
+                              } catch {
+                                return invoice.date;
+                              }
+                            })()
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{invoice.partyName}</TableCell>
+                        <TableCell className="text-sm">{invoice.stockPlace}</TableCell>
+                        <TableCell className="text-sm">{invoice.city || "-"}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(invoice.amount)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {invoice.recBy || "N/A"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    </ContextMenu>
                   ))}
                 </TableBody>
               </Table>
