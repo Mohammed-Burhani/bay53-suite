@@ -22,7 +22,7 @@ export interface ContextMenuItem {
 
 interface ContextMenuProps {
   items: ContextMenuItem[];
-  children: React.ReactNode;
+  children: React.ReactElement;
   disabled?: boolean;
 }
 
@@ -31,7 +31,6 @@ export function ContextMenu({ items, children, disabled = false }: ContextMenuPr
   const [position, setPosition] = React.useState<ContextMenuPosition>({ x: 0, y: 0 });
   const [mounted, setMounted] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -41,7 +40,7 @@ export function ContextMenu({ items, children, disabled = false }: ContextMenuPr
   const handleContextMenu = React.useCallback(
     (e: React.MouseEvent) => {
       if (disabled) return;
-      
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -95,6 +94,15 @@ export function ContextMenu({ items, children, disabled = false }: ContextMenuPr
     item.onClick();
     setVisible(false);
   };
+
+  // Inject onContextMenu directly onto the child so the component can wrap
+  // non-container elements like <tr> without producing invalid HTML
+  // (a <div> inside a <tbody> would break the table layout).
+  const trigger = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement, {
+        onContextMenu: handleContextMenu,
+      })
+    : children;
 
   const menu = visible && mounted ? (
     createPortal(
@@ -157,9 +165,7 @@ export function ContextMenu({ items, children, disabled = false }: ContextMenuPr
 
   return (
     <>
-      <div ref={containerRef} onContextMenu={handleContextMenu} className="w-full h-full">
-        {children}
-      </div>
+      {trigger}
       {menu}
     </>
   );
