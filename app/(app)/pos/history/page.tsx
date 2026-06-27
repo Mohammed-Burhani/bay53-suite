@@ -45,8 +45,12 @@ import {
   Smartphone,
   Banknote,
   Building2,
+  Mail,
+  Copy,
+  Share2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 
 export default function POSHistoryPage() {
   const router = useRouter();
@@ -132,6 +136,62 @@ export default function POSHistoryPage() {
     // Placeholder for print functionality
     alert("Print functionality - integrate with your print service");
   };
+
+  const handleEmailInvoice = (invoice: any) => {
+    alert(`Email invoice #${invoice.id} to customer`);
+  };
+
+  const handleDuplicateInvoice = (invoice: any) => {
+    alert(`Duplicate invoice #${invoice.id}`);
+  };
+
+  const handleShareInvoice = (invoice: any) => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Invoice #${invoice.id}`,
+        text: `Invoice for ${invoice.partyName} - ${formatCurrency(invoice.grandTotal)}`,
+      });
+    } else {
+      alert("Share functionality not supported");
+    }
+  };
+
+  const getContextMenuItems = (invoice: any): ContextMenuItem[] => [
+    {
+      label: "View Details",
+      icon: Eye,
+      onClick: () => setSelectedInvoice(invoice),
+      shortcut: "⌘V",
+    },
+    {
+      label: "Print Receipt",
+      icon: Printer,
+      onClick: () => handlePrint(invoice),
+      shortcut: "⌘P",
+    },
+    {
+      label: "Download PDF",
+      icon: Download,
+      onClick: () => alert("Download PDF"),
+    },
+    {
+      label: "Email Invoice",
+      icon: Mail,
+      onClick: () => handleEmailInvoice(invoice),
+      variant: "success",
+      divider: true,
+    },
+    {
+      label: "Duplicate",
+      icon: Copy,
+      onClick: () => handleDuplicateInvoice(invoice),
+    },
+    {
+      label: "Share",
+      icon: Share2,
+      onClick: () => handleShareInvoice(invoice),
+    },
+  ];
 
   const handleExport = () => {
     // Export to CSV
@@ -283,57 +343,65 @@ export default function POSHistoryPage() {
                 filteredInvoices.map((invoice) => {
                   const PaymentIcon = getPaymentIcon(invoice.paymentMode);
                   return (
-                    <TableRow key={invoice.id} className="group">
-                      <TableCell className="font-medium text-xs">
-                        {format(new Date(invoice.date), "MMM dd, yyyy")}
-                        <br />
-                        <span className="text-muted-foreground">
-                          {format(new Date(invoice.date), "hh:mm a")}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium">{invoice.partyName}</p>
-                          {invoice.id && (
-                            <p className="text-xs text-muted-foreground">#{invoice.id}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary" className="text-xs">
-                          {invoice.items.length}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(invoice.grandTotal)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <PaymentIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs capitalize">{invoice.paymentMode.replace("_", " ")}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setSelectedInvoice(invoice)}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handlePrint(invoice)}
-                          >
-                            <Printer className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <ContextMenu key={invoice.id} items={getContextMenuItems(invoice)}>
+                      <TableRow className="group cursor-context-menu">
+                        <TableCell className="font-medium text-xs">
+                          {format(new Date(invoice.date), "MMM dd, yyyy")}
+                          <br />
+                          <span className="text-muted-foreground">
+                            {format(new Date(invoice.date), "hh:mm a")}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm font-medium">{invoice.partyName}</p>
+                            {invoice.id && (
+                              <p className="text-xs text-muted-foreground">#{invoice.id}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="text-xs">
+                            {invoice.items.length}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(invoice.grandTotal)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <PaymentIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs capitalize">{invoice.paymentMode.replace("_", " ")}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedInvoice(invoice);
+                              }}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrint(invoice);
+                              }}
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </ContextMenu>
                   );
                 })
               )}

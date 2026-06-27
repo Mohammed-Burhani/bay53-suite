@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 
 interface Column<T = Record<string, unknown>> {
   key: string;
@@ -43,6 +44,9 @@ interface DataTableProps<T = Record<string, unknown>> {
   pageSize?: number;
   pageSizeOptions?: number[];
   showPagination?: boolean;
+  // Context menu props
+  contextMenuItems?: (row: T, index: number) => ContextMenuItem[];
+  disableContextMenu?: boolean;
 }
 
 export function DataTable<T extends Record<string, unknown> = Record<string, unknown>>({
@@ -61,6 +65,8 @@ export function DataTable<T extends Record<string, unknown> = Record<string, unk
   pageSize: initialPageSize = 50,
   pageSizeOptions = [10, 25, 50, 100, 200],
   showPagination = true,
+  contextMenuItems,
+  disableContextMenu = false,
 }: DataTableProps<T>) {
   const EmptyIconComponent = EmptyIcon || Icon;
   
@@ -123,25 +129,35 @@ export function DataTable<T extends Record<string, unknown> = Record<string, unk
                 <>
                   {paginatedData.map((row, idx) => {
                     const actualIndex = startIndex + idx;
+                    const rowContent = (
+                      <TableRow
+                        key={(row as { id?: string }).id || actualIndex}
+                        className={`${hoverColor} transition-colors ${
+                          idx % 2 === 0 ? "bg-background" : "bg-muted/20"
+                        } ${contextMenuItems && !disableContextMenu ? "cursor-context-menu" : ""}`}
+                      >
+                        {columns.map((column) => (
+                          <TableCell
+                            key={column.key}
+                            className={`${column.align === "right" ? "text-right" : ""} ${column.className || ""}`}
+                          >
+                            {column.render
+                              ? column.render((row as Record<string, unknown>)[column.key], row, actualIndex)
+                              : String((row as Record<string, unknown>)[column.key] ?? "")}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+
                     return (
                       <>
-                        <TableRow
-                          key={(row as { id?: string }).id || actualIndex}
-                          className={`${hoverColor} transition-colors ${
-                            idx % 2 === 0 ? "bg-background" : "bg-muted/20"
-                          }`}
-                        >
-                          {columns.map((column) => (
-                            <TableCell
-                              key={column.key}
-                              className={`${column.align === "right" ? "text-right" : ""} ${column.className || ""}`}
-                            >
-                              {column.render
-                                ? column.render((row as Record<string, unknown>)[column.key], row, actualIndex)
-                                : String((row as Record<string, unknown>)[column.key] ?? "")}
-                            </TableCell>
-                          ))}
-                        </TableRow>
+                        {contextMenuItems && !disableContextMenu ? (
+                          <ContextMenu items={contextMenuItems(row, actualIndex)}>
+                            {rowContent}
+                          </ContextMenu>
+                        ) : (
+                          rowContent
+                        )}
                         {renderExpandedRow && renderExpandedRow(row, actualIndex)}
                       </>
                     );
