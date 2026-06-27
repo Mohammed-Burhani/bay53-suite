@@ -16,19 +16,68 @@ export interface InvoiceSearchPayload {
 }
 
 export interface InvoiceSearchItem {
-  invCode: number;
-  billNo: string;
-  date: string; // ISO format: "2026-04-01T11:53:51.2"
-  partyName: string;
-  gstNo?: string;
-  invoiceType: number;
-  stockPlace: string;
-  spId: number;
-  amount: number;
-  recBy?: string; // Payment method: "Credit", "Cash", etc.
-  city?: string;
-  irn?: string;
-  // Additional fields that might come from API
+  // Core identifiers
+  invCode: number;            // unique invoice id
+  bill_No: string;            // displayed bill number, e.g. "HO/2026-27/52132"
+  invoiceNo: number;          // numeric invoice number (e.g. 52132)
+  inv_Type: number;           // invoice type id (1 = sales, etc.)
+  ledger_ID: number;          // party / ledger id
+
+  // Dates / refs
+  date: string;               // ISO: "2026-06-01T11:00:03.1"
+  poNumber?: string | null;
+  poDate?: string | null;
+  refPerson?: string | null;
+  refPersonNo?: string | null;
+  yourRefNo?: string | null;
+  yourRefDate?: string | null;
+  refNo?: string | null;
+  refDate?: string | null;
+  otherRefNo?: string | null;
+  otherRefDate?: string | null;
+  againstRefNo?: string | null;
+  againstRefDate?: string | null;
+
+  // Party
+  partyName?: string | null;
+  partyHasGST?: boolean;
+  shipToName?: string | null;
+
+  // Stock place
+  spCode?: number | string | null;
+  spName?: string | null;
+
+  // Money
+  item_SubTotal?: number;
+  grandTotal: number;         // total invoice amount
+  profit?: number;
+  profitPer?: number;
+  currRate?: number | string | null;
+  currTotal?: number | string | null;
+  compBaseCurr?: string | null;
+  invoiceBaseCurr?: string | null;
+
+  // Payment
+  recBy?: string;             // "Credit", "Cash", etc.
+
+  // GST / IRN
+  gstNo?: string | null;
+  irn?: string | null;
+
+  // Authorization
+  isAuthorized?: boolean;
+  authorizedBy?: string | null;
+  authorizedDate?: string | null;
+
+  // Misc
+  note?: string | null;
+  remark?: string | null;
+  transactionType?: number;
+  transportBy?: string | null;
+  inventorySPCode?: string | null;
+  offline_Bill_No?: string | null;
+
+  // Allow additional fields returned by the API
   [key: string]: string | number | boolean | null | undefined;
 }
 

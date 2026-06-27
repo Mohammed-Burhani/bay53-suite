@@ -182,16 +182,23 @@ export function InvoiceListTable({
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
       return (
-        inv.billNo?.toLowerCase().includes(search) ||
+        inv.bill_No?.toLowerCase().includes(search) ||
+        inv.offline_Bill_No?.toLowerCase().includes(search) ||
         inv.partyName?.toLowerCase().includes(search) ||
-        inv.stockPlace?.toLowerCase().includes(search) ||
-        inv.city?.toLowerCase().includes(search)
+        inv.shipToName?.toLowerCase().includes(search) ||
+        inv.spName?.toLowerCase().includes(search) ||
+        inv.recBy?.toLowerCase().includes(search) ||
+        inv.irn?.toLowerCase().includes(search) ||
+        String(inv.invoiceNo ?? "").includes(search)
       );
     });
   }, [invoiceData?.list, searchTerm]);
 
   // Calculate stats
-  const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  const totalAmount = filteredInvoices.reduce(
+    (sum, inv) => sum + (inv.grandTotal || 0),
+    0
+  );
 
   // Pagination
   const startIndex = (currentPage - 1) * pageSize;
@@ -209,37 +216,37 @@ export function InvoiceListTable({
 
   // Context menu handlers
   const handleViewInvoice = (invoice: any) => {
-    toast.info(`View invoice: ${invoice.billNo}`);
+    toast.info(`View invoice: ${invoice.bill_No}`);
     // router.push(`/invoices/${invoice.invCode}`);
   };
 
   const handleEditInvoice = (invoice: any) => {
-    toast.info(`Edit invoice: ${invoice.billNo}`);
+    toast.info(`Edit invoice: ${invoice.bill_No}`);
     // router.push(`/invoices/${invoice.invCode}/edit`);
   };
 
   const handlePrintInvoice = (invoice: any) => {
-    toast.info(`Print invoice: ${invoice.billNo}`);
+    toast.info(`Print invoice: ${invoice.bill_No}`);
   };
 
   const handleEmailInvoice = (invoice: any) => {
-    toast.info(`Email invoice: ${invoice.billNo}`);
+    toast.info(`Email invoice: ${invoice.bill_No}`);
   };
 
   const handleDuplicateInvoice = (invoice: any) => {
-    toast.info(`Duplicate invoice: ${invoice.billNo}`);
+    toast.info(`Duplicate invoice: ${invoice.bill_No}`);
   };
 
   const handleDownloadPDF = (invoice: any) => {
-    toast.info(`Download PDF: ${invoice.billNo}`);
+    toast.info(`Download PDF: ${invoice.bill_No}`);
   };
 
   const handleConvertToReturn = (invoice: any) => {
-    toast.info(`Convert to return: ${invoice.billNo}`);
+    toast.info(`Convert to return: ${invoice.bill_No}`);
   };
 
   const handleCancelInvoice = (invoice: any) => {
-    toast.warning(`Cancel invoice: ${invoice.billNo}`);
+    toast.warning(`Cancel invoice: ${invoice.bill_No}`);
   };
 
   const getInvoiceContextMenu = (invoice: any): ContextMenuItem[] => [
@@ -572,24 +579,36 @@ export function InvoiceListTable({
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
+            <Table>
                 <TableHeader>
                   <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
                     <TableHead className="font-semibold">Bill No</TableHead>
+                    <TableHead className="font-semibold text-center">Inv. No</TableHead>
                     <TableHead className="font-semibold">Date</TableHead>
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">Stock Place</TableHead>
-                    <TableHead className="font-semibold">City</TableHead>
                     <TableHead className="text-right font-semibold">Amount</TableHead>
                     <TableHead className="font-semibold">Payment</TableHead>
+                    <TableHead className="font-semibold text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedInvoices.map((invoice) => (
                     <ContextMenu key={invoice.invCode} items={getInvoiceContextMenu(invoice)}>
                       <TableRow className="hover:bg-muted/50 cursor-context-menu">
-                        <TableCell className="font-mono text-sm">{invoice.billNo}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex flex-col">
+                            <span>{invoice.bill_No || "-"}</span>
+                            {invoice.offline_Bill_No && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Offline: {invoice.offline_Bill_No}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-center tabular-nums">
+                          {invoice.invoiceNo ?? "-"}
+                        </TableCell>
                         <TableCell className="text-sm">
                           {invoice.date ? (
                             (() => {
@@ -604,23 +623,54 @@ export function InvoiceListTable({
                             "-"
                           )}
                         </TableCell>
-                        <TableCell className="text-sm font-medium">{invoice.partyName}</TableCell>
-                        <TableCell className="text-sm">{invoice.stockPlace}</TableCell>
-                        <TableCell className="text-sm">{invoice.city || "-"}</TableCell>
+                        <TableCell className="text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {invoice.partyName || "-"}
+                            </span>
+                            {invoice.shipToName && invoice.shipToName !== invoice.partyName && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Ship: {invoice.shipToName}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{invoice.spName || "-"}</TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(invoice.amount)}
+                          {formatCurrency(invoice.grandTotal)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {invoice.recBy || "N/A"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-center">
+                          {invoice.isAuthorized ? (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              title={
+                                invoice.authorizedBy
+                                  ? `Authorized by ${invoice.authorizedBy}`
+                                  : "Authorized"
+                              }
+                            >
+                              Authorized
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] text-muted-foreground"
+                            >
+                              Pending
+                            </Badge>
+                          )}
+                        </TableCell>
                       </TableRow>
                     </ContextMenu>
                   ))}
                 </TableBody>
               </Table>
-            </div>
 
             {/* Pagination */}
             <div className="border-t p-4">
