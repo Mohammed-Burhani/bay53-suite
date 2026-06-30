@@ -195,6 +195,7 @@ export function OpeningStockPanel({ tenantId, products, isLoading }: Props) {
             <TableRow>
               <TableHead>Product</TableHead>
               <TableHead className="text-center">Current Stock</TableHead>
+              <TableHead className="text-right">Sell Price</TableHead>
               <TableHead className="text-right">Stock Value</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -202,13 +203,13 @@ export function OpeningStockPanel({ tenantId, products, isLoading }: Props) {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                   Loading…
                 </TableCell>
               </TableRow>
             ) : filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                   <Layers className="mx-auto mb-2 h-8 w-8 opacity-30" />
                   <p className="text-sm">No products found</p>
                 </TableCell>
@@ -232,6 +233,9 @@ export function OpeningStockPanel({ tenantId, products, isLoading }: Props) {
                     >
                       {p.stock}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatCurrency(Number(p.selling_price))}
                   </TableCell>
                   <TableCell className="text-right text-sm">
                     {formatCurrency(p.stock * Number(p.selling_price))}
