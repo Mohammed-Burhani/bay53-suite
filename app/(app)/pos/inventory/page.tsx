@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -448,7 +448,7 @@ export default function POSInventoryPage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <FormField name="cost_price" label="Cost Price *" type="number" />
                   <FormField name="selling_price" label="Selling Price *" type="number" />
-                  <FormField name="mrp" label="MRP" type="number" />
+                  <MrpField />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <FormField name="stock" label="Stock *" type="number" />
@@ -527,6 +527,71 @@ function FormField({ name, label, type = "text" }: { name: string; label: string
         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
       />
       <ErrorMessage name={name} component="p" className="text-xs text-destructive" />
+    </div>
+  );
+}
+
+/**
+ * MRP field with auto-calculation. MRP is the GST-inclusive retail price, so it
+ * is derived from the (GST-exclusive) selling price plus GST:
+ *   mrp = round(selling_price * (1 + gst_rate / 100))
+ * It auto-fills as the user types selling price / GST, until the user manually
+ * edits MRP. A "Recalculate" link re-syncs it to the formula on demand.
+ */
+function MrpField() {
+  const { values, setFieldValue } = useFormikContext<ProductFormValues>();
+  const [manual, setManual] = useState(false);
+
+  const sellingPrice = Number(values.selling_price) || 0;
+  const gstRate = Number(values.gst_rate) || 0;
+  const suggested = useMemo(
+    () => Math.round(sellingPrice * (1 + gstRate / 100) * 100) / 100,
+    [sellingPrice, gstRate]
+  );
+
+  // Auto-fill MRP from the formula whenever inputs change, unless the user has
+  // taken manual control of the field.
+  useEffect(() => {
+    if (!manual) {
+      setFieldValue("mrp", suggested || undefined, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggested, manual]);
+
+  const mrpValue = values.mrp;
+  const showRecalc = manual && suggested > 0 && Number(mrpValue) !== suggested;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">MRP</label>
+        {showRecalc ? (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => {
+              setManual(false);
+              setFieldValue("mrp", suggested || undefined, false);
+            }}
+          >
+            Recalculate
+          </button>
+        ) : null}
+      </div>
+      <Field
+        name="mrp"
+        type="number"
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          setManual(true);
+          setFieldValue("mrp", e.target.value === "" ? undefined : Number(e.target.value), false);
+        }}
+        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+      />
+      <ErrorMessage name="mrp" component="p" className="text-xs text-destructive" />
+      <p className="text-[11px] text-muted-foreground">
+        {manual ? "Manually set" : "Auto: selling price + GST"}
+        {suggested > 0 ? ` (${formatCurrency(suggested)})` : ""}
+      </p>
     </div>
   );
 }
