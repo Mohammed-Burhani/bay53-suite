@@ -149,6 +149,31 @@ export interface CreateTransactionInput {
   notes?: string;
 }
 
+export interface StockAdjustmentInput {
+  tenant_id: string;
+  product_id: string;
+  /** Signed delta to apply: positive adds stock, negative removes stock. */
+  delta: number;
+  notes?: string;
+  reference_number?: string;
+  created_by?: string;
+}
+
+export interface OpeningStockInput {
+  tenant_id: string;
+  product_id: string;
+  /** Absolute opening balance the product stock should be set to. */
+  opening_quantity: number;
+  notes?: string;
+  created_by?: string;
+}
+
+/** A stock movement row enriched with the product name/sku for display. */
+export interface StockMovementWithProduct extends StockMovement {
+  product_name?: string;
+  product_sku?: string;
+}
+
 class POSService {
   public client = getPOSClient(); // Made public for hooks access
 
@@ -491,6 +516,146 @@ class POSService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  /**
+   * Fetch stock movements joined with product name/sku for display.
+   * Falls back gracefully if the embedded join is unavailable.
+   */
+  async getStockMovementsWithProducts(
+    tenantId: string,
+    options?: {
+      productId?: string;
+      movementType?: string;
+      limit?: number;
+    }
+  ): Promise<StockMovementWithProduct[]> {
+    let query = this.client
+      .from('stock_movements')
+      .select('*, products(name, sku)')
+      .eq('tenant_id', tenantId);
+
+    if (options?.productId) query = query.eq('product_id', options.productId);
+    if (options?.movementType) query = query.eq('movement_type', options.movementType);
+
+    query = query.order('created_at', { ascending: false });
+    if (options?.limit) query = query.limit(options.limit);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return (data || []).map((row: Record<string, unknown>) => {
+      const product = row.products as { name?: string; sku?: string } | null;
+      const movement = { ...row };
+      delete movement.products;
+      return {
+        ...(movement as unknown as StockMovement),
+        product_name: product?.name,
+        product_sku: product?.sku,
+      };
+    });
+  }
+
+  /**
+   * Adjust a product's stock by a signed delta (positive adds, negative removes).
+   * Inserts an 'adjustment' stock movement; the DB trigger
+   * `update_product_stock_after_movement` syncs products.stock to stock_after.
+   */
+  async adjustStock(input: StockAdjustmentInput): Promise<StockMovement> {
+    if (!input.delta || Number.isNaN(input.delta)) {
+      throw new Error('Adjustment quantity must be a non-zero number');
+    }
+
+    const { data: product, error: prodErr } = await this.client
+      .from('products')
+      .select('stock')
+      .eq('id', input.product_id)
+      .single();
+
+    if (prodErr) throw prodErr;
+
+    const stockBefore = Number(product?.stock ?? 0);
+    const stockAfter = stockBefore + input.delta;
+
+    if (stockAfter < 0) {
+      throw new Error(
+        `Adjustment would make stock negative (current ${stockBefore}, change ${input.delta}).`
+      );
+    }
+
+    const { data, error } = await this.client
+      .from('stock_movements')
+      .insert({
+        tenant_id: input.tenant_id,
+        product_id: input.product_id,
+        movement_type: 'adjustment',
+        quantity: input.delta,
+        stock_before: stockBefore,
+        stock_after: stockAfter,
+        reference_number: input.reference_number || null,
+        notes: input.notes || null,
+        created_by: input.created_by || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Safety net: ensure products.stock reflects the movement even if the
+    // DB trigger is absent. Setting the absolute value is idempotent with
+    // the trigger (both target stock_after).
+    await this.client
+      .from('products')
+      .update({ stock: stockAfter })
+      .eq('id', input.product_id);
+
+    return data;
+  }
+
+  /**
+   * Set a product's opening stock to an absolute baseline value.
+   * Inserts an 'opening' stock movement and syncs products.stock.
+   */
+  async setOpeningStock(input: OpeningStockInput): Promise<StockMovement> {
+    if (input.opening_quantity < 0 || Number.isNaN(input.opening_quantity)) {
+      throw new Error('Opening stock must be zero or a positive number');
+    }
+
+    const { data: product, error: prodErr } = await this.client
+      .from('products')
+      .select('stock')
+      .eq('id', input.product_id)
+      .single();
+
+    if (prodErr) throw prodErr;
+
+    const stockBefore = Number(product?.stock ?? 0);
+    const stockAfter = input.opening_quantity;
+
+    const { data, error } = await this.client
+      .from('stock_movements')
+      .insert({
+        tenant_id: input.tenant_id,
+        product_id: input.product_id,
+        movement_type: 'opening',
+        quantity: stockAfter - stockBefore,
+        stock_before: stockBefore,
+        stock_after: stockAfter,
+        reference_number: null,
+        notes: input.notes || 'Opening stock',
+        created_by: input.created_by || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await this.client
+      .from('products')
+      .update({ stock: stockAfter })
+      .eq('id', input.product_id);
+
+    return data;
   }
 
   // =====================================================

@@ -235,6 +235,132 @@ export function printBarcodeLabels(
   return openPrintWindow(`Barcode ${label.barcode}`, body, pageCss);
 }
 
+// ----------------------------------------------------------------------------
+// A4 SHEET (grid of labels — cut out manually, like a label/book-label sheet)
+// ----------------------------------------------------------------------------
+
+/** A4 dimensions and default sheet layout, in mm. */
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const A4_MARGIN_MM = 10; // outer page margin
+const A4_GUTTER_MM = 2; // gap between labels
+
+export interface A4GridLayout {
+  cols: number;
+  rows: number;
+  perPage: number;
+  /** actual cell size used (label size, possibly shrunk to fit) */
+  cellW: number;
+  cellH: number;
+}
+
+/**
+ * Compute how many labels of `size` fit on an A4 sheet (portrait), with a fixed
+ * outer margin and gutter between cells.
+ */
+export function computeA4Grid(size: LabelSize): A4GridLayout {
+  const usableW = A4_WIDTH_MM - A4_MARGIN_MM * 2;
+  const usableH = A4_HEIGHT_MM - A4_MARGIN_MM * 2;
+  const cellW = Math.min(size.widthMm, usableW);
+  const cellH = Math.min(size.heightMm, usableH);
+  const cols = Math.max(1, Math.floor((usableW + A4_GUTTER_MM) / (cellW + A4_GUTTER_MM)));
+  const rows = Math.max(1, Math.floor((usableH + A4_GUTTER_MM) / (cellH + A4_GUTTER_MM)));
+  return { cols, rows, perPage: cols * rows, cellW, cellH };
+}
+
+/**
+ * Open a print window with `copies` barcode labels tiled into a grid on A4
+ * sheet(s) — sorted left-to-right, top-to-bottom — with dashed cut guides so
+ * the user can cut each sticker out manually. Returns false if popup blocked.
+ */
+export function printBarcodeLabelsA4(
+  label: BarcodeLabelData,
+  copies = 1,
+  size: LabelSize = DEFAULT_LABEL_SIZE
+): boolean {
+  if (!canRenderBarcode(label.barcode)) return false;
+  const n = Math.max(1, Math.min(500, Math.floor(copies) || 1));
+  const { cols, cellW, cellH } = computeA4Grid(size);
+
+  const one = labelHtml(label);
+  const cells = Array.from({ length: n }, () => `<div class="cell">${one}</div>`).join("");
+
+  const pageCss = `
+    @page { size: A4 portrait; margin: ${A4_MARGIN_MM}mm; }
+    .sheet {
+      display: grid;
+      grid-template-columns: repeat(${cols}, ${cellW}mm);
+      gap: ${A4_GUTTER_MM}mm;
+      justify-content: center;
+      align-content: start;
+    }
+    .cell {
+      width: ${cellW}mm; height: ${cellH}mm;
+      border: 0.2mm dashed #9ca3af;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .label {
+      width: 100%; height: 100%;
+      padding: 1.5mm; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; overflow: hidden;
+    }
+    .lbl-name { font-size: 8pt; font-weight: 600; text-align: center; line-height: 1.1; margin-bottom: 0.5mm; max-width: 100%; }
+    .lbl-barcode { width: 100%; text-align: center; }
+    .lbl-barcode svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .lbl-price { font-size: 9pt; font-weight: 700; margin-top: 0.5mm; }
+    @media screen {
+      body { padding: 16px; background: #e5e7eb; }
+      .sheet { background: #fff; padding: ${A4_MARGIN_MM}mm; margin: 0 auto; width: ${A4_WIDTH_MM}mm; box-shadow: 0 1px 6px rgba(0,0,0,.2); }
+    }
+  `;
+  return openPrintWindow(`Barcodes ${label.barcode}`, `<div class="sheet">${cells}</div>`, pageCss);
+}
+
+/**
+ * Generate and download a PDF with `copies` barcode labels tiled into a grid on
+ * A4 sheet(s) (vector barcodes), with dashed cut guides. Adds pages as needed.
+ */
+export async function downloadBarcodeLabelsA4Pdf(
+  label: BarcodeLabelData,
+  copies = 1,
+  size: LabelSize = DEFAULT_LABEL_SIZE
+): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!canRenderBarcode(label.barcode)) throw new Error("Barcode value cannot be rendered.");
+  const n = Math.max(1, Math.min(500, Math.floor(copies) || 1));
+  const { cols, rows, perPage, cellW, cellH } = computeA4Grid(size);
+  const { jsPDF } = await import("jspdf");
+
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+  // Center the grid block horizontally; start at the top margin.
+  const gridW = cols * cellW + (cols - 1) * A4_GUTTER_MM;
+  const offsetX = (A4_WIDTH_MM - gridW) / 2;
+  const offsetY = A4_MARGIN_MM;
+
+  for (let i = 0; i < n; i++) {
+    const indexOnPage = i % perPage;
+    if (i > 0 && indexOnPage === 0) doc.addPage("a4", "portrait");
+
+    const col = indexOnPage % cols;
+    const row = Math.floor(indexOnPage / cols);
+    const x = offsetX + col * (cellW + A4_GUTTER_MM);
+    const y = offsetY + row * (cellH + A4_GUTTER_MM);
+
+    // Dashed cut guide around the cell.
+    doc.setDrawColor(156, 163, 175);
+    doc.setLineWidth(0.15);
+    doc.setLineDashPattern([0.8, 0.8], 0);
+    doc.rect(x, y, cellW, cellH);
+    doc.setLineDashPattern([], 0);
+
+    drawSingleLabel(doc, label, cellW, cellH, x, y);
+  }
+
+  doc.save(`barcodes-${sanitizeFilename(label.barcode)}-x${n}.pdf`);
+}
+
 /**
  * Generate and download a PDF of `copies` barcode labels at the small label
  * size (vector barcode, one label per page).
@@ -265,10 +391,12 @@ function drawSingleLabel(
   doc: import("jspdf").jsPDF,
   label: BarcodeLabelData,
   w: number,
-  h: number
+  h: number,
+  originX = 0,
+  originY = 0
 ): void {
   const margin = 2;
-  let y = margin;
+  let y = originY + margin;
 
   doc.setTextColor(0, 0, 0);
 
@@ -276,7 +404,7 @@ function drawSingleLabel(
   if (label.productName) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
-    doc.text(truncate(label.productName, 32), w / 2, y + 2.2, { align: "center" });
+    doc.text(truncate(label.productName, 32), originX + w / 2, y + 2.2, { align: "center" });
     y += 3.4;
   } else {
     y += 1;
@@ -288,22 +416,25 @@ function drawSingleLabel(
   const priceH = priceShown ? 3.4 : 0;
   const barWidth = w - margin * 2;
   const barTop = y + 0.5;
-  const barHeight = Math.max(6, h - barTop - valueTextH - priceH - margin);
+  const barHeight = Math.max(6, originY + h - barTop - valueTextH - priceH - margin);
 
-  drawBarcodeToPdf(doc, label.barcode, margin, barTop, barWidth, barHeight);
+  drawBarcodeToPdf(doc, label.barcode, originX + margin, barTop, barWidth, barHeight);
 
   // Human-readable value
   doc.setFont("courier", "normal");
   doc.setFontSize(7);
-  doc.text(label.barcode, w / 2, barTop + barHeight + 2.4, { align: "center" });
+  doc.text(label.barcode, originX + w / 2, barTop + barHeight + 2.4, { align: "center" });
 
   // Price (optional)
   if (priceShown) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.text(`${label.priceLabel || "MRP"}: ${inrPdf(label.price as number)}`, w / 2, barTop + barHeight + 2.4 + priceH, {
-      align: "center",
-    });
+    doc.text(
+      `${label.priceLabel || "MRP"}: ${inrPdf(label.price as number)}`,
+      originX + w / 2,
+      barTop + barHeight + 2.4 + priceH,
+      { align: "center" }
+    );
   }
 }
 

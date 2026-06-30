@@ -128,6 +128,8 @@ export interface CompanySetupPayload {
   currency: string;
   logo?: File | null;
   natureOfBusiness: "Retail" | "Wholesale" | "Distribution" | "Trading" | "Manufacturing" | "Fabrication";
+  adminUser?: string;
+  password?: string;
 }
 
 export interface CompanySetupResponse {

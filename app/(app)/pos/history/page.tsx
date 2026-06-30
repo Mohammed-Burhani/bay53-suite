@@ -56,6 +56,7 @@ import {
   Smartphone,
   Banknote,
   Building2,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -86,19 +87,36 @@ export default function POSHistoryPage() {
   const storeName = tenantName || "My Store";
 
   // --- Data sources ---------------------------------------------------------
-  const { data: supaTx = [], isLoading: supaLoading } = useQuery({
+  const {
+    data: supaTx = [],
+    isLoading: supaLoading,
+    isFetching: supaFetching,
+    refetch: refetchSupa,
+  } = useQuery({
     queryKey: ["pos-transactions", tenantId, "history"],
     queryFn: () => posService.getTransactions(tenantId, { status: "completed", limit: 500 }),
     enabled: USE_SUPABASE,
+    // Always pull the freshest list so a bill saved moments ago on the POS
+    // screen reliably appears here.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
-  const { data: zustandInvoices = [], isLoading: zustandLoading } = useQuery({
+  const {
+    data: zustandInvoices = [],
+    isLoading: zustandLoading,
+    isFetching: zustandFetching,
+    refetch: refetchZustand,
+  } = useQuery({
     queryKey: ["invoices"],
     queryFn: () => getInvoices(),
     enabled: !USE_SUPABASE,
   });
 
   const isLoading = USE_SUPABASE ? supaLoading : zustandLoading;
+  const isFetching = USE_SUPABASE ? supaFetching : zustandFetching;
+  const refetch = USE_SUPABASE ? refetchSupa : refetchZustand;
 
   // --- Normalize to rows ----------------------------------------------------
   const rows = useMemo<HistoryRow[]>(() => {
@@ -336,10 +354,22 @@ export default function POSHistoryPage() {
             <h1 className="text-lg font-semibold">POS History</h1>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            disabled={isFetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6 space-y-6">

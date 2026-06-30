@@ -99,9 +99,10 @@ export function ContextMenu({ items, children, disabled = false }: ContextMenuPr
   // non-container elements like <tr> without producing invalid HTML
   // (a <div> inside a <tbody> would break the table layout).
   const trigger = React.isValidElement(children)
-    ? React.cloneElement(children as React.ReactElement, {
-        onContextMenu: handleContextMenu,
-      })
+    ? React.cloneElement(
+        children as React.ReactElement<{ onContextMenu?: React.MouseEventHandler }>,
+        { onContextMenu: handleContextMenu }
+      )
     : children;
 
   const menu = visible && mounted ? (

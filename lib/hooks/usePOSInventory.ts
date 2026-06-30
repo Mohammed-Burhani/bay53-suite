@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { posService, Product, CreateTransactionInput } from "@/lib/services/pos.service";
+import {
+  posService,
+  Product,
+  CreateTransactionInput,
+  StockAdjustmentInput,
+  OpeningStockInput,
+} from "@/lib/services/pos.service";
 import { toast } from "sonner";
 
 // Tenant context - get from auth or props
@@ -115,6 +121,65 @@ export function useDeleteProduct(tenantId: string = DEMO_TENANT_ID) {
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete product: ${error.message}`);
+    },
+  });
+}
+
+// =====================================================
+// STOCK MOVEMENTS / ADJUSTMENTS / OPENING STOCK
+// =====================================================
+
+export function useStockMovements(
+  tenantId: string = DEMO_TENANT_ID,
+  options?: { productId?: string; movementType?: string; limit?: number }
+) {
+  return useQuery({
+    queryKey: ["stock-movements", tenantId, options],
+    queryFn: () => posService.getStockMovementsWithProducts(tenantId, options),
+    staleTime: 15000,
+  });
+}
+
+/**
+ * Adjustments mode — apply a signed delta to a product's stock.
+ * Positive adds stock (e.g. receiving goods), negative removes it
+ * (e.g. damage / shrinkage). Creates an 'adjustment' stock movement.
+ */
+export function useAdjustStock(tenantId: string = DEMO_TENANT_ID) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: StockAdjustmentInput) => posService.adjustStock(input),
+    onSuccess: (movement) => {
+      queryClient.invalidateQueries({ queryKey: ["pos-products", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements", tenantId] });
+      const verb = movement.quantity >= 0 ? "added to" : "removed from";
+      toast.success(
+        `Stock ${verb} inventory (${movement.stock_before} → ${movement.stock_after})`
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to adjust stock: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Open Stock mode — set a product's opening balance to an absolute value.
+ * Creates an 'opening' stock movement and syncs products.stock.
+ */
+export function useSetOpeningStock(tenantId: string = DEMO_TENANT_ID) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: OpeningStockInput) => posService.setOpeningStock(input),
+    onSuccess: (movement) => {
+      queryClient.invalidateQueries({ queryKey: ["pos-products", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements", tenantId] });
+      toast.success(`Opening stock set to ${movement.stock_after}`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to set opening stock: ${error.message}`);
     },
   });
 }

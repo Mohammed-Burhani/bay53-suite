@@ -40,9 +40,14 @@ import {
   X,
   Barcode as BarcodeIcon,
   Wand2,
+  PackagePlus,
+  Layers,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/lib/contexts/TenantContext";
 import { usePOSProducts, useAddProduct, useUpdateProduct, useDeleteProduct } from "@/lib/hooks/usePOSInventory";
+import { StockAdjustmentsPanel } from "@/components/pos/StockAdjustmentsPanel";
+import { OpeningStockPanel } from "@/components/pos/OpeningStockPanel";
 import { Product } from "@/lib/services/pos.service";
 import { formatCurrency } from "@/lib/store";
 import { Formik, Form, Field, ErrorMessage, useFormikContext } from "formik";
@@ -87,6 +92,7 @@ type ProductFormValues = Omit<Product, 'id' | 'tenant_id' | 'created_at' | 'upda
 export default function POSInventoryPage() {
   const router = useRouter();
   const { tenantId } = useTenant();
+  const [mode, setMode] = useState<"products" | "adjustments" | "opening">("products");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -200,11 +206,32 @@ export default function POSInventoryPage() {
             </p>
           </div>
         </div>
-        <Button onClick={openAdd} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
+        {mode === "products" && (
+          <Button onClick={openAdd} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        )}
       </div>
+
+      {/* Mode switcher */}
+      <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)} className="w-full">
+        <TabsList>
+          <TabsTrigger value="products" className="gap-1.5">
+            <Package className="h-4 w-4" />
+            Products
+          </TabsTrigger>
+          <TabsTrigger value="adjustments" className="gap-1.5">
+            <PackagePlus className="h-4 w-4" />
+            Adjustments
+          </TabsTrigger>
+          <TabsTrigger value="opening" className="gap-1.5">
+            <Layers className="h-4 w-4" />
+            Open Stock
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="products" className="mt-6 space-y-6">
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -385,6 +412,16 @@ export default function POSInventoryPage() {
           </TableBody>
         </Table>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="adjustments" className="mt-6">
+          <StockAdjustmentsPanel tenantId={tenantId} products={products} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="opening" className="mt-6">
+          <OpeningStockPanel tenantId={tenantId} products={products} isLoading={isLoading} />
+        </TabsContent>
+      </Tabs>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
