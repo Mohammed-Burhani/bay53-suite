@@ -96,88 +96,217 @@ export interface InvoiceGetByIdPayload {
   fromInvoice: boolean;
 }
 
-// A single line item on the invoice detail.
-// The exact response shape is provided later by the API, so this stays
-// permissive: common keys are typed as optional and the index signature
-// keeps it forward-compatible. The preview component reads fields through
-// defensive accessors that try several likely key names.
-export interface InvoiceDetailItem {
-  srNo?: number;
-  itemName?: string | null;
-  description?: string | null;
-  hsn?: string | null;
-  hsnCode?: string | null;
-  qty?: number | null;
-  quantity?: number | null;
-  unit?: string | null;
-  rate?: number | null;
-  price?: number | null;
-  discount?: number | null;
-  discountPer?: number | null;
-  taxPer?: number | null;
-  taxAmount?: number | null;
-  amount?: number | null;
-  total?: number | null;
-  [key: string]: string | number | boolean | null | undefined;
+// Batch / stock-movement sub-detail nested under a line item.
+export interface InvoiceItemSubDetail {
+  subDetId: number;
+  invDetId: number;
+  new0_Against1: boolean;
+  qty: number;
+  effect: number;
+  invCode: number;
+  refName: string | null;
+  invType: number;
+  subDetIdRef: number | null;
+  conversion: number;
+  id: number | null;
+  sessionId: string | null;
+}
+
+// A single line item exactly as returned by /Invoice/GetById.
+// `amount` is the taxable value (post-discount, pre-tax); HSN code and unit
+// name are NOT on this object — they live in `eInvoiceJson` (see below) and
+// are merged in by the bill normalizer.
+export interface InvoiceItemDetail {
+  invDetID: number;
+  invCode: number;
+  sno: number;
+  item_ID: number;
+  sp_Code: number;
+  mfrItemName: string | null;
+  invType: number;
+  std_Qty: number;
+  conv_Qty: number;
+  conv_Unit: number;
+  std_Rate: number;
+  conv_Rate: number;
+  vatPer: number; // total GST rate for the line (e.g. 18)
+  discount1: number; // percentages, applied cascading
+  discount2: number;
+  discount3: number;
+  amount: number; // taxable value after discount, before tax
+  cost_Rate: number;
+  itemDescription: string | null;
+  inventoryMoved: number;
+  rateDiscount: number;
+  cgstPercent: number;
+  cgstAmount: number;
+  sgstPercent: number;
+  sgstAmount: number;
+  igstPercent: number;
+  igstAmount: number;
+  vehicleWeigth: number;
+  emptyBoxWeigth: number;
+  totalWeigth: number;
+  emptyBoxes: number;
+  rackId: number | null;
+  invoiceItemSubDetail: InvoiceItemSubDetail[] | null;
+  currentStck: number;
+  conversion: number;
+  id: number | null;
+  sessionId: string | null;
+  [key: string]: unknown;
+}
+
+// Extra charge / tax line. For GST invoices these typically carry the CGST /
+// SGST / IGST amounts as separate ledger postings; they can also represent
+// freight, packing, etc. `effectOnTotal` of 1 adds to the grand total.
+export interface InvoiceExtraCharge {
+  extra_Charge_ID: number;
+  taxType: number;
+  perVal: number;
+  charges: number;
+  cstPer: number;
+  vatPer: number;
+  amount: number;
+  effectOnTotal: number;
+  vatAssessValue: number;
+  taxEffect: boolean;
+  id: number | null;
+  sessionId: string | null;
+  [key: string]: unknown;
 }
 
 // Full invoice detail returned by /Invoice/GetById.
-// Permissive by design (see note above). Known/likely fields are optional;
-// any extra fields from the real response are preserved by the index signature.
+// Forward-compatible: any extra fields are preserved by the index signature.
 export interface InvoiceDetail {
-  invCode?: number;
-  bill_No?: string | null;
-  billNo?: string | null;
-  invoiceNo?: number | null;
-  inv_Type?: number | null;
-  date?: string | null;
-  invoiceDate?: string | null;
+  inv_Type: number;
+  spCode: number;
+  ledger_ID: number;
+  invoiceNo: number;
+  bill_No: string;
+  date: string;
 
-  // Company / issuer
-  companyName?: string | null;
-  companyAddress?: string | null;
-  companyGST?: string | null;
-  companyPhone?: string | null;
-  companyEmail?: string | null;
-
-  // Party
-  partyName?: string | null;
-  partyAddress?: string | null;
-  partyGST?: string | null;
-  gstNo?: string | null;
-  shipToName?: string | null;
-  shipToAddress?: string | null;
-
-  // Stock place
-  spName?: string | null;
+  invoiceItemDetail: InvoiceItemDetail[] | null;
+  invoiceExtraCharges: InvoiceExtraCharge[] | null;
+  invoiceTncMap: unknown;
+  vouchLedgerDetails: unknown;
 
   // Money / totals
-  item_SubTotal?: number | null;
-  subTotal?: number | null;
-  totalDiscount?: number | null;
-  taxableAmount?: number | null;
-  cgst?: number | null;
-  sgst?: number | null;
-  igst?: number | null;
-  roundOff?: number | null;
-  grandTotal?: number | null;
+  item_SubTotal: number; // sum of line taxable amounts
+  extra_SubTotal: number; // sum of extra charges (often = total GST)
+  grandTotal: number;
+  roundOff: number;
+  profit: number;
 
-  // Payment / refs / misc
-  recBy?: string | null;
-  irn?: string | null;
-  note?: string | null;
-  remark?: string | null;
+  // Payment / refs
+  voucherId: number | null;
+  recBy: string | null;
+  dueDays: number;
+  footerXML: unknown[];
 
-  // Line items (one of these arrays is expected; accessors check each)
-  items?: InvoiceDetailItem[];
-  itemList?: InvoiceDetailItem[];
-  invoiceItems?: InvoiceDetailItem[];
-  invoiceDetails?: InvoiceDetailItem[];
-  details?: InvoiceDetailItem[];
-  lineItems?: InvoiceDetailItem[];
+  // GST e-invoice (IRP) data
+  eInvoiceJson: string | null; // JSON string; see EInvoiceEnvelope
+  irn: string | null;
+  irnSignedQRCode: string | null; // signed QR JWT to encode into the QR image
 
-  // Forward-compatible: preserve any extra fields from the real response.
+  taxableType: number;
+  id: number; // == invCode
+  sessionId: string | null;
+
   [key: string]: unknown;
+}
+
+// ==================== GST e-invoice (IRP) payload ====================
+// `InvoiceDetail.eInvoiceJson` is a JSON string that parses into this envelope
+// (the response returned by the NIC Invoice Registration Portal).
+export interface EInvoiceEnvelope {
+  data?: {
+    AckNo?: number | string | null;
+    AckDt?: string | null;
+    Irn?: string | null;
+    SignedInvoice?: string | null; // JWT; payload.data is a JSON string (EInvoiceDoc)
+    SignedQRCode?: string | null; // JWT; payload.data is a JSON string (EInvoiceQrData)
+    Status?: string | null;
+    EwbNo?: string | null;
+    EwbDt?: string | null;
+    EwbValidTill?: string | null;
+    Remarks?: string | null;
+  } | null;
+  status_cd?: string | null;
+  status_desc?: string | null;
+}
+
+export interface EInvoiceParty {
+  Gstin?: string;
+  LglNm?: string;
+  TrdNm?: string;
+  Addr1?: string;
+  Addr2?: string;
+  Loc?: string;
+  Pin?: number | string;
+  Stcd?: string;
+  Pos?: string;
+  Ph?: string;
+  Em?: string;
+}
+
+export interface EInvoiceLineItem {
+  ItemNo?: number;
+  SlNo?: string;
+  IsServc?: string;
+  PrdDesc?: string;
+  HsnCd?: string;
+  Qty?: number;
+  Unit?: string;
+  UnitPrice?: number;
+  TotAmt?: number;
+  Discount?: number;
+  AssAmt?: number;
+  GstRt?: number;
+  IgstAmt?: number;
+  CgstAmt?: number;
+  SgstAmt?: number;
+  TotItemVal?: number;
+}
+
+export interface EInvoiceValDtls {
+  AssVal?: number;
+  CgstVal?: number;
+  SgstVal?: number;
+  IgstVal?: number;
+  Discount?: number;
+  OthChrg?: number;
+  RndOffAmt?: number;
+  TotInvVal?: number;
+}
+
+// Decoded payload of the SignedInvoice JWT (the canonical IRP document).
+export interface EInvoiceDoc {
+  AckNo?: number | string;
+  AckDt?: string;
+  Irn?: string;
+  Version?: string;
+  TranDtls?: { TaxSch?: string; SupTyp?: string; IgstOnIntra?: string };
+  DocDtls?: { Typ?: string; No?: string; Dt?: string };
+  SellerDtls?: EInvoiceParty;
+  BuyerDtls?: EInvoiceParty;
+  ShipDtls?: EInvoiceParty;
+  ItemList?: EInvoiceLineItem[];
+  ValDtls?: EInvoiceValDtls;
+}
+
+// Decoded payload of the SignedQRCode JWT.
+export interface EInvoiceQrData {
+  SellerGstin?: string;
+  BuyerGstin?: string;
+  DocNo?: string;
+  DocTyp?: string;
+  DocDt?: string;
+  TotInvVal?: number;
+  ItemCnt?: number;
+  MainHsnCode?: string;
+  Irn?: string;
+  IrnDt?: string;
 }
 
 // Invoice category types

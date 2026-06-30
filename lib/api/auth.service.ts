@@ -47,8 +47,8 @@ export const authService = {
     formData.append("state", payload.state);
     formData.append("pinCode", payload.pinCode);
     formData.append("currency", payload.currency);
-    formData.append("adminUser", payload.adminUser);
-    formData.append("password", payload.password);
+    if (payload.adminUser) formData.append("adminUser", payload.adminUser);
+    if (payload.password) formData.append("password", payload.password);
     formData.append("natureOfBusiness", payload.natureOfBusiness);
     
     if (payload.logo) {

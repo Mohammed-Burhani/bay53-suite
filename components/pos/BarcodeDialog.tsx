@@ -25,6 +25,9 @@ import { BarcodeLabel } from "./BarcodeLabel";
 import {
   printBarcodeLabels,
   downloadBarcodeLabelsPdf,
+  printBarcodeLabelsA4,
+  downloadBarcodeLabelsA4Pdf,
+  computeA4Grid,
   type LabelSize,
   type BarcodeLabelData,
 } from "@/lib/utils/pos-print";
@@ -55,6 +58,7 @@ interface BarcodeDialogProps {
 export function BarcodeDialog({ open, onOpenChange, product, formatPrice }: BarcodeDialogProps) {
   const [quantity, setQuantity] = useState(1);
   const [sizeId, setSizeId] = useState("50x25");
+  const [layout, setLayout] = useState<"a4" | "label">("a4");
   const [downloading, setDownloading] = useState(false);
 
   const barcode = (product?.barcode || "").toString();
@@ -74,10 +78,15 @@ export function BarcodeDialog({ open, onOpenChange, product, formatPrice }: Barc
     : null;
 
   const copies = Math.max(1, Math.min(500, Math.floor(quantity) || 1));
+  const grid = computeA4Grid(size);
+  const sheetCount = layout === "a4" ? Math.ceil(copies / grid.perPage) : copies;
 
   const handlePrint = () => {
     if (!labelData || !hasBarcode) return;
-    const ok = printBarcodeLabels(labelData, copies, size);
+    const ok =
+      layout === "a4"
+        ? printBarcodeLabelsA4(labelData, copies, size)
+        : printBarcodeLabels(labelData, copies, size);
     if (!ok) {
       toast.error("Couldn't open the print window. Please allow pop-ups for this site and try again.");
     }
@@ -87,7 +96,11 @@ export function BarcodeDialog({ open, onOpenChange, product, formatPrice }: Barc
     if (!labelData || !hasBarcode) return;
     setDownloading(true);
     try {
-      await downloadBarcodeLabelsPdf(labelData, copies, size);
+      if (layout === "a4") {
+        await downloadBarcodeLabelsA4Pdf(labelData, copies, size);
+      } else {
+        await downloadBarcodeLabelsPdf(labelData, copies, size);
+      }
       toast.success(`Downloaded ${copies} label${copies > 1 ? "s" : ""} (PDF).`);
     } catch (e) {
       toast.error(`Could not generate PDF: ${(e as Error).message}`);
@@ -157,10 +170,31 @@ export function BarcodeDialog({ open, onOpenChange, product, formatPrice }: Barc
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Labels print at the selected size (not A4). Use your label/thermal printer, or &ldquo;Save as PDF&rdquo;
-              in the print dialog.
-            </p>
+            <div>
+              <Label htmlFor="label-layout">Layout</Label>
+              <Select value={layout} onValueChange={(v) => setLayout(v as "a4" | "label")}>
+                <SelectTrigger id="label-layout">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a4">A4 sheet (multiple per page, cut out)</SelectItem>
+                  <SelectItem value="label">Label roll / thermal (one per label)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {layout === "a4" ? (
+              <p className="text-xs text-muted-foreground">
+                {grid.cols} × {grid.rows} = {grid.perPage} labels per A4 sheet. Printing {copies} label
+                {copies > 1 ? "s" : ""} across {sheetCount} sheet{sheetCount > 1 ? "s" : ""}, with dashed cut
+                guides. Use a normal A4 printer or &ldquo;Save as PDF&rdquo;.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Labels print at the selected size (not A4), one per page. Use your label/thermal printer, or
+                &ldquo;Save as PDF&rdquo; in the print dialog.
+              </p>
+            )}
           </div>
         )}
 
