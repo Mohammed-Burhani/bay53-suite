@@ -83,8 +83,101 @@ export interface InvoiceSearchItem {
 
 export interface InvoiceSearchResponse {
   list: InvoiceSearchItem[];
-  deletes: any[] | null;
+  deletes: unknown[] | null;
   totalCount: number;
+}
+
+// ==================== Invoice GetById (detail) ====================
+// Payload for POST /Invoice/GetById
+export interface InvoiceGetByIdPayload {
+  id: number; // invCode of the selected invoice row
+  invType: number; // invoice type (1 = sales, 2 = purchase, etc.)
+  sessionId: string;
+  fromInvoice: boolean;
+}
+
+// A single line item on the invoice detail.
+// The exact response shape is provided later by the API, so this stays
+// permissive: common keys are typed as optional and the index signature
+// keeps it forward-compatible. The preview component reads fields through
+// defensive accessors that try several likely key names.
+export interface InvoiceDetailItem {
+  srNo?: number;
+  itemName?: string | null;
+  description?: string | null;
+  hsn?: string | null;
+  hsnCode?: string | null;
+  qty?: number | null;
+  quantity?: number | null;
+  unit?: string | null;
+  rate?: number | null;
+  price?: number | null;
+  discount?: number | null;
+  discountPer?: number | null;
+  taxPer?: number | null;
+  taxAmount?: number | null;
+  amount?: number | null;
+  total?: number | null;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+// Full invoice detail returned by /Invoice/GetById.
+// Permissive by design (see note above). Known/likely fields are optional;
+// any extra fields from the real response are preserved by the index signature.
+export interface InvoiceDetail {
+  invCode?: number;
+  bill_No?: string | null;
+  billNo?: string | null;
+  invoiceNo?: number | null;
+  inv_Type?: number | null;
+  date?: string | null;
+  invoiceDate?: string | null;
+
+  // Company / issuer
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyGST?: string | null;
+  companyPhone?: string | null;
+  companyEmail?: string | null;
+
+  // Party
+  partyName?: string | null;
+  partyAddress?: string | null;
+  partyGST?: string | null;
+  gstNo?: string | null;
+  shipToName?: string | null;
+  shipToAddress?: string | null;
+
+  // Stock place
+  spName?: string | null;
+
+  // Money / totals
+  item_SubTotal?: number | null;
+  subTotal?: number | null;
+  totalDiscount?: number | null;
+  taxableAmount?: number | null;
+  cgst?: number | null;
+  sgst?: number | null;
+  igst?: number | null;
+  roundOff?: number | null;
+  grandTotal?: number | null;
+
+  // Payment / refs / misc
+  recBy?: string | null;
+  irn?: string | null;
+  note?: string | null;
+  remark?: string | null;
+
+  // Line items (one of these arrays is expected; accessors check each)
+  items?: InvoiceDetailItem[];
+  itemList?: InvoiceDetailItem[];
+  invoiceItems?: InvoiceDetailItem[];
+  invoiceDetails?: InvoiceDetailItem[];
+  details?: InvoiceDetailItem[];
+  lineItems?: InvoiceDetailItem[];
+
+  // Forward-compatible: preserve any extra fields from the real response.
+  [key: string]: unknown;
 }
 
 // Invoice category types

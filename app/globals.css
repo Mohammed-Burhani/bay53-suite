@@ -181,3 +181,57 @@
     background-clip: text;
   }
 }
+
+/* ==================== Invoice bill print ==================== */
+/* Isolates the invoice preview ([data-invoice-print]) so only the bill prints.
+   Radix Dialog portals its content to <body> with a centering transform, so we
+   neutralize that shell and let the bill flow from the top of the page. */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-invoice-print],
+  [data-invoice-print] * {
+    visibility: visible !important;
+  }
+
+  /* Force background colors (e.g. the Grand Total band) to print so light
+     text stays legible instead of going white-on-white. */
+  [data-invoice-print] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Neutralize the dialog shell + overlay during print. */
+  [data-slot="dialog-overlay"] {
+    display: none !important;
+  }
+  [data-slot="dialog-content"] {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Don't clip the bill inside the scroll viewport. */
+  [data-slot="scroll-area"],
+  [data-slot="scroll-area-viewport"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

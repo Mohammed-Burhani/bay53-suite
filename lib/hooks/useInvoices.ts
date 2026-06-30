@@ -6,7 +6,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { invoiceService } from "@/lib/api/invoice.service";
 import { auth } from "@/lib/auth";
-import type { InvoiceSearchPayload } from "@/lib/types/invoice.types";
+import type { InvoiceSearchPayload, InvoiceDetail } from "@/lib/types/invoice.types";
 
 // Search invoices with mutation (for on-demand filtering)
 export function useInvoiceSearch() {
@@ -30,6 +30,32 @@ export function useInvoices(filters: Omit<InvoiceSearchPayload, "sessionId">) {
       return invoiceService.searchInvoices({ ...filters, sessionId });
     },
     enabled: !!sessionId,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+  });
+}
+
+// Fetch a single invoice's full detail (for the bill/preview popup).
+// Triggered on demand: pass `enabled` (e.g. dialog open) to control fetching.
+export function useInvoiceById(
+  id: number | null | undefined,
+  invType: number,
+  enabled: boolean = true
+) {
+  const sessionId = auth.getSessionId();
+
+  return useQuery<InvoiceDetail>({
+    queryKey: ["invoice-detail", sessionId, id, invType],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      if (!id || id <= 0) throw new Error("Invalid invoice id");
+      return invoiceService.getInvoiceById({
+        id,
+        invType,
+        sessionId,
+        fromInvoice: true,
+      });
+    },
+    enabled: !!sessionId && !!id && id > 0 && enabled,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 }

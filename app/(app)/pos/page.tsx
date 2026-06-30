@@ -36,13 +36,25 @@ import {
   User,
   History,
   X,
+  Printer,
+  Download,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTenant } from "@/lib/contexts/TenantContext";
 import { usePOSProducts, usePOSCustomers, useCreatePOSTransaction } from "@/lib/hooks/usePOSInventory";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { printReceipt, downloadReceiptPdf, type ReceiptData } from "@/lib/utils/pos-print";
 
 interface CartItem extends InvoiceItem {
   maxStock: number;
+  sku: string;
 }
 
 const USE_SUPABASE = !!process.env.NEXT_PUBLIC_POS_SUPABASE_URL;
@@ -50,13 +62,14 @@ const USE_SUPABASE = !!process.env.NEXT_PUBLIC_POS_SUPABASE_URL;
 export default function POSPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { tenantId } = useTenant();
+  const { tenantId, tenantName } = useTenant();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedPartyId, setSelectedPartyId] = useState<string>("walk-in");
   const [paymentMode, setPaymentMode] = useState<"cash" | "upi" | "card" | "bank_transfer">("cash");
   const [discount, setDiscount] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [lastSale, setLastSale] = useState<ReceiptData | null>(null);
 
   // Supabase or Zustand fallback
   const { data: supabaseProducts } = usePOSProducts(tenantId);
@@ -153,6 +166,7 @@ export default function POSPage() {
           gstRate: product.gstRate,
           total: product.sellingPrice,
           maxStock: product.stock,
+          sku: product.sku,
         },
       ];
     });
@@ -202,6 +216,40 @@ export default function POSPage() {
     return { subtotal, totalDiscount, totalGst, grandTotal, taxableAmount };
   }, [cart, discount]);
 
+  const buildReceiptFromCart = (
+    invoiceNumber: string,
+    customerName: string,
+    customerGstin: string | undefined,
+    cgst: number,
+    sgst: number
+  ): ReceiptData => ({
+    storeName: tenantName || "My Store",
+    invoiceNumber,
+    dateISO: new Date().toISOString(),
+    customerName,
+    customerGstin,
+    paymentMode,
+    items: cart.map((item) => ({
+      name: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      unit: item.unit,
+      price: item.price,
+      discount: item.discount,
+      gstRate: item.gstRate,
+      total: item.total,
+    })),
+    subtotal: totals.subtotal,
+    totalDiscount: totals.totalDiscount,
+    taxableAmount: totals.subtotal - totals.totalDiscount,
+    cgst,
+    sgst,
+    igst: 0,
+    totalGst: totals.totalGst,
+    grandTotal: totals.grandTotal,
+    amountPaid: totals.grandTotal,
+  });
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
@@ -209,7 +257,8 @@ export default function POSPage() {
     }
 
     const party = customers.find((c) => c.id === selectedPartyId);
-    
+    const customerName = party ? party.name : "Walk-in Customer";
+
     // Calculate GST breakdown (assuming intra-state for CGST+SGST)
     const cgst = totals.totalGst / 2;
     const sgst = totals.totalGst / 2;
@@ -217,15 +266,15 @@ export default function POSPage() {
     if (USE_SUPABASE) {
       // Use Supabase
       try {
-        await createTransaction.mutateAsync({
+        const tx = await createTransaction.mutateAsync({
           tenant_id: tenantId,
           customer_id: selectedPartyId === "walk-in" ? undefined : selectedPartyId,
-          customer_name: party ? party.name : "Walk-in Customer",
+          customer_name: customerName,
           payment_mode: paymentMode,
-          items: cart.map(item => ({
+          items: cart.map((item) => ({
             product_id: item.productId,
             product_name: item.productName,
-            product_sku: item.productName, // TODO: Get actual SKU
+            product_sku: item.sku,
             quantity: item.quantity,
             unit: item.unit,
             unit_price: item.price,
@@ -244,22 +293,34 @@ export default function POSPage() {
           amount_paid: totals.grandTotal,
         });
 
+        setLastSale(
+          buildReceiptFromCart(tx.transaction_number, customerName, party?.gstin, cgst, sgst)
+        );
         setCart([]);
         setDiscount(0);
         setSelectedPartyId("walk-in");
         setCategoryFilter("all");
         setSearch("");
       } catch (error) {
-        console.error('Checkout error:', error);
+        console.error("Checkout error:", error);
       }
     } else {
       // Use Zustand fallback
-      addInvoice({
+      const newInvoice = addInvoice({
         type: "sale",
         partyId: selectedPartyId === "walk-in" ? "walk-in" : selectedPartyId,
-        partyName: party ? party.name : "Walk-in Customer",
+        partyName: customerName,
         partyGstin: party?.gstin,
-        items: cart.map(({ maxStock, ...item }) => item),
+        items: cart.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: item.price,
+          discount: item.discount,
+          gstRate: item.gstRate,
+          total: item.total,
+        })),
         subtotal: totals.subtotal,
         totalDiscount: totals.totalDiscount,
         taxableAmount: totals.subtotal - totals.totalDiscount,
@@ -276,6 +337,9 @@ export default function POSPage() {
       });
 
       toast.success(`Sale of ${formatCurrency(totals.grandTotal)} completed!`);
+      setLastSale(
+        buildReceiptFromCart(newInvoice.invoiceNumber, customerName, party?.gstin, cgst, sgst)
+      );
       setCart([]);
       setDiscount(0);
       setSelectedPartyId("walk-in");
@@ -284,6 +348,23 @@ export default function POSPage() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    }
+  };
+
+  const printLastSale = () => {
+    if (!lastSale) return;
+    if (!printReceipt(lastSale)) {
+      toast.error("Couldn't open the print window. Please allow pop-ups for this site.");
+    }
+  };
+
+  const downloadLastSale = async () => {
+    if (!lastSale) return;
+    try {
+      await downloadReceiptPdf(lastSale);
+      toast.success("Receipt downloaded (PDF).");
+    } catch (e) {
+      toast.error(`Could not generate PDF: ${(e as Error).message}`);
     }
   };
 
@@ -601,6 +682,39 @@ export default function POSPage() {
           )}
         </div>
       </div>
+
+      {/* Post-sale receipt dialog */}
+      <Dialog open={!!lastSale} onOpenChange={(open) => !open && setLastSale(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Sale Completed
+            </DialogTitle>
+            <DialogDescription className="font-mono">{lastSale?.invoiceNumber}</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border bg-muted/30 p-4 text-center">
+            <p className="text-xs text-muted-foreground">Amount charged</p>
+            <p className="text-3xl font-bold">{lastSale ? formatCurrency(lastSale.grandTotal) : ""}</p>
+            <p className="mt-1 text-xs capitalize text-muted-foreground">
+              {lastSale?.paymentMode.replace("_", " ")} · {lastSale?.items.length} item(s)
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" className="gap-2" onClick={printLastSale}>
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => void downloadLastSale()}>
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+          <Button className="w-full" onClick={() => setLastSale(null)}>
+            New Sale
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
