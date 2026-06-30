@@ -42,7 +42,9 @@ import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
+import { InvoicePreviewDialog } from "@/components/invoices/InvoicePreviewDialog";
 import { useInvoiceSearch } from "@/lib/hooks/useInvoices";
+import type { InvoiceSearchItem } from "@/lib/types/invoice.types";
 import { useInvoiceTypes, useStockPlaces } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
@@ -76,6 +78,10 @@ export function InvoiceListTable({
 }: InvoiceListTableProps) {
   const router = useRouter();
   
+  // Invoice preview (bill) dialog
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceSearchItem | null>(null);
+
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedInvType, setSelectedInvType] = useState<number>(invType);
@@ -215,41 +221,41 @@ export function InvoiceListTable({
   ].filter(Boolean).length;
 
   // Context menu handlers
-  const handleViewInvoice = (invoice: any) => {
-    toast.info(`View invoice: ${invoice.bill_No}`);
-    // router.push(`/invoices/${invoice.invCode}`);
+  const handleViewInvoice = (invoice: InvoiceSearchItem) => {
+    setPreviewInvoice(invoice);
+    setPreviewOpen(true);
   };
 
-  const handleEditInvoice = (invoice: any) => {
+  const handleEditInvoice = (invoice: InvoiceSearchItem) => {
     toast.info(`Edit invoice: ${invoice.bill_No}`);
     // router.push(`/invoices/${invoice.invCode}/edit`);
   };
 
-  const handlePrintInvoice = (invoice: any) => {
+  const handlePrintInvoice = (invoice: InvoiceSearchItem) => {
     toast.info(`Print invoice: ${invoice.bill_No}`);
   };
 
-  const handleEmailInvoice = (invoice: any) => {
+  const handleEmailInvoice = (invoice: InvoiceSearchItem) => {
     toast.info(`Email invoice: ${invoice.bill_No}`);
   };
 
-  const handleDuplicateInvoice = (invoice: any) => {
+  const handleDuplicateInvoice = (invoice: InvoiceSearchItem) => {
     toast.info(`Duplicate invoice: ${invoice.bill_No}`);
   };
 
-  const handleDownloadPDF = (invoice: any) => {
+  const handleDownloadPDF = (invoice: InvoiceSearchItem) => {
     toast.info(`Download PDF: ${invoice.bill_No}`);
   };
 
-  const handleConvertToReturn = (invoice: any) => {
+  const handleConvertToReturn = (invoice: InvoiceSearchItem) => {
     toast.info(`Convert to return: ${invoice.bill_No}`);
   };
 
-  const handleCancelInvoice = (invoice: any) => {
+  const handleCancelInvoice = (invoice: InvoiceSearchItem) => {
     toast.warning(`Cancel invoice: ${invoice.bill_No}`);
   };
 
-  const getInvoiceContextMenu = (invoice: any): ContextMenuItem[] => [
+  const getInvoiceContextMenu = (invoice: InvoiceSearchItem): ContextMenuItem[] => [
     {
       label: "View Invoice",
       icon: Eye,
@@ -700,6 +706,15 @@ export function InvoiceListTable({
       <ModuleAIAssistant
         moduleName={title}
         moduleData={{ invoices: filteredInvoices }}
+      />
+
+      {/* Invoice bill preview */}
+      <InvoicePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        invCode={previewInvoice?.invCode ?? null}
+        invType={previewInvoice?.inv_Type ?? selectedInvType}
+        fallback={previewInvoice}
       />
     </div>
   );

@@ -21,13 +21,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -45,24 +38,49 @@ import {
   Package,
   ArrowLeft,
   X,
+  Barcode as BarcodeIcon,
+  Wand2,
 } from "lucide-react";
 import { useTenant } from "@/lib/contexts/TenantContext";
 import { usePOSProducts, useAddProduct, useUpdateProduct, useDeleteProduct } from "@/lib/hooks/usePOSInventory";
 import { Product } from "@/lib/services/pos.service";
 import { formatCurrency } from "@/lib/store";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form, Field, ErrorMessage, useFormikContext } from "formik";
 import * as Yup from "yup";
+import { toast } from "sonner";
+import {
+  generateUniqueBarcodeValue,
+  validateBarcode,
+  canRenderBarcode,
+} from "@/lib/utils/barcode";
+import { BarcodeLabel } from "@/components/pos/BarcodeLabel";
+import { BarcodeDialog } from "@/components/pos/BarcodeDialog";
 
-const productSchema = Yup.object({
-  sku: Yup.string().required("SKU required"),
-  name: Yup.string().required("Name required").min(3),
-  category: Yup.string().required("Category required"),
-  selling_price: Yup.number().required("Price required").min(0),
-  cost_price: Yup.number().required("Cost required").min(0),
-  stock: Yup.number().required("Stock required").min(0),
-  min_stock: Yup.number().required("Min stock required").min(0),
-  gst_rate: Yup.number().required("GST required").min(0).max(100),
-});
+const makeProductSchema = (products: Product[], editingId?: string) =>
+  Yup.object({
+    sku: Yup.string().required("SKU required"),
+    name: Yup.string().required("Name required").min(3),
+    category: Yup.string().required("Category required"),
+    selling_price: Yup.number().required("Price required").min(0),
+    cost_price: Yup.number().required("Cost required").min(0),
+    stock: Yup.number().required("Stock required").min(0),
+    min_stock: Yup.number().required("Min stock required").min(0),
+    gst_rate: Yup.number().required("GST required").min(0).max(100),
+    barcode: Yup.string()
+      .nullable()
+      .test("barcode-format", "Invalid barcode", function (value) {
+        const err = validateBarcode(value as string | undefined);
+        return err ? this.createError({ message: err }) : true;
+      })
+      .test(
+        "barcode-unique",
+        "This barcode is already used by another product",
+        (value) => {
+          if (!value) return true;
+          return !products.some((p) => p.barcode === value && p.id !== editingId);
+        }
+      ),
+  });
 
 type ProductFormValues = Omit<Product, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>;
 
@@ -74,11 +92,17 @@ export default function POSInventoryPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
 
   const { data: products = [], isLoading } = usePOSProducts(tenantId);
   const addProduct = useAddProduct(tenantId);
   const updateProduct = useUpdateProduct(tenantId);
   const deleteProduct = useDeleteProduct(tenantId);
+
+  const validationSchema = useMemo(
+    () => makeProductSchema(products, editingProduct?.id),
+    [products, editingProduct]
+  );
 
   const categories = useMemo(() => {
     const cats = new Set(products.map(p => p.category));
@@ -97,11 +121,20 @@ export default function POSInventoryPage() {
   }, [products, search, categoryFilter]);
 
   const handleSubmit = async (values: ProductFormValues) => {
+    // Normalize the barcode: trim, and auto-generate a unique one when blank.
+    const typed = (values.barcode ?? "").toString().trim();
+    let finalBarcode = typed;
+    if (!typed) {
+      finalBarcode = generateUniqueBarcodeValue(products.map((p) => p.barcode));
+      toast.success(`Barcode auto-generated: ${finalBarcode}`);
+    }
+    const finalValues: ProductFormValues = { ...values, barcode: finalBarcode };
+
     if (editingProduct) {
-      await updateProduct.mutateAsync({ id: editingProduct.id, ...values });
+      await updateProduct.mutateAsync({ id: editingProduct.id, ...finalValues });
     } else {
       await addProduct.mutateAsync({
-        ...values,
+        ...finalValues,
         tenant_id: tenantId,
         is_active: true,
       } as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
@@ -287,7 +320,14 @@ export default function POSInventoryPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{product.sku}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <div>{product.sku}</div>
+                    {product.barcode ? (
+                      <div className="text-[10px] text-muted-foreground">{product.barcode}</div>
+                    ) : (
+                      <div className="text-[10px] text-amber-600">no barcode</div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{product.category}</Badge>
                   </TableCell>
@@ -312,6 +352,15 @@ export default function POSInventoryPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Print / download barcode"
+                        onClick={() => setBarcodeProduct(product)}
+                      >
+                        <BarcodeIcon className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -345,11 +394,11 @@ export default function POSInventoryPage() {
           </DialogHeader>
           <Formik
             initialValues={editingProduct || emptyProduct}
-            validationSchema={productSchema}
+            validationSchema={validationSchema}
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ values, setFieldValue, isSubmitting }) => (
+            {({ isSubmitting }) => (
               <Form className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField name="name" label="Product Name *" />
@@ -373,7 +422,7 @@ export default function POSInventoryPage() {
                   <FormField name="unit" label="Unit" />
                   <FormField name="hsn_code" label="HSN Code" />
                 </div>
-                <FormField name="barcode" label="Barcode" />
+                <BarcodeField products={products} editingId={editingProduct?.id} />
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
@@ -410,6 +459,23 @@ export default function POSInventoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Barcode print / download dialog */}
+      <BarcodeDialog
+        open={!!barcodeProduct}
+        onOpenChange={(open) => !open && setBarcodeProduct(null)}
+        product={
+          barcodeProduct
+            ? {
+                name: barcodeProduct.name,
+                barcode: barcodeProduct.barcode,
+                sku: barcodeProduct.sku,
+                price: Number(barcodeProduct.mrp || barcodeProduct.selling_price),
+              }
+            : null
+        }
+        formatPrice={formatCurrency}
+      />
     </div>
   );
 }
@@ -424,6 +490,72 @@ function FormField({ name, label, type = "text" }: { name: string; label: string
         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
       />
       <ErrorMessage name={name} component="p" className="text-xs text-destructive" />
+    </div>
+  );
+}
+
+/**
+ * Barcode form field: text input + "Generate" button + live preview + helper
+ * text. Validation (format + uniqueness) is handled by the Formik schema; this
+ * component surfaces the live barcode so the user understands what will be saved.
+ */
+function BarcodeField({ products, editingId }: { products: Product[]; editingId?: string }) {
+  const { values, setFieldValue } = useFormikContext<ProductFormValues>();
+  const value = ((values.barcode as string | undefined) ?? "").toString();
+  const trimmed = value.trim();
+
+  const handleGenerate = () => {
+    const existing = products
+      .filter((p) => p.id !== editingId)
+      .map((p) => p.barcode);
+    const generated = generateUniqueBarcodeValue(existing);
+    setFieldValue("barcode", generated, true);
+    toast.success(`Generated barcode ${generated}`);
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">Barcode</label>
+        {trimmed ? (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => setFieldValue("barcode", "", true)}
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+      <div className="flex gap-2">
+        <Field
+          name="barcode"
+          type="text"
+          placeholder="Leave blank to auto-generate"
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm font-mono"
+        />
+        <Button type="button" variant="outline" className="shrink-0 gap-1.5" onClick={handleGenerate}>
+          <Wand2 className="h-4 w-4" />
+          Generate
+        </Button>
+      </div>
+      <ErrorMessage name="barcode" component="p" className="text-xs text-destructive" />
+      <p className="text-xs text-muted-foreground">
+        Leave blank to auto-generate a unique 13-digit barcode on save, or type your own
+        (4–48 characters: letters, numbers, hyphen, dot or underscore). Each product gets a
+        unique barcode.
+      </p>
+      {trimmed ? (
+        canRenderBarcode(trimmed) ? (
+          <div className="flex justify-center rounded-md border bg-white p-2">
+            <BarcodeLabel value={trimmed} showName={false} showPrice={false} barHeight={48} moduleWidth={1.6} />
+          </div>
+        ) : (
+          <p className="text-xs text-amber-600">
+            This value contains characters that can&apos;t be turned into a barcode.
+          </p>
+        )
+      ) : null}
     </div>
   );
 }
