@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, Search, Loader2, Building2, MapPin, Phone } from "lucide-react";
+import { Users, Search, Loader2, Building2, MapPin, Phone, Edit, Save, FileDown, Printer, Lock } from "lucide-react";
 import { toast } from "sonner";
 import type { Ledger, Group } from "@/lib/types/reports.types";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 
 export default function LedgerPage() {
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
@@ -81,6 +82,59 @@ export default function LedgerPage() {
       }
     );
   };
+
+  // Context menu handlers
+  const handleEdit = (ledger: Ledger) => {
+    toast.info(`Edit: ${ledger.name}`);
+  };
+
+  const handleSaveAs = (ledger: Ledger) => {
+    toast.info(`Save As: ${ledger.name}`);
+  };
+
+  const handleEnvelopePrint = (ledger: Ledger) => {
+    toast.info(`Envelope Print: ${ledger.name}`);
+  };
+
+  const handleLock = (ledger: Ledger) => {
+    toast.info(`${ledger.lock_Freeze ? 'Unlock' : 'Lock'}: ${ledger.name}`);
+  };
+
+  const handleDelete = (ledger: Ledger) => {
+    toast.warning(`Delete: ${ledger.name}`);
+  };
+
+  const getLedgerContextMenu = (ledger: Ledger): ContextMenuItem[] => [
+    {
+      label: "Edit",
+      icon: Edit,
+      onClick: () => handleEdit(ledger),
+    },
+    {
+      label: "Save As",
+      icon: Save,
+      onClick: () => handleSaveAs(ledger),
+    },
+    {
+      label: "Envelope Print",
+      icon: Printer,
+      onClick: () => handleEnvelopePrint(ledger),
+      divider: true,
+    },
+    {
+      label: ledger.lock_Freeze ? "Unlock" : "Lock",
+      icon: Lock,
+      onClick: () => handleLock(ledger),
+      variant: ledger.lock_Freeze ? "success" : "default",
+      divider: true,
+    },
+    {
+      label: "Delete",
+      icon: FileDown,
+      onClick: () => handleDelete(ledger),
+      variant: "danger",
+    },
+  ];
 
   const filtered = ledgers.filter(
     (l) =>
@@ -257,10 +311,8 @@ export default function LedgerPage() {
                 </TableRow>
               ) : (
                 filtered.map((ledger) => (
-                  <TableRow
-                    key={ledger.ledger_id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
+                  <ContextMenu key={ledger.ledger_id} items={getLedgerContextMenu(ledger)}>
+                    <TableRow className="hover:bg-muted/30 transition-colors cursor-context-menu">
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">{ledger.name}</p>
@@ -339,6 +391,7 @@ export default function LedgerPage() {
                       )}
                     </TableCell>
                   </TableRow>
+                  </ContextMenu>
                 ))
               )}
             </TableBody>
