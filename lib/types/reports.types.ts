@@ -23,6 +23,8 @@ export interface LedgerSearchPayload {
   pageNumber: number;
   groups: number[];
   includeChildGroups: boolean;
+  isSync?: boolean;
+  lastModifiedDate?: string | null;
 }
 
 export interface LedgerSearchResponse {
@@ -204,6 +206,8 @@ export interface GroupSearchPayload {
   childOf: number[] | null;
   name: string | null;
   nature: string | null;
+  isSync?: boolean;
+  lastModifiedDate?: string | null;
 }
 
 // --- Current Stock ---

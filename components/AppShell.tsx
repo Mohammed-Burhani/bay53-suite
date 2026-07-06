@@ -169,6 +169,7 @@ const NAV_MODULES: NavModule[] = [
       { href: "/parties/customers", label: "Customers", icon: Users },
       { href: "/parties/suppliers", label: "Suppliers", icon: Users },
       { href: "/parties/add", label: "Add Party", icon: UserPlus },
+      { href: "/ledger", label: "Ledger", icon: FileText },
     ],
   },
   {
