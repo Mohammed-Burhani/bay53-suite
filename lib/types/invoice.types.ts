@@ -326,3 +326,44 @@ export const INVOICE_TYPE_IDS = {
   STOCK_TRANSFER: 5,
   STOCK_ADJUSTMENT: 6,
 } as const;
+
+// ==================== Invoice SetupInfo ====================
+// Payload for POST /Invoice/SetupInfo
+export interface InvoiceSetupInfoPayload {
+  id: number; // invoiceCode (invCode)
+  invType: number;
+  sessionId: string;
+  fromInvoice: boolean;
+}
+
+// Extra charge definition from SetupInfo
+export interface SetupInfoExtraCharge {
+  sequenceNo: number;
+  extraCharges_ID: number;
+  name: string;
+  tax_Type: number;
+  taxPercent: number;
+  vatEffect: boolean;
+  cstEffect: boolean;
+  isPositiveEffect: boolean;
+  percentBased: boolean;
+  ledger_ID: number;
+  description: string | null;
+  fixedAmount: number;
+  fixedPercent: number;
+  salesLegderId: number | null;
+  purchaseLegderId: number | null;
+}
+
+// Response from SetupInfo API
+export interface InvoiceSetupInfoResponse {
+  billingPlaces: unknown | null;
+  stockPlaces: unknown | null;
+  invTypeId: number;
+  typeName: string;
+  billNoEnable: boolean;
+  category: number;
+  stockEffect: number;
+  vouchEffect: boolean;
+  extraCharges: SetupInfoExtraCharge[];
+}

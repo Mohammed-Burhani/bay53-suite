@@ -35,6 +35,7 @@ import {
   Download,
   RotateCcw,
   XCircle,
+  FileDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
@@ -47,6 +48,8 @@ import { useInvoiceSearch } from "@/lib/hooks/useInvoices";
 import type { InvoiceSearchItem } from "@/lib/types/invoice.types";
 import { useInvoiceTypes, useStockPlaces } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
+import { invoiceService } from "@/lib/api/invoice.service";
+import { auth } from "@/lib/auth";
 import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -255,6 +258,95 @@ export function InvoiceListTable({
     toast.warning(`Cancel invoice: ${invoice.bill_No}`);
   };
 
+  // Lazy-load submenu for Print options
+  const loadPrintSubmenu = async (invoice: InvoiceSearchItem): Promise<ContextMenuItem[]> => {
+    const sessionId = auth.getSessionId();
+    if (!sessionId) {
+      toast.error("Session expired");
+      return [];
+    }
+
+    try {
+      const setupInfo = await invoiceService.getSetupInfo({
+        id: invoice.invCode,
+        invType: invoice.inv_Type,
+        sessionId,
+        fromInvoice: true,
+      });
+
+      // Convert extraCharges into menu items (placeholder actions for now)
+      const printOptions: ContextMenuItem[] = setupInfo.extraCharges.map((charge) => ({
+        label: charge.name,
+        onClick: () => toast.info(`Print with: ${charge.name}`),
+      }));
+
+      // Add standard print options
+      return [
+        {
+          label: "Standard Format",
+          icon: Printer,
+          onClick: () => toast.info(`Print: ${invoice.bill_No} (Standard)`),
+        },
+        {
+          label: "Thermal Print",
+          icon: Printer,
+          onClick: () => toast.info(`Print: ${invoice.bill_No} (Thermal)`),
+        },
+        ...printOptions,
+      ];
+    } catch (error) {
+      console.error("Failed to load print options:", error);
+      toast.error("Failed to load print options");
+      return [];
+    }
+  };
+
+  // Lazy-load submenu for Export options
+  const loadExportSubmenu = async (invoice: InvoiceSearchItem): Promise<ContextMenuItem[]> => {
+    const sessionId = auth.getSessionId();
+    if (!sessionId) {
+      toast.error("Session expired");
+      return [];
+    }
+
+    try {
+      const setupInfo = await invoiceService.getSetupInfo({
+        id: invoice.invCode,
+        invType: invoice.inv_Type,
+        sessionId,
+        fromInvoice: true,
+      });
+
+      // Standard export options
+      return [
+        {
+          label: "Export as PDF",
+          icon: FileDown,
+          onClick: () => toast.info(`Export PDF: ${invoice.bill_No}`),
+        },
+        {
+          label: "Export as Excel",
+          icon: FileDown,
+          onClick: () => toast.info(`Export Excel: ${invoice.bill_No}`),
+        },
+        {
+          label: "Export as CSV",
+          icon: FileDown,
+          onClick: () => toast.info(`Export CSV: ${invoice.bill_No}`),
+        },
+        {
+          label: `Invoice Type: ${setupInfo.typeName}`,
+          disabled: true,
+          onClick: () => {},
+        },
+      ];
+    } catch (error) {
+      console.error("Failed to load export options:", error);
+      toast.error("Failed to load export options");
+      return [];
+    }
+  };
+
   const getInvoiceContextMenu = (invoice: InvoiceSearchItem): ContextMenuItem[] => [
     {
       label: "View Invoice",
@@ -270,19 +362,19 @@ export function InvoiceListTable({
     {
       label: "Print",
       icon: Printer,
-      onClick: () => handlePrintInvoice(invoice),
       shortcut: "⌘P",
+      onSubmenuOpen: () => loadPrintSubmenu(invoice),
+    },
+    {
+      label: "Export",
+      icon: FileDown,
+      onSubmenuOpen: () => loadExportSubmenu(invoice),
     },
     {
       label: "Email Invoice",
       icon: Mail,
       onClick: () => handleEmailInvoice(invoice),
       variant: "success",
-    },
-    {
-      label: "Download PDF",
-      icon: Download,
-      onClick: () => handleDownloadPDF(invoice),
     },
     {
       label: "Duplicate",

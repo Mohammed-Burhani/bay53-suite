@@ -7,6 +7,8 @@ import type {
   InvoiceSearchResponse,
   InvoiceGetByIdPayload,
   InvoiceDetail,
+  InvoiceSetupInfoPayload,
+  InvoiceSetupInfoResponse,
 } from "@/lib/types/invoice.types";
 
 export const invoiceService = {
@@ -18,5 +20,10 @@ export const invoiceService = {
   // Fetch a single invoice's full detail for the bill/preview view
   getInvoiceById: async (payload: InvoiceGetByIdPayload): Promise<InvoiceDetail> => {
     return apiClient.post<InvoiceDetail>("/Invoice/GetById", payload);
+  },
+
+  // Fetch setup info (print/export templates, extra charges, etc.)
+  getSetupInfo: async (payload: InvoiceSetupInfoPayload): Promise<InvoiceSetupInfoResponse> => {
+    return apiClient.post<InvoiceSetupInfoResponse>("/Invoice/SetupInfo", payload);
   },
 };
