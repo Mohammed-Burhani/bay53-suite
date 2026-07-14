@@ -274,26 +274,41 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Convert extraCharges into menu items (placeholder actions for now)
+      // Convert extraCharges into print menu items - each calls print API
       const printOptions: ContextMenuItem[] = setupInfo.extraCharges.map((charge) => ({
         label: charge.name,
-        onClick: () => toast.info(`Print with: ${charge.name}`),
+        onClick: async () => {
+          try {
+            toast.loading(`Printing ${invoice.bill_No}...`);
+            
+            const pdfBlob = await invoiceService.printInvoice({
+              id: invoice.invCode,
+              invType: invoice.inv_Type,
+              reportName: charge.name,
+              sessionId: sessionId!,
+            });
+
+            // Download PDF
+            const url = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${invoice.bill_No || invoice.invCode}_${charge.name}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.dismiss();
+            toast.success(`Downloaded: ${charge.name}`);
+          } catch (error) {
+            toast.dismiss();
+            toast.error("Failed to print invoice");
+            console.error("Print error:", error);
+          }
+        },
       }));
 
-      // Add standard print options
-      return [
-        {
-          label: "Standard Format",
-          icon: Printer,
-          onClick: () => toast.info(`Print: ${invoice.bill_No} (Standard)`),
-        },
-        {
-          label: "Thermal Print",
-          icon: Printer,
-          onClick: () => toast.info(`Print: ${invoice.bill_No} (Thermal)`),
-        },
-        ...printOptions,
-      ];
+      return printOptions;
     } catch (error) {
       console.error("Failed to load print options:", error);
       toast.error("Failed to load print options");
@@ -317,29 +332,41 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Standard export options
-      return [
-        {
-          label: "Export as PDF",
-          icon: FileDown,
-          onClick: () => toast.info(`Export PDF: ${invoice.bill_No}`),
+      // Convert extraCharges into export menu items - each calls print API
+      const exportOptions: ContextMenuItem[] = setupInfo.extraCharges.map((charge) => ({
+        label: charge.name,
+        onClick: async () => {
+          try {
+            toast.loading(`Exporting ${invoice.bill_No}...`);
+            
+            const pdfBlob = await invoiceService.printInvoice({
+              id: invoice.invCode,
+              invType: invoice.inv_Type,
+              reportName: charge.name,
+              sessionId: sessionId!,
+            });
+
+            // Download exported file
+            const url = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${invoice.bill_No || invoice.invCode}_${charge.name}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.dismiss();
+            toast.success(`Exported: ${charge.name}`);
+          } catch (error) {
+            toast.dismiss();
+            toast.error("Failed to export invoice");
+            console.error("Export error:", error);
+          }
         },
-        {
-          label: "Export as Excel",
-          icon: FileDown,
-          onClick: () => toast.info(`Export Excel: ${invoice.bill_No}`),
-        },
-        {
-          label: "Export as CSV",
-          icon: FileDown,
-          onClick: () => toast.info(`Export CSV: ${invoice.bill_No}`),
-        },
-        {
-          label: `Invoice Type: ${setupInfo.typeName}`,
-          disabled: true,
-          onClick: () => {},
-        },
-      ];
+      }));
+
+      return exportOptions;
     } catch (error) {
       console.error("Failed to load export options:", error);
       toast.error("Failed to load export options");
