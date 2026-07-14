@@ -9,6 +9,8 @@ import type {
   InvoiceDetail,
   InvoiceSetupInfoPayload,
   InvoiceSetupInfoResponse,
+  PrintInvoicePayload,
+  PrintInvoiceResponse,
 } from "@/lib/types/invoice.types";
 
 export const invoiceService = {
@@ -25,5 +27,24 @@ export const invoiceService = {
   // Fetch setup info (print/export templates, extra charges, etc.)
   getSetupInfo: async (payload: InvoiceSetupInfoPayload): Promise<InvoiceSetupInfoResponse> => {
     return apiClient.post<InvoiceSetupInfoResponse>("/Invoice/SetupInfo", payload);
+  },
+
+  // Print invoice - call external print API
+  printInvoice: async (payload: PrintInvoicePayload): Promise<Blob> => {
+    const PRINT_API_BASE = "https://printapi.bay53.in/api";
+    const response = await fetch(`${PRINT_API_BASE}/Print/PrintInvoice`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Print API failed: ${response.statusText}`);
+    }
+
+    // Return PDF blob for download
+    return response.blob();
   },
 };

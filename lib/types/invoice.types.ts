@@ -367,3 +367,24 @@ export interface InvoiceSetupInfoResponse {
   vouchEffect: boolean;
   extraCharges: SetupInfoExtraCharge[];
 }
+
+// ==================== Print Invoice API ====================
+// Payload for POST https://printapi.bay53.in/api/Print/PrintInvoice
+export interface PrintInvoicePayload {
+  id: number; // invoiceCode
+  invType: number;
+  reportName: string; // Selected report from setupInfo.extraCharges
+  sessionId: string;
+  preCmd?: string;
+  reportFormat?: string;
+  noOfCopies?: number;
+}
+
+// Response from PrintInvoice API (returns PDF blob or URL)
+export interface PrintInvoiceResponse {
+  // Assuming API returns binary PDF or download URL
+  // Adjust based on actual response format
+  success?: boolean;
+  url?: string;
+  message?: string;
+}
