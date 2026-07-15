@@ -274,9 +274,9 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Convert extraCharges into print menu items - each calls print API
-      const printOptions: ContextMenuItem[] = setupInfo.extraCharges.map((charge) => ({
-        label: charge.name,
+      // Convert printReports into menu items - pass fileName to print API
+      const printOptions: ContextMenuItem[] = setupInfo.printReports.map((report) => ({
+        label: report.reportName,
         onClick: async () => {
           try {
             toast.loading(`Printing ${invoice.bill_No}...`);
@@ -284,22 +284,23 @@ export function InvoiceListTable({
             const pdfBlob = await invoiceService.printInvoice({
               id: invoice.invCode,
               invType: invoice.inv_Type,
-              reportName: charge.name,
+              reportName: report.fileName, // Pass fileName as reportName
               sessionId: sessionId!,
+              noOfCopies: report.noOfCopies,
             });
 
             // Download PDF
             const url = window.URL.createObjectURL(pdfBlob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `${invoice.bill_No || invoice.invCode}_${charge.name}.pdf`;
+            link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
 
             toast.dismiss();
-            toast.success(`Downloaded: ${charge.name}`);
+            toast.success(`Downloaded: ${report.reportName}`);
           } catch (error) {
             toast.dismiss();
             toast.error("Failed to print invoice");
@@ -332,9 +333,9 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Convert extraCharges into export menu items - each calls print API
-      const exportOptions: ContextMenuItem[] = setupInfo.extraCharges.map((charge) => ({
-        label: charge.name,
+      // Convert printReports into export menu items - pass fileName to print API
+      const exportOptions: ContextMenuItem[] = setupInfo.printReports.map((report) => ({
+        label: report.reportName,
         onClick: async () => {
           try {
             toast.loading(`Exporting ${invoice.bill_No}...`);
@@ -342,22 +343,23 @@ export function InvoiceListTable({
             const pdfBlob = await invoiceService.printInvoice({
               id: invoice.invCode,
               invType: invoice.inv_Type,
-              reportName: charge.name,
+              reportName: report.fileName, // Pass fileName as reportName
               sessionId: sessionId!,
+              noOfCopies: report.noOfCopies,
             });
 
             // Download exported file
             const url = window.URL.createObjectURL(pdfBlob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `${invoice.bill_No || invoice.invCode}_${charge.name}.pdf`;
+            link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
 
             toast.dismiss();
-            toast.success(`Exported: ${charge.name}`);
+            toast.success(`Exported: ${report.reportName}`);
           } catch (error) {
             toast.dismiss();
             toast.error("Failed to export invoice");

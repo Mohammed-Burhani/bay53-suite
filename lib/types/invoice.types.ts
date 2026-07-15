@@ -355,6 +355,15 @@ export interface SetupInfoExtraCharge {
   purchaseLegderId: number | null;
 }
 
+// Print report definition from SetupInfo
+export interface PrintReport {
+  fileName: string;
+  reportName: string;
+  isDefault: boolean;
+  isVoucher: boolean;
+  noOfCopies: number;
+}
+
 // Response from SetupInfo API
 export interface InvoiceSetupInfoResponse {
   billingPlaces: unknown | null;
@@ -366,6 +375,7 @@ export interface InvoiceSetupInfoResponse {
   stockEffect: number;
   vouchEffect: boolean;
   extraCharges: SetupInfoExtraCharge[];
+  printReports: PrintReport[];
 }
 
 // ==================== Print Invoice API ====================
