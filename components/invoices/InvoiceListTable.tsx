@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +84,9 @@ export function InvoiceListTable({
   // Invoice preview (bill) dialog
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceSearchItem | null>(null);
+
+  // Cache setupInfo per invoice to avoid repeated API calls
+  const setupInfoCache = useRef<Map<string, any>>(new Map());
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -266,6 +269,54 @@ export function InvoiceListTable({
       return [];
     }
 
+    // Check cache first
+    const cacheKey = `${invoice.invCode}_${invoice.inv_Type}`;
+    if (setupInfoCache.current.has(cacheKey)) {
+      const setupInfo = setupInfoCache.current.get(cacheKey);
+      return setupInfo.printReports.map((report: any) => ({
+        label: report.reportName,
+        onClick: async () => {
+          try {
+            toast.loading(`Preparing print preview...`);
+            
+            const pdfBlob = await invoiceService.printInvoice({
+              id: invoice.invCode,
+              invType: invoice.inv_Type,
+              reportName: report.fileName,
+              sessionId: sessionId!,
+              noOfCopies: report.noOfCopies,
+            });
+
+            const url = window.URL.createObjectURL(pdfBlob);
+            const printWindow = window.open(url, '_blank');
+            
+            if (printWindow) {
+              printWindow.onload = () => {
+                printWindow.print();
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+              };
+            } else {
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            }
+
+            toast.dismiss();
+            toast.success(`Print preview opened`);
+          } catch (error) {
+            toast.dismiss();
+            toast.error("Failed to print invoice");
+            console.error("Print error:", error);
+          }
+        },
+      }));
+    }
+
+    // Fetch + cache
     try {
       const setupInfo = await invoiceService.getSetupInfo({
         id: invoice.invCode,
@@ -274,33 +325,43 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Convert printReports into menu items - pass fileName to print API
+      // Cache result
+      setupInfoCache.current.set(cacheKey, setupInfo);
+
       const printOptions: ContextMenuItem[] = setupInfo.printReports.map((report) => ({
         label: report.reportName,
         onClick: async () => {
           try {
-            toast.loading(`Printing ${invoice.bill_No}...`);
+            toast.loading(`Preparing print preview...`);
             
             const pdfBlob = await invoiceService.printInvoice({
               id: invoice.invCode,
               invType: invoice.inv_Type,
-              reportName: report.fileName, // Pass fileName as reportName
+              reportName: report.fileName,
               sessionId: sessionId!,
               noOfCopies: report.noOfCopies,
             });
 
-            // Download PDF
             const url = window.URL.createObjectURL(pdfBlob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const printWindow = window.open(url, '_blank');
+            
+            if (printWindow) {
+              printWindow.onload = () => {
+                printWindow.print();
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+              };
+            } else {
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            }
 
             toast.dismiss();
-            toast.success(`Downloaded: ${report.reportName}`);
+            toast.success(`Print preview opened`);
           } catch (error) {
             toast.dismiss();
             toast.error("Failed to print invoice");
@@ -325,6 +386,45 @@ export function InvoiceListTable({
       return [];
     }
 
+    // Check cache first
+    const cacheKey = `${invoice.invCode}_${invoice.inv_Type}`;
+    if (setupInfoCache.current.has(cacheKey)) {
+      const setupInfo = setupInfoCache.current.get(cacheKey);
+      return setupInfo.printReports.map((report: any) => ({
+        label: report.reportName,
+        onClick: async () => {
+          try {
+            toast.loading(`Exporting ${invoice.bill_No}...`);
+            
+            const pdfBlob = await invoiceService.printInvoice({
+              id: invoice.invCode,
+              invType: invoice.inv_Type,
+              reportName: report.fileName,
+              sessionId: sessionId!,
+              noOfCopies: report.noOfCopies,
+            });
+
+            const url = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${invoice.bill_No || invoice.invCode}_${report.reportName}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.dismiss();
+            toast.success(`Exported: ${report.reportName}`);
+          } catch (error) {
+            toast.dismiss();
+            toast.error("Failed to export invoice");
+            console.error("Export error:", error);
+          }
+        },
+      }));
+    }
+
+    // Fetch + cache
     try {
       const setupInfo = await invoiceService.getSetupInfo({
         id: invoice.invCode,
@@ -333,7 +433,9 @@ export function InvoiceListTable({
         fromInvoice: true,
       });
 
-      // Convert printReports into export menu items - pass fileName to print API
+      // Cache result
+      setupInfoCache.current.set(cacheKey, setupInfo);
+
       const exportOptions: ContextMenuItem[] = setupInfo.printReports.map((report) => ({
         label: report.reportName,
         onClick: async () => {
@@ -343,12 +445,11 @@ export function InvoiceListTable({
             const pdfBlob = await invoiceService.printInvoice({
               id: invoice.invCode,
               invType: invoice.inv_Type,
-              reportName: report.fileName, // Pass fileName as reportName
+              reportName: report.fileName,
               sessionId: sessionId!,
               noOfCopies: report.noOfCopies,
             });
 
-            // Download exported file
             const url = window.URL.createObjectURL(pdfBlob);
             const link = document.createElement("a");
             link.href = url;
