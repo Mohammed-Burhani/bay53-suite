@@ -51,6 +51,19 @@ export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
   // AI & Settings
   "/ai-assistant": { title: "AI Assistant" },
   "/settings": { title: "Settings" },
+
+  // bay53CRM
+  "/bay53crm/dashboard": { title: "CRM Dashboard" },
+  "/bay53crm/leads": { title: "CRM Leads" },
+  "/bay53crm/projects": { title: "CRM Projects" },
+  "/bay53crm/reports": { title: "CRM Reports" },
+  "/bay53crm/reports/lead-details": { title: "Lead Details Report" },
+  "/bay53crm/reports/lead-activity": { title: "Lead Activity Report" },
+  "/bay53crm/reports/project-details": { title: "Project Details Report" },
+  "/bay53crm/reports/sales-stage-status": { title: "Sales Stage Status Report" },
+  "/bay53crm/cms/master-values": { title: "Master Values" },
+  "/bay53crm/cms/notification-master": { title: "Notification Master" },
+  "/bay53crm/company": { title: "Company Settings" },
 };
 
 export function getRouteTitle(path: string): string {
