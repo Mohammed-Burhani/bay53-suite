@@ -31,6 +31,11 @@ import {
   Search,
   Database,
   FolderTree,
+  Contact,
+  FolderKanban,
+  Activity,
+  Bell,
+  Building2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +51,7 @@ interface SubMenuItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  isGroupLabel?: boolean;
 }
 
 interface NavModule {
@@ -232,6 +238,27 @@ const NAV_MODULES: NavModule[] = [
       { href: "/settings", label: "All Settings", icon: Settings },
     ],
   },
+  {
+    id: "bay53crm",
+    label: "bay53CRM",
+    icon: Contact,
+    color: "text-sky-400",
+    activeBg: "bg-sky-500/20",
+    subItems: [
+      { href: "/bay53crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/bay53crm/leads", label: "Leads", icon: Users },
+      { href: "/bay53crm/projects", label: "Projects", icon: FolderKanban },
+      { href: "", label: "Reports", icon: BarChart3, isGroupLabel: true },
+      { href: "/bay53crm/reports/lead-details", label: "Lead Details", icon: FileText },
+      { href: "/bay53crm/reports/lead-activity", label: "Lead Activity", icon: Activity },
+      { href: "/bay53crm/reports/project-details", label: "Project Details", icon: FolderKanban },
+      { href: "/bay53crm/reports/sales-stage-status", label: "Sales Stage Status", icon: BarChart3 },
+      { href: "", label: "CMS", icon: Settings, isGroupLabel: true },
+      { href: "/bay53crm/cms/master-values", label: "Master Values", icon: Database },
+      { href: "/bay53crm/cms/notification-master", label: "Notification Master", icon: Bell },
+      { href: "/bay53crm/company", label: "Company", icon: Building2 },
+    ],
+  },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -311,7 +338,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav className="relative flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {NAV_MODULES.map((module) => {
-              const isModuleActive = module.subItems.some(item => pathname.startsWith(item.href));
+              const isModuleActive = module.subItems.some(item => !item.isGroupLabel && (pathname.startsWith(item.href)));
               const isOpen = openModules.includes(module.id);
 
               if (collapsed) {
@@ -338,14 +365,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       <div className="font-medium mb-2">{module.label}</div>
                       <div className="space-y-1">
                         {module.subItems.map(subItem => (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className="flex items-center gap-2 px-2 py-1 text-xs rounded hover:bg-accent"
-                          >
-                            <subItem.icon className="h-3 w-3" />
-                            {subItem.label}
-                          </Link>
+                          subItem.isGroupLabel ? (
+                            <div key={subItem.label} className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              {subItem.label}
+                            </div>
+                          ) : (
+                            <Link
+                              key={subItem.href}
+                              href={subItem.href}
+                              className="flex items-center gap-2 px-2 py-1 text-xs rounded hover:bg-accent"
+                            >
+                              <subItem.icon className="h-3 w-3" />
+                              {subItem.label}
+                            </Link>
+                          )
                         ))}
                       </div>
                     </TooltipContent>
@@ -382,6 +415,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-1 space-y-1">
                     {module.subItems.map(subItem => {
+                      if (subItem.isGroupLabel) {
+                        return (
+                          <div key={subItem.label} className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                            {subItem.label}
+                          </div>
+                        );
+                      }
                       const isSubItemActive = pathname === subItem.href || pathname.startsWith(subItem.href + '/');
                       return (
                         <Link
