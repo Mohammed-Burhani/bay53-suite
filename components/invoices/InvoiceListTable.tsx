@@ -77,7 +77,7 @@ export function InvoiceListTable({
   invType,
   showInvoiceTypeFilter = false,
   icon: Icon = FileText,
-  iconColor = "bg-indigo-500",
+  iconColor = "bg-[var(--report-accent)]",
 }: InvoiceListTableProps) {
   const router = useRouter();
   

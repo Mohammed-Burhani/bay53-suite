@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Layers, ShoppingCart, Contact, Check, Settings, LogOut, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,9 +36,9 @@ const PLATFORMS = [
     name: "CRM",
     description: "Leads & Projects",
     icon: Contact,
-    color: "text-sky-400",
-    bgColor: "bg-sky-500/10",
-    activeColor: "bg-sky-500/20 text-sky-300",
+    color: "text-lime-400",
+    bgColor: "bg-lime-500/10",
+    activeColor: "bg-lime-500/20 text-lime-300",
   },
 ];
 
@@ -47,16 +48,23 @@ const PLATFORMS = [
  */
 export function PlatformSwitcherHeader() {
   const [open, setOpen] = useState(false);
-  const [currentPlatform, setCurrentPlatform] = useState<Platform>("erp");
+  const pathname = usePathname();
+  const router = useRouter();
   const session = useSession();
   const logout = useLogout();
   const isMobile = useIsMobile();
 
+  const currentPlatform: Platform = pathname.startsWith("/pos") ? "pos" : pathname.startsWith("/crm") ? "crm" : "erp";
   const activePlatform = PLATFORMS.find((p) => p.id === currentPlatform) || PLATFORMS[0];
 
   const handleSwitch = (platform: Platform) => {
-    setCurrentPlatform(platform);
     setOpen(false);
+    if (platform === currentPlatform) return;
+    switch (platform) {
+      case "erp": router.push("/erp/dashboard"); break;
+      case "pos": router.push("/pos"); break;
+      case "crm": router.push("/crm/dashboard"); break;
+    }
   };
 
   return (
@@ -102,16 +110,23 @@ export function PlatformSwitcherHeader() {
  */
 export function PlatformSwitcherFooter({ collapsed = false }: { collapsed?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [currentPlatform, setCurrentPlatform] = useState<Platform>("erp");
+  const pathname = usePathname();
+  const router = useRouter();
   const session = useSession();
   const logout = useLogout();
   const isMobile = useIsMobile();
 
+  const currentPlatform: Platform = pathname.startsWith("/pos") ? "pos" : pathname.startsWith("/crm") ? "crm" : "erp";
   const activePlatform = PLATFORMS.find((p) => p.id === currentPlatform) || PLATFORMS[0];
 
   const handleSwitch = (platform: Platform) => {
-    setCurrentPlatform(platform);
     setOpen(false);
+    if (platform === currentPlatform) return;
+    switch (platform) {
+      case "erp": router.push("/erp/dashboard"); break;
+      case "pos": router.push("/pos"); break;
+      case "crm": router.push("/crm/dashboard"); break;
+    }
   };
 
   return (
@@ -127,7 +142,7 @@ export function PlatformSwitcherFooter({ collapsed = false }: { collapsed?: bool
               )}
             >
               {/* User avatar */}
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--user-avatar-bg)] text-[var(--user-avatar-text)] text-xs font-bold">
                 {session?.user?.first_Name?.[0]?.toUpperCase() ?? "U"}
               </div>
 
@@ -192,7 +207,7 @@ function PlatformPopoverContent({
       {/* User card at the top */}
       {session && (
         <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-lg bg-sidebar-accent/30">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-300 text-sm font-bold">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--user-avatar-bg)] text-[var(--user-avatar-text)] text-sm font-bold">
             {session.user.first_Name?.[0]?.toUpperCase() ?? "U"}
           </div>
           <div className="flex flex-col overflow-hidden flex-1 min-w-0">

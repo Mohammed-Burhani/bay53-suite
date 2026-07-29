@@ -266,14 +266,14 @@ export default function CurrentStockReport() {
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="relative">
-                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse" />
-                <div className="relative p-6 rounded-full bg-linear-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-950/50">
-                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                <div className="absolute inset-0 bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] rounded-full blur-2xl opacity-30 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-linear-to-br from-[var(--report-accent-bg)] to-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/10 dark:to-[var(--report-accent)]/10">
+                  <Loader2 className="h-12 w-12 text-[var(--report-accent)] animate-spin" />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <h3 className="text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h3 className="text-xl font-bold bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] bg-clip-text text-transparent">
                   Loading Items Data
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -282,16 +282,16 @@ export default function CurrentStockReport() {
               </div>
 
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-linear-to-r from-indigo-600 to-purple-600 animate-pulse" style={{ width: '70%' }} />
+                <div className="h-full bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] animate-pulse" style={{ width: '70%' }} />
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5 rounded-lg border border-[var(--report-accent-border)] dark:border-[var(--report-accent-border)]">
+                <Lightbulb className="h-5 w-5 text-[var(--report-accent)] shrink-0 mt-0.5" />
                 <div className="text-left">
-                  <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                  <p className="text-xs font-semibold text-foreground dark:text-foreground mb-1">
                     Pro Tip
                   </p>
-                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                  <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                     {loadingTips[currentTip]}
                   </p>
                 </div>
@@ -309,7 +309,7 @@ export default function CurrentStockReport() {
         {/* Hero Stats Section */}
         {filteredData.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <div className="flex items-center justify-between mb-2">
@@ -418,7 +418,7 @@ export default function CurrentStockReport() {
                       {/* 6 Item Attribute Filters */}
                       <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-purple-500" />
+                          <Package className="h-4 w-4 text-[var(--report-accent)]" />
                           <Label className="text-sm font-semibold">Item Filters</Label>
                         </div>
 
@@ -686,7 +686,7 @@ export default function CurrentStockReport() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+                    <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
                       <TableHead className="font-semibold">Item Code</TableHead>
                       <TableHead className="font-semibold">Item Name</TableHead>
                       <TableHead className="font-semibold">Brand</TableHead>
@@ -704,10 +704,10 @@ export default function CurrentStockReport() {
                       // Grouped by category
                       Object.entries(groupedData).map(([category, items]) => (
                         <>
-                          <TableRow key={`cat-${category}`} className="bg-linear-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/30 dark:to-purple-950/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-950/40 dark:hover:to-purple-950/40">
+                          <TableRow key={`cat-${category}`} className="bg-linear-to-r from-[var(--report-accent-bg)]/50 to-[var(--report-accent-bg)]/50 dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5 hover:from-[var(--report-accent-bg)] hover:to-[var(--report-accent-bg)] dark:hover:from-[var(--report-accent)]/10 dark:hover:to-[var(--report-accent)]/10">
                             <TableCell colSpan={10} className="font-semibold">
                               <div className="flex items-center gap-3">
-                                <div className="p-1.5 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
+                                <div className="p-1.5 rounded-lg bg-linear-to-br from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] text-white">
                                   <Package className="h-4 w-4" />
                                 </div>
                                 <span className="text-base">{category}</span>
@@ -807,7 +807,7 @@ export default function CurrentStockReport() {
                       })
                     )}
                     {/* Totals Row */}
-                    <TableRow className="bg-linear-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 border-t-2 border-indigo-200 dark:border-indigo-800 font-semibold">
+                    <TableRow className="bg-linear-to-r from-[var(--report-accent-bg)] to-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/10 dark:to-[var(--report-accent)]/10 border-t-2 border-[var(--report-accent-border)] dark:border-[var(--report-accent-border)] font-semibold">
                       <TableCell colSpan={5} className="text-right text-base">
                         Total:
                       </TableCell>
@@ -818,7 +818,7 @@ export default function CurrentStockReport() {
                         {paginatedData.reduce((sum, item) => sum + (item.total || 0), 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">-</TableCell>
-                      <TableCell className="text-right text-base font-bold text-indigo-600 dark:text-indigo-400">
+                      <TableCell className="text-right text-base font-bold text-[var(--report-accent)] dark:text-[var(--report-accent)]">
                         ₹{paginatedData.reduce((sum, item) => sum + ((item.total || 0) * (item.stdSellRate || 0)), 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-center">-</TableCell>
@@ -841,12 +841,12 @@ export default function CurrentStockReport() {
           <Card className="border-0 shadow-lg">
             <CardContent className="flex flex-col items-center justify-center py-20">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 rounded-full blur-2xl opacity-20 animate-pulse" />
-                <div className="relative p-6 rounded-full bg-linear-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-950/50">
-                  <Package className="h-16 w-16 text-indigo-600" />
+                <div className="absolute inset-0 bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] rounded-full blur-2xl opacity-20 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-linear-to-br from-[var(--report-accent-bg)] to-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/10 dark:to-[var(--report-accent)]/10">
+                  <Package className="h-16 w-16 text-[var(--report-accent)]" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold mb-2 bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h3 className="text-2xl font-bold mb-2 bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] bg-clip-text text-transparent">
                 No Stock Data Yet
               </h3>
               <p className="text-muted-foreground text-center max-w-md mb-8">
@@ -856,7 +856,7 @@ export default function CurrentStockReport() {
                 onClick={handleStock}
                 size="lg"
                 disabled={isLoading}
-                className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] hover:from-[var(--sidebar-glow-from)] hover:to-[var(--sidebar-glow-to)] text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {isLoadingStock ? (
                   <>

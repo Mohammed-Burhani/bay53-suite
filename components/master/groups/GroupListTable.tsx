@@ -312,7 +312,7 @@ export function GroupListTable() {
               Export
             </Button>
             <Button asChild size="sm" className="h-9 ml-auto">
-              <Link href="/master/groups/create">
+              <Link href="/erp/master/groups/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Group
               </Link>

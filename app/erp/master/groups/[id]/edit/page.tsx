@@ -26,7 +26,7 @@ export default function EditGroupPage() {
           toast.success("Group updated successfully");
           queryClient.invalidateQueries({ queryKey: ["parent-groups"] });
           queryClient.invalidateQueries({ queryKey: ["group", groupId] });
-          router.push("/master/groups");
+          router.push("/erp/master/groups");
         },
         onError: (error) => {
           toast.error(getApiErrorMessage(error, "Failed to update group"));
@@ -48,7 +48,7 @@ export default function EditGroupPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-muted-foreground">Group not found</p>
-        <Button variant="outline" onClick={() => router.push("/master/groups")}>
+        <Button variant="outline" onClick={() => router.push("/erp/master/groups")}>
           Back to Groups
         </Button>
       </div>

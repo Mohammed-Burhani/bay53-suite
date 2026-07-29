@@ -21,7 +21,7 @@ export default function CreateGroupPage() {
         onSuccess: () => {
           toast.success("Group created successfully");
           queryClient.invalidateQueries({ queryKey: ["parent-groups"] });
-          router.push("/master/groups");
+          router.push("/erp/master/groups");
         },
         onError: (error) => {
           toast.error(getApiErrorMessage(error, "Failed to create group"));

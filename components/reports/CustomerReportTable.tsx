@@ -54,7 +54,7 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
       label: "Total Invoices",
       align: "right" as const,
       render: (value: unknown) => (
-        <span className="inline-flex items-center justify-center min-w-8 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold text-sm px-2">
+        <span className="inline-flex items-center justify-center min-w-8 h-7 rounded-full bg-[var(--report-accent-bg)] dark:bg-[var(--report-accent)]/10 text-[var(--report-accent)] font-semibold text-sm px-2">
           {value as number}
         </span>
       ),
@@ -95,9 +95,9 @@ export function CustomerReportTable({ invoices }: CustomerReportTableProps) {
     <ReportTable
       title="Customer-wise Sales Summary"
       icon={TrendingUp}
-      iconColor="bg-blue-500"
-      headerGradient="bg-linear-to-r from-blue-50 to-blue-100/50 dark:from-blue-950 dark:to-blue-900/50"
-      hoverColor="hover:bg-blue-50/50 dark:hover:bg-blue-950/20"
+      iconColor="bg-[var(--report-accent)]"
+      headerGradient="bg-linear-to-r from-[var(--report-accent-bg)] to-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/10 dark:to-[var(--report-accent)]/5"
+      hoverColor="hover:bg-[var(--report-accent-bg)] dark:hover:bg-[var(--report-accent)]/5"
       columns={columns}
       data={customerSummary as unknown as Record<string, unknown>[]}
       emptyMessage="No customer data found"

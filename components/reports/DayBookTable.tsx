@@ -209,7 +209,7 @@ export default function DayBookTable({ initialData = [] }: DayBookTableProps) {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Calendar className="h-8 w-8 opacity-80 mb-2" />

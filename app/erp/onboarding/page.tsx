@@ -184,13 +184,13 @@ export default function OnboardingPage() {
             transition={{ delay: 0.5 }}
             className="flex gap-4 justify-center flex-wrap"
           >
-            <Link href="/dashboard">
+            <Link href="/erp/dashboard">
               <Button size="lg" className="gap-2">
                 Go to Dashboard
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/ai-assistant">
+            <Link href="/erp/ai-assistant">
               <Button size="lg" variant="outline" className="gap-2">
                 <Brain className="w-4 h-4" />
                 Try AI Assistant

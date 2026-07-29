@@ -82,6 +82,115 @@
   --sidebar-accent-foreground: oklch(0.92 0.02 270);
   --sidebar-border: oklch(0.30 0.04 270);
   --sidebar-ring: oklch(0.55 0.20 270);
+
+  /* ERP avatar */
+  --user-avatar-bg: oklch(0.50 0.20 270 / 0.2);
+  --user-avatar-text: oklch(0.70 0.15 270);
+
+  /* ERP theme accent variables */
+  --sidebar-glow-from: oklch(0.50 0.20 270);
+  --sidebar-glow-to: oklch(0.45 0.18 290);
+  --report-accent: oklch(0.38 0.12 270);
+  --report-accent-bg: oklch(0.96 0.02 270);
+  --report-accent-border: oklch(0.88 0.03 270);
+  --card-accent-bg: oklch(0.50 0.20 270);
+  --card-accent-foreground: oklch(0.99 0 0);
+}
+
+/* ══════════ POS Module Theme (Teal/Emerald) ══════════ */
+[data-theme="pos"] {
+  --background: oklch(0.98 0.005 170);
+  --foreground: oklch(0.18 0.02 180);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 180);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 180);
+  --primary: oklch(0.53 0.20 170);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.02 170);
+  --secondary-foreground: oklch(0.30 0.05 170);
+  --muted: oklch(0.96 0.01 170);
+  --muted-foreground: oklch(0.50 0.02 170);
+  --accent: oklch(0.94 0.04 170);
+  --accent-foreground: oklch(0.30 0.08 170);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.91 0.02 170);
+  --input: oklch(0.91 0.02 170);
+  --ring: oklch(0.55 0.20 170);
+  --chart-1: oklch(0.55 0.22 170);
+  --chart-2: oklch(0.65 0.19 130);
+  --chart-3: oklch(0.70 0.18 75);
+  --chart-4: oklch(0.60 0.22 330);
+  --chart-5: oklch(0.65 0.20 200);
+  --sidebar: oklch(0.20 0.04 180);
+  --sidebar-foreground: oklch(0.92 0.02 170);
+  --sidebar-primary: oklch(0.65 0.22 170);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.26 0.05 180);
+  --sidebar-accent-foreground: oklch(0.92 0.02 170);
+  --sidebar-border: oklch(0.28 0.04 180);
+  --sidebar-ring: oklch(0.55 0.20 170);
+
+  /* POS avatar */
+  --user-avatar-bg: oklch(0.53 0.20 170 / 0.2);
+  --user-avatar-text: oklch(0.70 0.20 170);
+
+  /* POS theme accent variables */
+  --sidebar-glow-from: oklch(0.53 0.20 170);
+  --sidebar-glow-to: oklch(0.50 0.18 160);
+  --report-accent: oklch(0.40 0.12 170);
+  --report-accent-bg: oklch(0.96 0.02 170);
+  --report-accent-border: oklch(0.88 0.03 170);
+  --card-accent-bg: oklch(0.53 0.20 170);
+  --card-accent-foreground: oklch(0.99 0 0);
+}
+
+/* ══════════ CRM Module Theme (Lime Green) ══════════ */
+[data-theme="crm"] {
+  --background: oklch(0.98 0.008 120);
+  --foreground: oklch(0.18 0.02 120);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 120);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 120);
+  --primary: oklch(0.58 0.22 135);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.03 120);
+  --secondary-foreground: oklch(0.30 0.05 120);
+  --muted: oklch(0.96 0.01 120);
+  --muted-foreground: oklch(0.50 0.02 120);
+  --accent: oklch(0.94 0.06 120);
+  --accent-foreground: oklch(0.25 0.08 120);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.03 120);
+  --input: oklch(0.90 0.03 120);
+  --ring: oklch(0.55 0.20 135);
+  --chart-1: oklch(0.58 0.22 135);
+  --chart-2: oklch(0.65 0.20 160);
+  --chart-3: oklch(0.70 0.18 100);
+  --chart-4: oklch(0.60 0.22 180);
+  --chart-5: oklch(0.65 0.20 80);
+  --sidebar: oklch(0.18 0.04 135);
+  --sidebar-foreground: oklch(0.92 0.02 120);
+  --sidebar-primary: oklch(0.65 0.22 135);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.24 0.06 135);
+  --sidebar-accent-foreground: oklch(0.92 0.02 120);
+  --sidebar-border: oklch(0.26 0.04 135);
+  --sidebar-ring: oklch(0.55 0.20 135);
+
+  /* CRM avatar */
+  --user-avatar-bg: oklch(0.55 0.22 135 / 0.2);
+  --user-avatar-text: oklch(0.72 0.20 135);
+
+  /* CRM theme accent variables (lime) */
+  --sidebar-glow-from: oklch(0.55 0.22 135);
+  --sidebar-glow-to: oklch(0.50 0.20 145);
+  --report-accent: oklch(0.40 0.20 135);
+  --report-accent-bg: oklch(0.96 0.04 120);
+  --report-accent-border: oklch(0.88 0.06 120);
+  --card-accent-bg: oklch(0.55 0.22 135);
+  --card-accent-foreground: oklch(0.99 0 0);
 }
 
 .dark {

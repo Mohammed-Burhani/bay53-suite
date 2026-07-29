@@ -21,7 +21,11 @@ import { cn } from "@/lib/utils";
 const ALL_STAGES: LeadStage[] = ["Cold Lead", "Hot Lead", "Tender", "Tender Won", "Tender Lost", "Won", "Lost"];
 
 // Colors palette for charts
-const CHART_COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#22c55e", "#ef4444", "#10b981", "#6366f1", "#ec4899", "#14b8a6", "#f97316"];
+const CHART_COLORS = [
+  "var(--chart-1)", "var(--chart-3)", "var(--chart-4)",
+  "var(--chart-2)", "var(--chart-5)", "var(--chart-1)",
+  "var(--chart-4)", "var(--chart-3)", "var(--chart-5)", "var(--chart-2)",
+];
 
 // Month labels
 const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
@@ -142,17 +146,17 @@ export function DashboardView() {
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* ===== HEADER ===== */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-600 via-blue-600 to-indigo-700 p-6">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-lime-600 via-green-600 to-emerald-700 p-6">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
         <div className="relative flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-white">CRM Dashboard</h1>
-            <p className="text-sm text-blue-100">
+            <p className="text-sm text-white/80">
               {fy.label} · Real-time sales performance overview
             </p>
           </div>
           <Select value={selectedFY} onValueChange={setSelectedFY}>
-            <SelectTrigger className="w-[160px] bg-white/15 border-white/20 text-white placeholder:text-blue-200 [&_.lucide-chevron-down]:text-blue-200">
+            <SelectTrigger className="w-[160px] bg-white/15 border-white/20 text-white placeholder:text-white/60 [&_.lucide-chevron-down]:text-white/60">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -199,7 +203,7 @@ export function DashboardView() {
         <Card className="lg:col-span-4 shadow-sm border-0 ring-1 ring-border/50">
           <CardHeader className="pb-2 border-b bg-muted/10">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
+              <TrendingUp className="h-4 w-4 text-[var(--chart-1)]" />
               Monthly Lead Trend
             </CardTitle>
           </CardHeader>
@@ -213,8 +217,8 @@ export function DashboardView() {
                   contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12 }}
                   labelFormatter={(label) => `${label}`}
                 />
-                <Line type="monotone" dataKey="leads" name="Leads" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="won" name="Won" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" />
+                <Line type="monotone" dataKey="leads" name="Leads" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="won" name="Won" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -252,7 +256,7 @@ export function DashboardView() {
         <Card className="lg:col-span-4 shadow-sm border-0 ring-1 ring-border/50">
           <CardHeader className="pb-2 border-b bg-muted/10">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-500" />
+              <Layers className="h-4 w-4 text-[var(--chart-1)]" />
               Sales Pipeline
             </CardTitle>
           </CardHeader>
@@ -438,7 +442,7 @@ export function DashboardView() {
         <Card className="lg:col-span-3 shadow-sm border-0 ring-1 ring-border/50">
           <CardHeader className="pb-2 border-b bg-muted/10">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <PieChartIcon className="h-4 w-4 text-blue-500" />
+              <PieChartIcon className="h-4 w-4 text-[var(--chart-1)]" />
               Leads By Stage
             </CardTitle>
           </CardHeader>
@@ -469,7 +473,7 @@ export function DashboardView() {
         <Card className="lg:col-span-3 shadow-sm border-0 ring-1 ring-border/50">
           <CardHeader className="pb-2 border-b bg-muted/10">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-purple-500" />
+              <BarChart3 className="h-4 w-4 text-[var(--chart-4)]" />
               Leads By Source
             </CardTitle>
           </CardHeader>
@@ -561,7 +565,7 @@ export function DashboardView() {
                       "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
                       n.type === "lead_won" ? "bg-green-100 text-green-600" :
                       n.type === "tender_deadline" ? "bg-red-100 text-red-600" :
-                      n.type === "project_update" ? "bg-blue-100 text-blue-600" :
+                      n.type === "project_update" ? "bg-[var(--report-accent-bg)] text-[var(--report-accent)]" :
                       "bg-amber-100 text-amber-600"
                     )}>
                       <Bell className="h-4 w-4" />
@@ -624,11 +628,11 @@ interface CompactStatProps {
 }
 
 const colorMap: Record<string, { bg: string; icon: string; text: string; ring: string }> = {
-  blue: { bg: "bg-blue-50 dark:bg-blue-950/30", icon: "text-blue-500", text: "text-blue-700 dark:text-blue-300", ring: "ring-blue-200 dark:ring-blue-800" },
+  blue: { bg: "bg-[var(--report-accent-bg)]", icon: "text-[var(--report-accent)]", text: "text-[var(--report-accent)]", ring: "ring-[var(--report-accent-border)]" },
   amber: { bg: "bg-amber-50 dark:bg-amber-950/30", icon: "text-amber-500", text: "text-amber-700 dark:text-amber-300", ring: "ring-amber-200 dark:ring-amber-800" },
   green: { bg: "bg-green-50 dark:bg-green-950/30", icon: "text-green-500", text: "text-green-700 dark:text-green-300", ring: "ring-green-200 dark:ring-green-800" },
   red: { bg: "bg-red-50 dark:bg-red-950/30", icon: "text-red-500", text: "text-red-700 dark:text-red-300", ring: "ring-red-200 dark:ring-red-800" },
-  purple: { bg: "bg-purple-50 dark:bg-purple-950/30", icon: "text-purple-500", text: "text-purple-700 dark:text-purple-300", ring: "ring-purple-200 dark:ring-purple-800" },
+  purple: { bg: "bg-[var(--report-accent-bg)]", icon: "text-[var(--chart-4)]", text: "text-[var(--report-accent)]", ring: "ring-[var(--report-accent-border)]" },
   teal: { bg: "bg-teal-50 dark:bg-teal-950/30", icon: "text-teal-500", text: "text-teal-700 dark:text-teal-300", ring: "ring-teal-200 dark:ring-teal-800" },
 };
 

@@ -55,7 +55,7 @@ export function useVerifyOtp() {
       
       auth.setSession(session);
       queryClient.setQueryData(["auth", "session"], session);
-      router.push("/dashboard");
+      router.push("/erp/dashboard");
     },
   });
 }
@@ -129,7 +129,7 @@ export function useCompanySetup() {
     },
     onSuccess: () => {
       // Session created by Supabase auth.signUp, just redirect
-      router.push("/dashboard");
+      router.push("/erp/dashboard");
     },
   });
 }

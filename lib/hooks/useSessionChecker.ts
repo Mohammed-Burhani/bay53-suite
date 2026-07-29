@@ -4,21 +4,18 @@
 // Periodically validates session and handles expiration
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { authService } from "@/lib/api/auth.service";
 import { auth } from "@/lib/auth";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
 export function useSessionChecker() {
-  const router = useRouter();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
       const session = auth.getSession();
-      
+
       if (!session?.user?.user_ID || !session?.user?.currentSessionId) {
         return;
       }
@@ -34,21 +31,17 @@ export function useSessionChecker() {
           return;
         }
 
-        // Any other response means session is invalid
-        handleSessionExpired();
+        // Any other response means session is invalid — the API client
+        // (client.ts) already handles "Invalid Session or Session Expired"
+        // by clearing the session and redirecting to /login, so nothing
+        // else is needed here.
+        console.warn("Session check returned unexpected response:", response);
       } catch (error) {
-        // API returns 400 with "Invalid Session or Session Expired" text
-        // or any other error - treat as session expired
-        handleSessionExpired();
+        // Network errors (ERR_HTTP2_PROTOCOL_ERROR, server down, etc.)
+        // should NOT log the user out. The API client already handles
+        // true session expiration. Just log and retry in 5 min.
+        console.warn("Session check failed (will retry in 5 min):", error);
       }
-    };
-
-    const handleSessionExpired = () => {
-      auth.clearSession();
-      toast.error("Session Expired", {
-        description: "Your session has expired. Please login again.",
-      });
-      router.push("/login");
     };
 
     // Initial check
@@ -62,5 +55,5 @@ export function useSessionChecker() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [router]);
+  }, []);
 }

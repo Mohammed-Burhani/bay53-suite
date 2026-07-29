@@ -12,9 +12,11 @@ export default function CompanySetupPage() {
   useEffect(() => {
     // If already has company setup, redirect to dashboard
     if (session?.company) {
-      router.replace("/dashboard");
+      router.replace("/erp/dashboard");
     }
   }, [session, router]);
 
   return <CompanySetupForm />;
 }
+
+

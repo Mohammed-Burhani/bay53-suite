@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/components/QueryProvider";
+import SessionChecker from "@/components/SessionChecker";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -21,7 +22,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
 
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <SessionChecker />
+          {children}
+        </QueryProvider>
         <Toaster position="top-right" richColors />
 
       </body>

@@ -12,7 +12,7 @@ export default function SignupPage() {
   useEffect(() => {
     // If already logged in, redirect to dashboard
     if (session) {
-      router.replace("/dashboard");
+      router.replace("/erp/dashboard");
     }
   }, [session, router]);
 
