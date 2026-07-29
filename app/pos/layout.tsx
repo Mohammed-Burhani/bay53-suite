@@ -1,12 +1,12 @@
-import AppShell from "@/components/AppShell";
+import PosAppShell from "@/components/PosAppShell";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { TabNavigationProvider } from "@/components/TabNavigationProvider";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function PosLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <TabNavigationProvider>
-        <AppShell>{children}</AppShell>
+        <PosAppShell>{children}</PosAppShell>
       </TabNavigationProvider>
     </AuthGuard>
   );

@@ -197,14 +197,14 @@ export default function ItemRegisterTable() {
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="relative">
-                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse" />
-                <div className="relative p-6 rounded-full bg-linear-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-950/50">
-                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                <div className="absolute inset-0 bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] rounded-full blur-2xl opacity-30 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-linear-to-br from-[var(--report-accent-bg)] to-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/10 dark:to-[var(--report-accent)]/10">
+                  <Loader2 className="h-12 w-12 text-[var(--report-accent)] animate-spin" />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <h3 className="text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h3 className="text-xl font-bold bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] bg-clip-text text-transparent">
                   Loading Items Data
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -213,16 +213,16 @@ export default function ItemRegisterTable() {
               </div>
 
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-linear-to-r from-indigo-600 to-purple-600 animate-pulse" style={{ width: '70%' }} />
+                <div className="h-full bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] animate-pulse" style={{ width: '70%' }} />
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5 rounded-lg border border-[var(--report-accent-border)] dark:border-[var(--report-accent-border)]">
+                <Lightbulb className="h-5 w-5 text-[var(--report-accent)] shrink-0 mt-0.5" />
                 <div className="text-left">
-                  <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                  <p className="text-xs font-semibold text-foreground dark:text-foreground mb-1">
                     Pro Tip
                   </p>
-                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                  <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                     Item register tracks all stock movements for a specific item over time
                   </p>
                 </div>
@@ -249,7 +249,7 @@ export default function ItemRegisterTable() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <TrendingDown className="h-8 w-8 opacity-80 mb-2" />
@@ -258,7 +258,7 @@ export default function ItemRegisterTable() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Package className="h-8 w-8 opacity-80 mb-2" />
@@ -413,7 +413,7 @@ export default function ItemRegisterTable() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+                  <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
                     <TableHead className="font-semibold">Type</TableHead>
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">Bill No</TableHead>
@@ -465,7 +465,7 @@ export default function ItemRegisterTable() {
                           <TableCell className="text-right text-emerald-600 font-medium">
                             {row.Received ?? "—"}
                           </TableCell>
-                          <TableCell className="text-right text-blue-600 font-medium">
+                          <TableCell className="text-right text-[var(--report-accent)] font-medium">
                             {row.Issued ?? "—"}
                           </TableCell>
                           <TableCell className="text-right font-bold">{row.Balance ?? "—"}</TableCell>

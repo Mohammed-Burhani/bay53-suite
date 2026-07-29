@@ -5,10 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Activity, FolderKanban, BarChart3 } from "lucide-react";
 
 const REPORTS = [
-  { href: "/bay53crm/reports/lead-details", label: "Lead Details", icon: FileText, description: "Detailed lead table with export" },
-  { href: "/bay53crm/reports/lead-activity", label: "Lead Activity", icon: Activity, description: "Follow-up activity log" },
-  { href: "/bay53crm/reports/project-details", label: "Project Details", icon: FolderKanban, description: "Project list with all fields" },
-  { href: "/bay53crm/reports/sales-stage-status", label: "Sales Stage Status", icon: BarChart3, description: "Pivot table and chart by stage" },
+  { href: "/crm/reports/lead-details", label: "Lead Details", icon: FileText, description: "Detailed lead table with export" },
+  { href: "/crm/reports/lead-activity", label: "Lead Activity", icon: Activity, description: "Follow-up activity log" },
+  { href: "/crm/reports/project-details", label: "Project Details", icon: FolderKanban, description: "Project list with all fields" },
+  { href: "/crm/reports/sales-stage-status", label: "Sales Stage Status", icon: BarChart3, description: "Pivot table and chart by stage" },
 ];
 
 export default function CRMReportsPage() {

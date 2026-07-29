@@ -78,7 +78,7 @@ export default function CalibrationCertificatesPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push("/sales")}
+            onClick={() => router.push("/erp/sales")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

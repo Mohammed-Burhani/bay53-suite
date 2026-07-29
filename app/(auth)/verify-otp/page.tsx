@@ -15,7 +15,7 @@ function VerifyOTPContent() {
   useEffect(() => {
     // If already logged in, redirect to dashboard
     if (session) {
-      router.replace("/dashboard");
+      router.replace("/erp/dashboard");
     }
     // If no userName param, redirect to login
     if (!userName) {

@@ -241,7 +241,7 @@ export function DateRangeFilter({
     <div className={`space-y-3 ${className}`}>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
           {label}
         </Label>
         <Select value={dateType} onValueChange={onDateTypeChange}>

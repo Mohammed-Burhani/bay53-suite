@@ -46,7 +46,7 @@ export default function AddPartyPage() {
     addParty(party as Parameters<typeof addParty>[0]);
     toast.success(`${values.type === "customer" ? "Customer" : "Supplier"} added successfully`);
     queryClient.invalidateQueries({ queryKey: ["parties"] });
-    router.push("/parties");
+    router.push("/erp/parties");
   };
 
   return (

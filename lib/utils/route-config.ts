@@ -1,69 +1,72 @@
 // Route configuration for tab titles and icons
 export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
-  "/dashboard": { title: "Dashboard" },
-  "/onboarding": { title: "Get Started" },
-  
+  // ERP
+  "/erp/dashboard": { title: "Dashboard" },
+  "/erp/onboarding": { title: "Get Started" },
+
   // Inventory
-  "/inventory": { title: "All Products" },
-  "/inventory/add": { title: "Add Product" },
-  "/inventory/categories": { title: "Categories" },
-  "/inventory/low-stock": { title: "Low Stock" },
-  
+  "/erp/inventory": { title: "All Products" },
+  "/erp/inventory/add": { title: "Add Product" },
+  "/erp/inventory/categories": { title: "Categories" },
+  "/erp/inventory/low-stock": { title: "Low Stock" },
+
   // Sales
-  "/pos": { title: "POS" },
-  "/sales": { title: "Sales" },
-  "/sales/create": { title: "Create Invoice" },
-  "/sales/returns": { title: "Sales Returns" },
-  "/sales/certificates": { title: "Certificates" },
-  
+  "/erp/sales": { title: "Sales" },
+  "/erp/sales/create": { title: "Create Invoice" },
+  "/erp/sales/returns": { title: "Sales Returns" },
+  "/erp/sales/certificates": { title: "Certificates" },
+
   // Purchases
-  "/purchases": { title: "Purchases" },
-  "/purchases/create": { title: "New Purchase" },
-  "/purchases/orders": { title: "Purchase Orders" },
-  "/purchases/returns": { title: "Purchase Returns" },
-  
+  "/erp/purchases": { title: "Purchases" },
+  "/erp/purchases/orders": { title: "Purchase Orders" },
+  "/erp/purchases/returns": { title: "Purchase Returns" },
+
   // Parties
-  "/parties": { title: "Parties" },
-  "/parties/customers": { title: "Customers" },
-  "/parties/suppliers": { title: "Suppliers" },
-  "/parties/add": { title: "Add Party" },
-  
+  "/erp/parties": { title: "Parties" },
+  "/erp/parties/customers": { title: "Customers" },
+  "/erp/parties/suppliers": { title: "Suppliers" },
+  "/erp/parties/add": { title: "Add Party" },
+
   // Certificates
-  "/certificates": { title: "Certificates" },
-  
+  "/erp/certificates": { title: "Certificates" },
+
   // Master
-  "/master/groups": { title: "Groups" },
-  "/master/groups/create": { title: "Create Group" },
+  "/erp/master/groups": { title: "Groups" },
+  "/erp/master/groups/create": { title: "Create Group" },
 
   // Reports
-  "/reports": { title: "Reports" },
-  "/reports/current-stock": { title: "Current Stock" },
-  "/reports/inventory-report": { title: "Inventory Report" },
-  "/reports/item-register": { title: "Item Register" },
-  "/reports/pending-items": { title: "Pending Items" },
-  "/reports/ledger-outstanding": { title: "Ledger Outstanding" },
-  "/reports/ledger-outstanding-summary": { title: "Outstanding Summary" },
-  "/reports/ledger-balances": { title: "Ledger Balances" },
-  "/reports/ledger-register": { title: "Ledger Register" },
-  "/reports/day-book": { title: "Day Book" },
-  "/reports/gst-filing": { title: "GST Filing" },
-  
-  // AI & Settings
-  "/ai-assistant": { title: "AI Assistant" },
-  "/settings": { title: "Settings" },
+  "/erp/reports": { title: "Reports" },
+  "/erp/reports/current-stock": { title: "Current Stock" },
+  "/erp/reports/inventory-report": { title: "Inventory Report" },
+  "/erp/reports/item-register": { title: "Item Register" },
+  "/erp/reports/pending-items": { title: "Pending Items" },
+  "/erp/reports/ledger-outstanding": { title: "Ledger Outstanding" },
+  "/erp/reports/ledger-balances": { title: "Ledger Balances" },
+  "/erp/reports/ledger-register": { title: "Ledger Register" },
+  "/erp/reports/day-book": { title: "Day Book" },
+  "/erp/reports/gst-filing": { title: "GST Filing" },
 
-  // bay53CRM
-  "/bay53crm/dashboard": { title: "CRM Dashboard" },
-  "/bay53crm/leads": { title: "CRM Leads" },
-  "/bay53crm/projects": { title: "CRM Projects" },
-  "/bay53crm/reports": { title: "CRM Reports" },
-  "/bay53crm/reports/lead-details": { title: "Lead Details Report" },
-  "/bay53crm/reports/lead-activity": { title: "Lead Activity Report" },
-  "/bay53crm/reports/project-details": { title: "Project Details Report" },
-  "/bay53crm/reports/sales-stage-status": { title: "Sales Stage Status Report" },
-  "/bay53crm/cms/master-values": { title: "Master Values" },
-  "/bay53crm/cms/notification-master": { title: "Notification Master" },
-  "/bay53crm/company": { title: "Company Settings" },
+  // AI & Settings
+  "/erp/ai-assistant": { title: "AI Assistant" },
+  "/erp/settings": { title: "Settings" },
+
+  // POS
+  "/pos": { title: "POS" },
+  "/pos/inventory": { title: "POS Inventory" },
+  "/pos/history": { title: "POS History" },
+
+  // CRM
+  "/crm/dashboard": { title: "CRM Dashboard" },
+  "/crm/leads": { title: "CRM Leads" },
+  "/crm/projects": { title: "CRM Projects" },
+  "/crm/reports": { title: "CRM Reports" },
+  "/crm/reports/lead-details": { title: "Lead Details Report" },
+  "/crm/reports/lead-activity": { title: "Lead Activity Report" },
+  "/crm/reports/project-details": { title: "Project Details Report" },
+  "/crm/reports/sales-stage-status": { title: "Sales Stage Status Report" },
+  "/crm/cms/master-values": { title: "Master Values" },
+  "/crm/cms/notification-master": { title: "Notification Master" },
+  "/crm/company": { title: "Company Settings" },
 };
 
 export function getRouteTitle(path: string): string {

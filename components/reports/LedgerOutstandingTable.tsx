@@ -185,7 +185,7 @@ export default function LedgerOutstandingTable() {
         {/* Stats Cards */}
         {rows.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Receipt className="h-8 w-8 opacity-80 mb-2" />
@@ -379,7 +379,7 @@ export default function LedgerOutstandingTable() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                  <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">Group</TableHead>
                     <TableHead className="font-semibold">Bill No</TableHead>
@@ -431,7 +431,7 @@ export default function LedgerOutstandingTable() {
                                 {row.openingDrCr}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-bold text-blue-600">
+                            <TableCell className="text-right font-bold text-[var(--report-accent)]">
                               ₹{row.pending.toLocaleString()}
                             </TableCell>
                             <TableCell>
@@ -456,7 +456,7 @@ export default function LedgerOutstandingTable() {
                       })}
 
                       {/* Total Row - Opening and Closing in single line */}
-                      <TableRow className="bg-linear-to-r from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20 font-bold border-t-2">
+                      <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5 font-bold border-t-2">
                         <TableCell colSpan={6} className="text-right">Total:</TableCell>
                         <TableCell className="text-right">₹{Math.abs(totalOpening).toLocaleString()}</TableCell>
                         <TableCell>

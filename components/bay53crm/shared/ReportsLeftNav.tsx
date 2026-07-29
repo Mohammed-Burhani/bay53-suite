@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { FileText, Activity, FolderKanban, BarChart3 } from "lucide-react";
 
 const REPORT_NAV_ITEMS = [
-  { href: "/bay53crm/reports/lead-details", label: "Lead Details", icon: FileText },
-  { href: "/bay53crm/reports/lead-activity", label: "Lead Activity", icon: Activity },
-  { href: "/bay53crm/reports/project-details", label: "Project Details", icon: FolderKanban },
-  { href: "/bay53crm/reports/sales-stage-status", label: "Sales Stage Status", icon: BarChart3 },
+  { href: "/crm/reports/lead-details", label: "Lead Details", icon: FileText },
+  { href: "/crm/reports/lead-activity", label: "Lead Activity", icon: Activity },
+  { href: "/crm/reports/project-details", label: "Project Details", icon: FolderKanban },
+  { href: "/crm/reports/sales-stage-status", label: "Sales Stage Status", icon: BarChart3 },
 ];
 
 export function ReportsLeftNav() {

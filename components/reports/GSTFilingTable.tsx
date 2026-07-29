@@ -127,7 +127,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
     switch (reportType) {
       case "b2b":
         return (
-          <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+          <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
             <TableHead className="font-semibold">GSTIN</TableHead>
             <TableHead className="font-semibold">Party Name</TableHead>
             <TableHead className="font-semibold">Invoice No</TableHead>
@@ -143,7 +143,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
       case "b2cl":
       case "b2cs":
         return (
-          <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+          <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
             <TableHead className="font-semibold">Invoice No</TableHead>
             <TableHead className="font-semibold">Invoice Date</TableHead>
             <TableHead className="text-right font-semibold">Invoice Value</TableHead>
@@ -157,7 +157,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
         );
       case "hsn":
         return (
-          <TableRow className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+          <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
             <TableHead className="font-semibold">HSN Code</TableHead>
             <TableHead className="font-semibold">Description</TableHead>
             <TableHead className="font-semibold">UOM</TableHead>
@@ -182,7 +182,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
         {/* Stats Cards */}
         {data.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-indigo-500 to-indigo-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Receipt className="h-8 w-8 opacity-80 mb-2" />
@@ -200,7 +200,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <FileText className="h-8 w-8 opacity-80 mb-2" />
@@ -209,7 +209,7 @@ export default function GSTFilingTable({ initialData = [] }: GSTFilingTableProps
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Package2 className="h-8 w-8 opacity-80 mb-2" />

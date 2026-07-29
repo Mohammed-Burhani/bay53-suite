@@ -245,7 +245,7 @@ export default function LedgerOutstandingSummaryTable() {
         {/* Stats Cards */}
         {rows.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <Receipt className="h-8 w-8 opacity-80 mb-2" />
@@ -263,7 +263,7 @@ export default function LedgerOutstandingSummaryTable() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+            <Card className="relative overflow-hidden border-0 bg-linear-to-br from-[var(--card-accent-bg)] to-[var(--card-accent-bg)] text-white shadow-lg">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative">
                 <TrendingUp className="h-8 w-8 opacity-80 mb-2" />
@@ -278,7 +278,7 @@ export default function LedgerOutstandingSummaryTable() {
         <Card className="border shadow-sm">
           <CardHeader className="border-b bg-linear-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 text-white">
+              <div className="p-2 rounded-lg bg-linear-to-br from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] text-white">
                 <Filter className="h-4 w-4" />
               </div>
               <div>
@@ -293,7 +293,7 @@ export default function LedgerOutstandingSummaryTable() {
               {/* Group Filter */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
                   Group
                 </Label>
                 <Select 
@@ -325,7 +325,7 @@ export default function LedgerOutstandingSummaryTable() {
               {/* Ledger Selection */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
                   Ledgers
                 </Label>
                 <Popover open={ledgerSearchOpen} onOpenChange={setLedgerSearchOpen}>
@@ -461,7 +461,7 @@ export default function LedgerOutstandingSummaryTable() {
                 onClick={handleSearch}
                 disabled={isPending || !selectedGroupId || selectedGroupId === "all"}
                 size="sm"
-                className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-9"
+                className="bg-linear-to-r from-[var(--sidebar-glow-from)] to-[var(--sidebar-glow-to)] hover:from-[var(--sidebar-glow-from)] hover:to-[var(--sidebar-glow-to)] text-white h-9"
               >
                 {isPending ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -579,7 +579,7 @@ export default function LedgerOutstandingSummaryTable() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                  <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5">
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">GST No</TableHead>
                     <TableHead className="font-semibold">Area</TableHead>
@@ -607,7 +607,7 @@ export default function LedgerOutstandingSummaryTable() {
                           <TableCell className="text-sm text-muted-foreground">{row.Area}</TableCell>
                           <TableCell className="text-sm">{row.City}</TableCell>
                           <TableCell className="text-sm">{row["Contact No."]}</TableCell>
-                          <TableCell className="text-right font-bold text-blue-600">
+                          <TableCell className="text-right font-bold text-[var(--report-accent)]">
                             {row["Pending Amount"]?.toFixed(2) || "0.00"}
                           </TableCell>
                           <TableCell>
@@ -617,9 +617,9 @@ export default function LedgerOutstandingSummaryTable() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 font-bold">
+                      <TableRow className="bg-linear-to-r bg-[var(--report-accent-bg)] dark:from-[var(--report-accent)]/5 dark:to-[var(--report-accent)]/5 font-bold">
                         <TableCell colSpan={5} className="text-right font-bold">Total:</TableCell>
-                        <TableCell className="text-right font-bold text-blue-600">
+                        <TableCell className="text-right font-bold text-[var(--report-accent)]">
                           ₹{rows.reduce((sum, r) => sum + r["Pending Amount"], 0).toFixed(2)}
                         </TableCell>
                         <TableCell></TableCell>

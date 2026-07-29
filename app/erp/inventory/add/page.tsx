@@ -63,7 +63,7 @@ export default function AddProductPage() {
     toast.success("Product added successfully");
     queryClient.invalidateQueries({ queryKey: ["products"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    router.push("/inventory");
+    router.push("/erp/inventory");
   };
 
   return (

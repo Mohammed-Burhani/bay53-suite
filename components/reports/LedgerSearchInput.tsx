@@ -150,7 +150,7 @@ export function LedgerSearchInput({
   return (
     <div className={`space-y-1.5 ${className}`}>
       <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       <Popover open={ledgerSearchOpen} onOpenChange={setLedgerSearchOpen}>

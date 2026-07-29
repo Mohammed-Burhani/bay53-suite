@@ -122,6 +122,16 @@ export const useTabStore = create<TabStore>()(
     }),
     {
       name: "tab-storage",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        // Migration from v1 (old paths) to v2 (module-prefixed paths).
+        // Old tabs with paths like /dashboard or /bay53crm/* would 404,
+        // so we clear stored tabs on version bump.
+        if (version < 2) {
+          return { tabs: [], activeTabId: null };
+        }
+        return persisted as TabStore;
+      },
       partialize: (state) => ({
         tabs: state.tabs,
         activeTabId: state.activeTabId,

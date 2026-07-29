@@ -266,7 +266,7 @@ export default function CreateSalesInvoicePage() {
     queryClient.invalidateQueries({ queryKey: ["products"] });
     queryClient.invalidateQueries({ queryKey: ["invoices"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    router.push("/sales");
+    router.push("/erp/sales");
   };
 
   return (
