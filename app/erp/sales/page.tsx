@@ -19,6 +19,7 @@ export default function SalesPage() {
         showInvoiceTypeFilter={false} // Don't show dropdown, fixed to sales
         icon={TrendingUp}
         iconColor="bg-cyan-500"
+        hideActions={true}
       />
     </div>
   );

@@ -55,11 +55,13 @@ export const reportsService = {
 
   // Current Stock APIs
   searchStockPlaces: async (payload: StockPlaceSearchPayload): Promise<StockPlace[]> => {
-    return apiClient.post<StockPlace[]>("/StockPlace/Search", payload);
+    const response = await apiClient.post<StockPlace[] | unknown>("/StockPlace/Search", payload);
+    return Array.isArray(response) ? response : [];
   },
 
   searchItems: async (payload: ItemSearchPayload): Promise<Item[]> => {
-    return apiClient.post<Item[]>("/Item/Search", payload);
+    const response = await apiClient.post<{ list: Item[] } | Item[]>("/Item/Search", payload);
+    return Array.isArray(response) ? response : (response.list || []);
   },
 
   getCurrentStock: (payload: CurrentStockPayload) =>

@@ -265,6 +265,14 @@ export interface ItemAttributes {
 
 export interface StockPlaceSearchPayload {
   sessionId: string;
+  name?: string;
+  code?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  sp_ID?: number;
+  canMakeBill?: boolean;
+  isStockPlace?: boolean;
 }
 
 export interface ItemSearchPayload {

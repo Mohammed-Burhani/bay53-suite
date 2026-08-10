@@ -19,6 +19,7 @@ export default function SalesEnquiryPage() {
         showInvoiceTypeFilter={false}
         icon={MessageSquare}
         iconColor="bg-teal-500"
+        hideActions={true}
       />
     </div>
   );

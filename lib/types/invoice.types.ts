@@ -317,6 +317,138 @@ export enum InvoiceCategory {
   Stock = 3,
 }
 
+// ==================== Invoice Create (POST /Invoice/Create) ====================
+
+export interface InvoiceFooterNote {
+  title: string;
+  note: string;
+}
+
+export interface InvoiceCreateItemSubDetail {
+  id: number;
+  sessionId: string;
+  subDetId: number;
+  invDetId: number;
+  new0_Against1: boolean;
+  qty: number;
+  effect: number;
+  invCode: number;
+  refName: string;
+  invType: number;
+  subDetIdRef: number;
+  conversion: number;
+}
+
+export interface InvoiceCreateItemDetail {
+  id: number;
+  sessionId: string;
+  invDetID: number;
+  invCode: number;
+  sno: number;
+  item_ID: number;
+  sp_Code: number;
+  mfrItemName: string;
+  invType: number;
+  std_Qty: number;
+  conv_Qty: number;
+  conv_Unit: number;
+  std_Rate: number;
+  conv_Rate: number;
+  vatPer: number;
+  discount1: number;
+  discount2: number;
+  discount3: number;
+  amount: number;
+  cost_Rate: number;
+  itemDescription: string;
+  inventoryMoved: number;
+  rateDiscount: number;
+  cgstPercent: number;
+  cgstAmount: number;
+  sgstPercent: number;
+  sgstAmount: number;
+  igstPercent: number;
+  igstAmount: number;
+  vehicleWeigth: number;
+  emptyBoxWeigth: number;
+  totalWeigth: number;
+  emptyBoxes: number;
+  rackId: number;
+  invoiceItemSubDetail: InvoiceCreateItemSubDetail[];
+  currentStck: number;
+  conversion: number;
+}
+
+export interface InvoiceCreateExtraCharge {
+  id: number;
+  sessionId: string;
+  extra_Charge_ID: number;
+  taxType: number;
+  perVal: number;
+  charges: number;
+  cstPer: number;
+  vatPer: number;
+  amount: number;
+  effectOnTotal: number;
+  vatAssessValue: number;
+  taxEffect: boolean;
+}
+
+export interface InvoiceCreateTncMap {
+  id: number;
+  sessionId: string;
+  tncID: number;
+}
+
+export interface InvoiceCreatePayload {
+  id: number;
+  sessionId: string;
+  inv_Type: number;
+  spCode: number;
+  ledger_ID: number;
+  gstType: number;
+  invoiceNo: number;
+  bill_No: string;
+  date: string;
+  useInCompany: boolean;
+  refNo: string;
+  refDate: string;
+  orderNo: string;
+  orderDate: string;
+  projectSiteId: number;
+  invoiceItemDetail: InvoiceCreateItemDetail[];
+  invoiceExtraCharges: InvoiceCreateExtraCharge[];
+  invoiceTncMap: InvoiceCreateTncMap[];
+  item_SubTotal: number;
+  extra_SubTotal: number;
+  grandTotal: number;
+  roundOff: number;
+  shipToName: string;
+  shipToAddress: string;
+  partyName: string;
+  partyAddress: string;
+  voucherId: number;
+  attenTo: string;
+  subject: string;
+  recBy: string;
+  recAmt: number;
+  dueDays: number;
+  footerXML: InvoiceFooterNote[];
+  isMaxVAT: boolean;
+  isRoundOff: boolean;
+  precision: number;
+  profit: number;
+  profitPer: number;
+  billStatus: number;
+  state: number;
+  yourRefNo: string;
+  yourRefDate: string;
+  poNumber: string;
+  otherRefNo: string;
+  otherRefDate: string;
+  note: string;
+}
+
 // Common invoice type IDs (these may vary based on your setup)
 export const INVOICE_TYPE_IDS = {
   SALES_INVOICE: 1,
@@ -376,6 +508,13 @@ export interface InvoiceSetupInfoResponse {
   vouchEffect: boolean;
   extraCharges: SetupInfoExtraCharge[];
   printReports: PrintReport[];
+}
+
+// ==================== Invoice Delete / Cancel ====================
+export interface InvoiceDeletePayload {
+  id: number; // invCode
+  invType: number;
+  sessionId: string;
 }
 
 // ==================== Print Invoice API ====================

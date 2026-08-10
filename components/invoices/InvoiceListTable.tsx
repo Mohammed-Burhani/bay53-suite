@@ -36,6 +36,7 @@ import {
   RotateCcw,
   XCircle,
   FileDown,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
@@ -44,7 +45,7 @@ import { useRouter } from "next/navigation";
 import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { InvoicePreviewDialog } from "@/components/invoices/InvoicePreviewDialog";
-import { useInvoiceSearch } from "@/lib/hooks/useInvoices";
+import { useInvoiceSearch, useInvoiceDelete } from "@/lib/hooks/useInvoices";
 import type { InvoiceSearchItem } from "@/lib/types/invoice.types";
 import { useInvoiceTypes, useStockPlaces } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
@@ -63,6 +64,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface InvoiceListTableProps {
   title: string;
@@ -70,6 +81,7 @@ interface InvoiceListTableProps {
   showInvoiceTypeFilter?: boolean; // Whether to show the invoice type dropdown
   icon?: React.ElementType;
   iconColor?: string;
+  hideActions?: boolean; // When true, hides Edit/Duplicate/Convert/Cancel context menu actions
 }
 
 export function InvoiceListTable({
@@ -78,12 +90,17 @@ export function InvoiceListTable({
   showInvoiceTypeFilter = false,
   icon: Icon = FileText,
   iconColor = "bg-[var(--report-accent)]",
+  hideActions = false,
 }: InvoiceListTableProps) {
   const router = useRouter();
   
   // Invoice preview (bill) dialog
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceSearchItem | null>(null);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceSearchItem | null>(null);
+  const deleteMutation = useInvoiceDelete();
 
   // Cache setupInfo per invoice to avoid repeated API calls
   const setupInfoCache = useRef<Map<string, any>>(new Map());
@@ -259,6 +276,30 @@ export function InvoiceListTable({
 
   const handleCancelInvoice = (invoice: InvoiceSearchItem) => {
     toast.warning(`Cancel invoice: ${invoice.bill_No}`);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(
+      { id: deleteTarget.invCode, invType: deleteTarget.inv_Type },
+      {
+        onSuccess: () => {
+          toast.success(`Invoice "${deleteTarget.bill_No}" deleted`);
+          setDeleteTarget(null);
+          // Refresh the listing
+          if (invoiceData) {
+            searchInvoices(
+              { pageSize: 0, pageNumber: 0, invType: selectedInvType, fromDate: null, toDate: null, invoiceNo: null, bill_No: null, spIds: [0], partyName: null, itemName: null },
+              { onError: () => toast.error("Failed to refresh list") }
+            );
+          }
+        },
+        onError: (error) => {
+          toast.error("Failed to delete invoice");
+          console.error(error);
+        },
+      }
+    );
   };
 
   // Lazy-load submenu for Print options
@@ -477,53 +518,69 @@ export function InvoiceListTable({
     }
   };
 
-  const getInvoiceContextMenu = (invoice: InvoiceSearchItem): ContextMenuItem[] => [
-    {
-      label: "View Invoice",
-      icon: Eye,
-      onClick: () => handleViewInvoice(invoice),
-      shortcut: "⌘V",
-    },
-    {
-      label: "Edit",
-      icon: Edit,
-      onClick: () => handleEditInvoice(invoice),
-    },
-    {
-      label: "Print",
-      icon: Printer,
-      shortcut: "⌘P",
-      onSubmenuOpen: () => loadPrintSubmenu(invoice),
-    },
-    {
-      label: "Export",
-      icon: FileDown,
-      onSubmenuOpen: () => loadExportSubmenu(invoice),
-    },
-    {
-      label: "Email Invoice",
-      icon: Mail,
-      onClick: () => handleEmailInvoice(invoice),
-      variant: "success",
-    },
-    {
-      label: "Duplicate",
-      icon: Copy,
-      onClick: () => handleDuplicateInvoice(invoice),
-      divider: true,
-    },
-    {
-      label: "Convert to Return",
-      icon: RotateCcw,
-      onClick: () => handleConvertToReturn(invoice),
-    },
-    {
-      label: "Cancel Invoice",
-      icon: XCircle,
-      onClick: () => handleCancelInvoice(invoice),
-      variant: "danger",
-    },
-  ];
+  const getInvoiceContextMenu = (invoice: InvoiceSearchItem): ContextMenuItem[] => {
+    const items: ContextMenuItem[] = [
+      {
+        label: "View Invoice",
+        icon: Eye,
+        onClick: () => handleViewInvoice(invoice),
+        shortcut: "⌘V",
+      },
+      {
+        label: "Print",
+        icon: Printer,
+        shortcut: "⌘P",
+        onSubmenuOpen: () => loadPrintSubmenu(invoice),
+      },
+      {
+        label: "Export",
+        icon: FileDown,
+        onSubmenuOpen: () => loadExportSubmenu(invoice),
+      },
+      {
+        label: "Email Invoice",
+        icon: Mail,
+        onClick: () => handleEmailInvoice(invoice),
+        variant: "success",
+      },
+    ];
+
+    if (!hideActions) {
+      items.push(
+        {
+          label: "Edit",
+          icon: Edit,
+          onClick: () => handleEditInvoice(invoice),
+        },
+        {
+          label: "Duplicate",
+          icon: Copy,
+          onClick: () => handleDuplicateInvoice(invoice),
+          divider: true,
+        },
+        {
+          label: "Convert to Return",
+          icon: RotateCcw,
+          onClick: () => handleConvertToReturn(invoice),
+        },
+        {
+          label: "Cancel Invoice",
+          icon: XCircle,
+          onClick: () => handleCancelInvoice(invoice),
+          variant: "danger",
+        },
+        {
+          label: "Delete",
+          icon: Trash2,
+          onClick: () => setDeleteTarget(invoice),
+          variant: "danger",
+          divider: true,
+        }
+      );
+    }
+
+    return items;
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -929,6 +986,28 @@ export function InvoiceListTable({
         moduleName={title}
         moduleData={{ invoices: filteredInvoices }}
       />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice &quot;{deleteTarget?.bill_No}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Invoice bill preview */}
       <InvoicePreviewDialog

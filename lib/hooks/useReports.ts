@@ -138,7 +138,7 @@ export function useStockPlaces() {
     queryKey: ["stock-places", sessionId],
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
-      return reportsService.searchStockPlaces({ sessionId });
+      return reportsService.searchStockPlaces({ sessionId, name: "", area: "", city: "", state: "", code: "", sp_ID: 0, canMakeBill: false, isStockPlace: false });
     },
     enabled: !!sessionId,
     staleTime: Infinity, // Cache indefinitely - stock places rarely change

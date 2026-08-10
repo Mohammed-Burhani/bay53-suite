@@ -11,6 +11,8 @@ import type {
   InvoiceSetupInfoResponse,
   PrintInvoicePayload,
   PrintInvoiceResponse,
+  InvoiceCreatePayload,
+  InvoiceDeletePayload,
 } from "@/lib/types/invoice.types";
 
 export const invoiceService = {
@@ -27,6 +29,18 @@ export const invoiceService = {
   // Fetch setup info (print/export templates, extra charges, etc.)
   getSetupInfo: async (payload: InvoiceSetupInfoPayload): Promise<InvoiceSetupInfoResponse> => {
     return apiClient.post<InvoiceSetupInfoResponse>("/Invoice/SetupInfo", payload);
+  },
+
+  // ==================== Create Invoice ====================
+  // POST /Invoice/Create - creates a new invoice
+  createInvoice: async (payload: InvoiceCreatePayload): Promise<{ id: number; bill_No: string }> => {
+    return apiClient.post<{ id: number; bill_No: string }>("/Invoice/Create", payload);
+  },
+
+  // ==================== Delete Invoice ====================
+  // POST /Invoice/Delete - deletes/cancels an invoice
+  deleteInvoice: async (payload: InvoiceDeletePayload): Promise<void> => {
+    await apiClient.post<void>("/Invoice/Delete", payload);
   },
 
   // Print invoice - call external print API

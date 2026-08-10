@@ -19,6 +19,7 @@ export default function SalesChallanPage() {
         showInvoiceTypeFilter={false}
         icon={Truck}
         iconColor="bg-orange-500"
+        hideActions={true}
       />
     </div>
   );

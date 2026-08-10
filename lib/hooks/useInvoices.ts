@@ -3,10 +3,10 @@
 // ==================== Invoice Hooks ====================
 // All invoice queries/mutations via TanStack React Query
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoiceService } from "@/lib/api/invoice.service";
 import { auth } from "@/lib/auth";
-import type { InvoiceSearchPayload, InvoiceDetail } from "@/lib/types/invoice.types";
+import type { InvoiceSearchPayload, InvoiceDetail, InvoiceCreatePayload, InvoiceDeletePayload } from "@/lib/types/invoice.types";
 
 // Search invoices with mutation (for on-demand filtering)
 export function useInvoiceSearch() {
@@ -57,5 +57,40 @@ export function useInvoiceById(
     },
     enabled: !!sessionId && !!id && id > 0 && enabled,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+  });
+}
+
+// ==================== Invoice Create Mutation ====================
+// Hook for creating a new invoice via POST /Invoice/Create
+export function useInvoiceCreate() {
+  const sessionId = auth.getSessionId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: Omit<InvoiceCreatePayload, "sessionId">) => {
+      if (!sessionId) throw new Error("No session");
+      return invoiceService.createInvoice({ ...payload, sessionId });
+    },
+    onSuccess: () => {
+      // Invalidate invoice lists so they refetch
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+// ==================== Invoice Delete Mutation ====================
+// Hook for deleting an invoice via POST /Invoice/Delete
+export function useInvoiceDelete() {
+  const sessionId = auth.getSessionId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: Omit<InvoiceDeletePayload, "sessionId">) => {
+      if (!sessionId) throw new Error("No session");
+      return invoiceService.deleteInvoice({ ...payload, sessionId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
   });
 }

@@ -2,12 +2,12 @@
 
 import { InvoiceCreateForm } from "@/components/invoice/InvoiceCreateForm";
 
-export default function CreateSalesInvoicePage() {
+export default function CreateSalesChallanPage() {
   return (
     <InvoiceCreateForm
-      invType={1}
-      title="Sales Invoice"
-      backUrl="/erp/sales"
+      invType={7}
+      title="Sales Challan"
+      backUrl="/erp/sales/challan"
     />
   );
 }
