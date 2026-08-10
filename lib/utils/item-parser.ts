@@ -79,6 +79,9 @@ export function getAvailableOptions(
   currentFilters: Partial<ItemAttributes>,
   attribute: keyof ItemAttributes
 ): string[] {
+  // Guard against non-array input (e.g. a raw { list: [...] } API response)
+  if (!Array.isArray(items)) return [];
+
   // First filter items by all OTHER attributes
   const filtersWithoutCurrent = { ...currentFilters };
   delete filtersWithoutCurrent[attribute];

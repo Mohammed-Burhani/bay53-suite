@@ -131,33 +131,33 @@ export default function DashboardPage() {
 
   // Don't auto-fetch on mount - user must select ledgers first
   // Stock data can still auto-fetch
-  useEffect(() => {
-    if (sessionId && !currentStockMutation.data && !cachedStockData && !toastId) {
-      // Show custom toast with progress
-      const id = toast.custom(
-        () => (
-          <div className="pointer-events-auto flex w-full max-w-md rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-xl backdrop-saturate-150">
-            <LoadingToast message={LOADING_MESSAGES[0]} progress={0} />
-          </div>
-        ),
-        { duration: Infinity }
-      );
-      setToastId(id);
-      setMessageIndex(0);
+  // useEffect(() => {
+  //   if (sessionId && !currentStockMutation.data && !cachedStockData && !toastId) {
+  //     // Show custom toast with progress
+  //     const id = toast.custom(
+  //       () => (
+  //         <div className="pointer-events-auto flex w-full max-w-md rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-xl backdrop-saturate-150">
+  //           <LoadingToast message={LOADING_MESSAGES[0]} progress={0} />
+  //         </div>
+  //       ),
+  //       { duration: Infinity }
+  //     );
+  //     setToastId(id);
+  //     setMessageIndex(0);
       
-      // Fetch stock data
-      currentStockMutation.mutate({
-        itemCode: null,
-        name: null,
-        size: null,
-        material: null,
-        quality: null,
-        brand: null,
-        spId: 0,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, cachedStockData]);
+  //     // Fetch stock data
+  //     currentStockMutation.mutate({
+  //       itemCode: null,
+  //       name: null,
+  //       size: null,
+  //       material: null,
+  //       quality: null,
+  //       brand: null,
+  //       spId: 0,
+  //     });
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [sessionId, cachedStockData]);
 
   // Rotate loading messages + update progress
   useEffect(() => {
