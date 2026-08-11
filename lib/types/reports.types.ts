@@ -277,6 +277,11 @@ export interface StockPlaceSearchPayload {
 
 export interface ItemSearchPayload {
   sessionId: string;
+  pageSize?: number;
+  pageNumber?: number;
+  isSync?: boolean;
+  lastModifiedDate?: string;
+  name?: string;
 }
 
 // --- Invoice Type ---

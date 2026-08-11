@@ -55,8 +55,8 @@ export const reportsService = {
 
   // Current Stock APIs
   searchStockPlaces: async (payload: StockPlaceSearchPayload): Promise<StockPlace[]> => {
-    const response = await apiClient.post<StockPlace[] | unknown>("/StockPlace/Search", payload);
-    return Array.isArray(response) ? response : [];
+    const response = await apiClient.post<{ list: StockPlace[] } | StockPlace[]>("/StockPlace/Search", payload);
+    return Array.isArray(response) ? response : (response.list || []);
   },
 
   searchItems: async (payload: ItemSearchPayload): Promise<Item[]> => {

@@ -3,9 +3,10 @@
 // ==================== Reports Hooks ====================
 // All report queries/mutations via TanStack React Query
 
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { reportsService } from "@/lib/api/reports.service";
 import { auth } from "@/lib/auth";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import type { 
   LedgerOutstandingPayload, 
   LedgerOutstandingSummaryPayload, 
@@ -135,7 +136,8 @@ export function useStockPlaces() {
   const sessionId = auth.getSessionId();
 
   return useQuery({
-    queryKey: ["stock-places", sessionId],
+    // "v2" busts the cached [] from the pre-parsing-fix bundle (staleTime: Infinity never refetched it)
+    queryKey: ["stock-places", sessionId, "v2"],
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
       return reportsService.searchStockPlaces({ sessionId, name: "", area: "", city: "", state: "", code: "", sp_ID: 0, canMakeBill: false, isStockPlace: false });
@@ -151,14 +153,48 @@ export function useItems() {
   const sessionId = auth.getSessionId();
 
   return useQuery({
-    queryKey: ["items", sessionId],
+    // "v2" busts the cached [] from the pre-parsing-fix bundle (staleTime: Infinity never refetched it)
+    queryKey: ["items", sessionId, "v2"],
     queryFn: () => {
       if (!sessionId) throw new Error("No session");
-      return reportsService.searchItems({ sessionId });
+      return reportsService.searchItems({
+        sessionId,
+        pageSize: 0, // 0 means fetch all
+        pageNumber: 0,
+        isSync: true,
+        lastModifiedDate: "",
+        name: "",
+      });
     },
     enabled: !!sessionId,
     staleTime: Infinity, // Cache indefinitely - fetch once and store in memory
     gcTime: Infinity, // Keep in cache forever
+  });
+}
+
+// Server-side item search (debounced) for autocomplete dropdowns.
+// The API only returns results when `name` is non-empty, so the query is
+// enabled once the user has typed something.
+export function useItemSearch(searchTerm: string) {
+  const sessionId = auth.getSessionId();
+  const debouncedTerm = useDebouncedValue(searchTerm.trim(), 400);
+
+  return useQuery({
+    queryKey: ["item-search", sessionId, debouncedTerm],
+    queryFn: () => {
+      if (!sessionId) throw new Error("No session");
+      return reportsService.searchItems({
+        sessionId,
+        pageSize: 0,
+        pageNumber: 0,
+        isSync: true,
+        lastModifiedDate: "",
+        name: debouncedTerm,
+      });
+    },
+    enabled: !!sessionId && debouncedTerm.length > 0,
+    staleTime: 60 * 1000,
+    placeholderData: keepPreviousData, // keep old results while typing
   });
 }
 
