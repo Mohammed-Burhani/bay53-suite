@@ -42,7 +42,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useInvoiceCreate } from "@/lib/hooks/useInvoices";
-import { useStockPlaces, useItems, useLedgersByGroup } from "@/lib/hooks/useReports";
+import { useStockPlaces, useItemSearch, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import type { Item } from "@/lib/types/reports.types";
 import { auth } from "@/lib/auth";
@@ -179,34 +179,42 @@ function calcNetAmount(qty: number, rate: number, d1: number, d2: number, d3: nu
   return Math.round(afterD3 * 100) / 100;
 }
 
+// Recompute a line item's taxable amount + GST split (intra-state: CGST+SGST half each)
+function applyAmounts(li: LineItem): LineItem {
+  const net = calcNetAmount(li.std_Qty, li.std_Rate, li.discount1, li.discount2, li.discount3);
+  li.amount = net;
+  const gstTotal = Math.round((net * li.vatPer) / 100 * 100) / 100;
+  li.cgstPercent = li.vatPer / 2;
+  li.sgstPercent = li.vatPer / 2;
+  li.igstPercent = 0;
+  li.cgstAmount = Math.round(gstTotal / 2 * 100) / 100;
+  li.sgstAmount = Math.round(gstTotal / 2 * 100) / 100;
+  li.igstAmount = 0;
+  return li;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 //  ITEM SEARCH COMBOBOX (reused)
 // ═══════════════════════════════════════════════════════════════════
 
 function ItemSearchCell({
-  items, value, onSelect,
+  value, onSelect,
 }: {
-  items: Item[]; value: number; onSelect: (item: Item) => void;
+  value: number; onSelect: (item: Item) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const selected = items.find((i) => i.item_ID === value);
-  const filtered = useMemo(() => {
-    if (!search) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (i) => i.name.toLowerCase().includes(q) ||
-        (i.hsnNo && i.hsnNo.toLowerCase().includes(q)) ||
-        (i.item_CodeTxt && i.item_CodeTxt.toLowerCase().includes(q))
-    );
-  }, [items, search]);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  // Debounced server-side search — fires /Item/Search with `name` = typed characters
+  const { data: results = [], isFetching } = useItemSearch(search);
+  const hasSearch = search.trim().length > 0;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" aria-expanded={open}
           className="w-[220px] justify-between font-normal text-left h-9">
-          {selected ? <span className="truncate">{selected.name}</span>
+          {selectedItem ? <span className="truncate">{selectedItem.name}</span>
             : <span className="text-muted-foreground">Search item...</span>}
         </Button>
       </PopoverTrigger>
@@ -214,23 +222,34 @@ function ItemSearchCell({
         <Command shouldFilter={false}>
           <CommandInput placeholder="Search by name, HSN, code..." value={search} onValueChange={setSearch} />
           <CommandList>
-            <CommandEmpty>No items found.</CommandEmpty>
-            <CommandGroup className="max-h-[250px] overflow-auto">
-              {filtered.map((item) => (
-                <CommandItem key={item.item_ID} value={`${item.name} ${item.item_ID}`}
-                  onSelect={() => { onSelect(item); setOpen(false); setSearch(""); }}>
-                  <Check className={cn("mr-2 h-4 w-4 shrink-0", value === item.item_ID ? "opacity-100" : "opacity-0")} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{item.name}</div>
-                    <div className="flex gap-2 text-[10px] text-muted-foreground">
-                      {item.hsnNo && <span>HSN: {item.hsnNo}</span>}
-                      {item.std_Unit && <span>Unit: {item.std_Unit}</span>}
-                      {item.std_Sell_Rate > 0 && <span>Rate: ₹{item.std_Sell_Rate}</span>}
+            {!hasSearch ? (
+              <CommandEmpty>Type to search...</CommandEmpty>
+            ) : results.length === 0 ? (
+              <CommandEmpty>
+                {isFetching ? (
+                  <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                ) : (
+                  "No items found."
+                )}
+              </CommandEmpty>
+            ) : (
+              <CommandGroup className="max-h-[250px] overflow-auto">
+                {results.map((item) => (
+                  <CommandItem key={item.item_ID} value={`${item.name} ${item.item_ID}`}
+                    onSelect={() => { setSelectedItem(item); onSelect(item); setOpen(false); setSearch(""); }}>
+                    <Check className={cn("mr-2 h-4 w-4 shrink-0", value === item.item_ID ? "opacity-100" : "opacity-0")} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{item.name}</div>
+                      <div className="flex gap-2 text-[10px] text-muted-foreground">
+                        {item.hsnNo && <span>HSN: {item.hsnNo}</span>}
+                        {item.std_Unit && <span>Unit: {item.std_Unit}</span>}
+                        {item.std_Sell_Rate > 0 && <span>Rate: ₹{item.std_Sell_Rate}</span>}
+                      </div>
                     </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
@@ -258,7 +277,6 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
 
   // Master data
   const { data: stockPlaces = [], isLoading: loadingSp } = useStockPlaces();
-  const { data: allItems = [], isLoading: loadingItems } = useItems();
   const { data: allLedgers = [] } = useLedgersByGroup();
 
   // ── Section 1: Basic Info ─────────────────────────────────────
@@ -327,38 +345,25 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
 
   const updateLineItem = useCallback((tempId: string, patch: Partial<LineItem>) => {
     setLineItems((prev) =>
-      prev.map((li) => {
-        if (li.tempId !== tempId) return li;
-        let updated = { ...li, ...patch };
-
-        // When item is selected, auto-fill defaults
-        if (patch.item_ID !== undefined && patch.item_ID !== li.item_ID) {
-          const item = allItems.find((i) => i.item_ID === patch.item_ID);
-          if (item) {
-            updated.itemName = item.name;
-            updated.std_Rate = item.std_Sell_Rate || 0;
-            updated.vatPer = item.vatPer || 0;
-            updated.discount1 = 0; updated.discount2 = 0; updated.discount3 = 0;
-          }
-        }
-
-        // Auto-calc amount
-        const net = calcNetAmount(updated.std_Qty, updated.std_Rate, updated.discount1, updated.discount2, updated.discount3);
-        updated.amount = net;
-
-        // GST split (intra-state: CGST+SGST half each)
-        const gstTotal = Math.round((net * updated.vatPer) / 100 * 100) / 100;
-        updated.cgstPercent = updated.vatPer / 2;
-        updated.sgstPercent = updated.vatPer / 2;
-        updated.igstPercent = 0;
-        updated.cgstAmount = Math.round(gstTotal / 2 * 100) / 100;
-        updated.sgstAmount = Math.round(gstTotal / 2 * 100) / 100;
-        updated.igstAmount = 0;
-
-        return updated;
-      })
+      prev.map((li) => li.tempId !== tempId ? li : applyAmounts({ ...li, ...patch }))
     );
-  }, [allItems]);
+  }, []);
+
+  // When an item is picked from the search dropdown, auto-fill its defaults
+  const handleItemSelect = useCallback((tempId: string, item: Item) => {
+    setLineItems((prev) =>
+      prev.map((li) =>
+        li.tempId !== tempId ? li : applyAmounts({
+          ...li,
+          item_ID: item.item_ID,
+          itemName: item.name,
+          std_Rate: item.std_Sell_Rate || 0,
+          vatPer: item.vatPer || 0,
+          discount1: 0, discount2: 0, discount3: 0,
+        })
+      )
+    );
+  }, []);
 
   // ── Section 5: Extra Charges ─────────────────────────────────
   const [extraCharges, setExtraCharges] = useState<ExtraChargeRow[]>([]);
@@ -687,7 +692,7 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
           <Card className="py-5">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Items</CardTitle>
-              <Button variant="outline" size="sm" onClick={addLineItem} disabled={loadingItems}>
+              <Button variant="outline" size="sm" onClick={addLineItem}>
                 <Plus className="h-4 w-4 mr-1" /> Add Item
               </Button>
             </CardHeader>
@@ -724,8 +729,8 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
                               </Button>
                             </TableCell>
                             <TableCell className="py-1">
-                              <ItemSearchCell items={allItems} value={li.item_ID}
-                                onSelect={(item) => updateLineItem(li.tempId, { item_ID: item.item_ID })} />
+                              <ItemSearchCell value={li.item_ID}
+                                onSelect={(item) => handleItemSelect(li.tempId, item)} />
                             </TableCell>
                             <TableCell className="py-1">
                               <Input type="number" min={0} step="any"
