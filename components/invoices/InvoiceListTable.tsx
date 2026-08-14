@@ -81,8 +81,15 @@ interface InvoiceListTableProps {
   showInvoiceTypeFilter?: boolean; // Whether to show the invoice type dropdown
   icon?: React.ElementType;
   iconColor?: string;
-  hideActions?: boolean; // When true, hides Edit/Duplicate/Convert/Cancel context menu actions
+  hideActions?: boolean; // When true, hides Duplicate/Convert/Cancel context menu actions (Edit & Delete stay)
 }
+
+// Invoice type → create-form page used for editing (the form doubles as an editor via ?edit=invCode).
+const EDIT_CREATE_PAGE: Record<number, string> = {
+  1: "/erp/sales/create",
+  7: "/erp/sales/challan/create",
+  23: "/erp/sales/enquiry/create",
+};
 
 export function InvoiceListTable({
   title,
@@ -250,8 +257,12 @@ export function InvoiceListTable({
   };
 
   const handleEditInvoice = (invoice: InvoiceSearchItem) => {
-    toast.info(`Edit invoice: ${invoice.bill_No}`);
-    // router.push(`/invoices/${invoice.invCode}/edit`);
+    const createPage = EDIT_CREATE_PAGE[invoice.inv_Type] ?? EDIT_CREATE_PAGE[invType];
+    if (createPage) {
+      router.push(`${createPage}?edit=${invoice.invCode}`);
+    } else {
+      toast.error(`No edit page for invoice type ${invoice.inv_Type}`);
+    }
   };
 
   const handlePrintInvoice = (invoice: InvoiceSearchItem) => {
@@ -545,13 +556,14 @@ export function InvoiceListTable({
       },
     ];
 
+    // Edit & Delete are always available (delete shows a confirmation dialog first).
+    items.push({
+      label: "Edit",
+      icon: Edit,
+      onClick: () => handleEditInvoice(invoice),
+    });
     if (!hideActions) {
       items.push(
-        {
-          label: "Edit",
-          icon: Edit,
-          onClick: () => handleEditInvoice(invoice),
-        },
         {
           label: "Duplicate",
           icon: Copy,
@@ -568,16 +580,16 @@ export function InvoiceListTable({
           icon: XCircle,
           onClick: () => handleCancelInvoice(invoice),
           variant: "danger",
-        },
-        {
-          label: "Delete",
-          icon: Trash2,
-          onClick: () => setDeleteTarget(invoice),
-          variant: "danger",
-          divider: true,
         }
       );
     }
+    items.push({
+      label: "Delete",
+      icon: Trash2,
+      onClick: () => setDeleteTarget(invoice),
+      variant: "danger",
+      divider: true,
+    });
 
     return items;
   };

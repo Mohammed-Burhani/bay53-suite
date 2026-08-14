@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,10 +41,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useInvoiceCreate } from "@/lib/hooks/useInvoices";
+import { useInvoiceCreate, useInvoiceById } from "@/lib/hooks/useInvoices";
 import { useStockPlaces, useItemSearch, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import type { Item } from "@/lib/types/reports.types";
+import type { InvoiceDetail, InvoiceCreateExtraCharge } from "@/lib/types/invoice.types";
 import { auth } from "@/lib/auth";
 import {
   Command,
@@ -157,16 +158,32 @@ interface FooterNoteRow {
 const nowISO = () => new Date().toISOString();
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
+// Edit-prefill helpers: coerce unknown API values into form-shaped strings.
+function editStr(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return String(v);
+}
+// API dates arrive ISO-ish ("2026-06-01T11:00:03.1"); the date inputs want "yyyy-MM-dd".
+function editDate(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "";
+  try {
+    const d = new Date(String(v));
+    return Number.isNaN(d.getTime()) ? "" : format(d, "yyyy-MM-dd");
+  } catch {
+    return "";
+  }
+}
+
 function emptyLineItem(tempId: string): LineItem {
   return {
     tempId, item_ID: 0, itemName: "", sno: 0,
-    std_Qty: 1, conv_Qty: 0, conv_Unit: 0, std_Rate: 0, conv_Rate: 0, cost_Rate: 0,
+    std_Qty: 1, conv_Qty: 1, conv_Unit: 0, std_Rate: 0, conv_Rate: 0, cost_Rate: 0,
     discount1: 0, discount2: 0, discount3: 0, rateDiscount: 0, amount: 0,
     vatPer: 0, cgstPercent: 0, cgstAmount: 0, sgstPercent: 0, sgstAmount: 0,
     igstPercent: 0, igstAmount: 0,
     mfrItemName: "", itemDescription: "",
     vehicleWeigth: 0, emptyBoxWeigth: 0, totalWeigth: 0, emptyBoxes: 0, rackId: 0,
-    inventoryMoved: 0, currentStck: 0, conversion: 0,
+    inventoryMoved: 0, currentStck: 0, conversion: 1,
     invoiceItemSubDetail: [],
   };
 }
@@ -190,7 +207,34 @@ function applyAmounts(li: LineItem): LineItem {
   li.cgstAmount = Math.round(gstTotal / 2 * 100) / 100;
   li.sgstAmount = Math.round(gstTotal / 2 * 100) / 100;
   li.igstAmount = 0;
+  // When there's no conversion unit, the backend stores & validates the conversion
+  // qty/rate/factor as equal to the standard ones (confirmed from /Invoice/GetById).
+  if (li.conv_Unit === 0) {
+    li.conv_Qty = li.std_Qty;
+    li.conv_Rate = li.std_Rate;
+    li.conversion = 1;
+  }
   return li;
+}
+
+// One stock-movement entry per line, as stored by the backend for valid invoices:
+// { qty: <line qty>, effect: -1 (out), new0_Against1: false (fresh movement), conversion: 1 }.
+function buildStockSubDetail(li: LineItem, invType: number): ItemSubDetail[] {
+  const existing = (li.invoiceItemSubDetail ?? []).filter((sd) => sd.qty > 0);
+  if (existing.length > 0) {
+    return existing; // edit mode — send back the restored entries
+  }
+  return [{
+    id: 0, sessionId: "",
+    subDetId: 0, invDetId: 0,
+    new0_Against1: false,
+    qty: li.std_Qty,
+    effect: -1, // sales/challan: stock out
+    invCode: 0, refName: "",
+    invType,
+    subDetIdRef: 0,
+    conversion: li.conversion || 1,
+  }];
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -265,25 +309,36 @@ interface InvoiceCreateFormProps {
   invType: number;
   title: string;
   backUrl: string;
+  /** When set, the form loads this invoice via GetById, prefills every field, and updates (not creates) on save. */
+  editInvCode?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 //  MAIN FORM
 // ═══════════════════════════════════════════════════════════════════
 
-export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateFormProps) {
+export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: InvoiceCreateFormProps) {
   const router = useRouter();
   const createMutation = useInvoiceCreate();
 
   // Master data
   const { data: stockPlaces = [], isLoading: loadingSp } = useStockPlaces();
-  const { data: allLedgers = [] } = useLedgersByGroup();
+  const { data: allLedgers = [], isLoading: loadingLedgers } = useLedgersByGroup();
+
+  // Edit mode: fetch the invoice once and prefill all fields (see effect below).
+  const {
+    data: editDetail,
+    isLoading: loadingEdit,
+    isError: editError,
+  } = useInvoiceById(editInvCode, invType, !!editInvCode);
 
   // ── Section 1: Basic Info ─────────────────────────────────────
   const [date, setDate] = useState(todayStr());
   const [billNo, setBillNo] = useState("");
   const [invoiceNo, setInvoiceNo] = useState<number>(0);
-  const [spCode, setSpCode] = useState<number>(0);
+  // Stock place id. null = nothing picked yet. The API returns sp_ID = 0 for real
+  // stock places, so 0 is a VALID selection — only null blocks submit.
+  const [spCode, setSpCode] = useState<number | null>(null);
   const [gstType, setGstType] = useState<number>(0);
   const [useInCompany, setUseInCompany] = useState(true);
   const [projectSiteId, setProjectSiteId] = useState<number>(0);
@@ -309,6 +364,112 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
       setPartyAddress(full?.address || "");
     } else { setPartyName(""); setPartyAddress(""); }
   }, [selectedLedgers, allLedgers]);
+
+  // ── Edit prefill: map /Invoice/GetById detail back into the form state ──
+  // Runs once, after BOTH the detail and the ledger master data have loaded.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!editInvCode || !editDetail || !editDetail.id || prefilledRef.current) return;
+    if (loadingLedgers) return; // wait so the party ledger name resolves
+
+    const d = editDetail;
+    const ledger = allLedgers.find((l) => l.ledger_id === d.ledger_ID);
+
+    // Section 1: Basic Info
+    setDate(editDate(d.date) || todayStr());
+    setBillNo(editStr(d.bill_No));
+    setInvoiceNo(d.invoiceNo || 0);
+    setSpCode(d.spCode ?? null);
+    setGstType(Number((d as any).gstType ?? d.taxableType ?? 0));
+    setUseInCompany(d.useInCompany !== false);
+    setProjectSiteId(Number((d as any).projectSiteId ?? 0));
+
+    // Section 2: Party (party name/address auto-fill from the ledger below)
+    setSelectedLedgerIds(d.ledger_ID ? [d.ledger_ID] : []);
+    setSelectedLedgers(
+      ledger
+        ? [{ ledger_id: ledger.ledger_id, name: ledger.name, group: ledger.group ?? null }]
+        : d.ledger_ID
+          ? [{ ledger_id: d.ledger_ID, name: editStr(d.partyName), group: null }]
+          : []
+    );
+    setShipToName(editStr(d.shipToName));
+    setShipToAddress(editStr(d.shipToAddress));
+    setAttenTo(editStr(d.attenTo));
+    setStateCode(Number((d as any).state ?? 0));
+
+    // Section 3: References
+    setRefNo(editStr(d.refNo));
+    setRefDate(editDate(d.refDate));
+    setOrderNo(editStr(d.orderNo));
+    setOrderDate(editDate(d.orderDate));
+    setYourRefNo(editStr(d.yourRefNo));
+    setYourRefDate(editDate(d.yourRefDate));
+    setPoNumber(editStr(d.poNumber));
+    setOtherRefNo(editStr(d.otherRefNo));
+    setOtherRefDate(editDate(d.otherRefDate));
+    setSubject(editStr(d.subject));
+    setNote(editStr(d.note));
+
+    // Section 4: Items — keep the exact amounts/GST split from the API
+    const items = Array.isArray(d.invoiceItemDetail) ? d.invoiceItemDetail : [];
+    setLineItems(items.map((li, i) => ({
+      tempId: `edit_${i}`,
+      item_ID: li.item_ID,
+      itemName: editStr(li.mfrItemName ?? li.itemDescription),
+      sno: li.sno || i + 1,
+      std_Qty: li.std_Qty, conv_Qty: li.conv_Qty, conv_Unit: li.conv_Unit,
+      std_Rate: li.std_Rate, conv_Rate: li.conv_Rate, cost_Rate: li.cost_Rate,
+      discount1: li.discount1, discount2: li.discount2, discount3: li.discount3,
+      rateDiscount: li.rateDiscount,
+      amount: li.amount,
+      vatPer: li.vatPer,
+      cgstPercent: li.cgstPercent, cgstAmount: li.cgstAmount,
+      sgstPercent: li.sgstPercent, sgstAmount: li.sgstAmount,
+      igstPercent: li.igstPercent, igstAmount: li.igstAmount,
+      mfrItemName: editStr(li.mfrItemName), itemDescription: editStr(li.itemDescription),
+      vehicleWeigth: li.vehicleWeigth, emptyBoxWeigth: li.emptyBoxWeigth,
+      totalWeigth: li.totalWeigth, emptyBoxes: li.emptyBoxes, rackId: li.rackId ?? 0,
+      inventoryMoved: li.inventoryMoved, currentStck: li.currentStck, conversion: li.conversion,
+      invoiceItemSubDetail: (li.invoiceItemSubDetail ?? []).map((sd) => ({
+        id: sd.id ?? 0, sessionId: sd.sessionId ?? "",
+        subDetId: sd.subDetId, invDetId: sd.invDetId, new0_Against1: sd.new0_Against1,
+        qty: sd.qty, effect: sd.effect, invCode: sd.invCode,
+        refName: editStr(sd.refName), invType: sd.invType, subDetIdRef: sd.subDetIdRef ?? 0,
+        conversion: sd.conversion,
+      })),
+    })));
+
+    // Section 5: Extra charges — restore only additive charges (effectOnTotal 1).
+    // GST ledger postings (ids 6/7/8) are recomputed fresh from the line items on save.
+    const charges = Array.isArray(d.invoiceExtraCharges) ? d.invoiceExtraCharges : [];
+    setExtraCharges(charges.filter((c) => c.effectOnTotal === 1 && ![6, 7, 8].includes(c.extra_Charge_ID)).map((c, i) => ({
+      tempId: `edit_ec_${i}`,
+      extra_Charge_ID: c.extra_Charge_ID, taxType: c.taxType, perVal: c.perVal,
+      charges: c.charges, cstPer: c.cstPer, vatPer: c.vatPer, amount: c.amount,
+      effectOnTotal: c.effectOnTotal, vatAssessValue: c.vatAssessValue, taxEffect: c.taxEffect,
+    })));
+
+    // Section 6: TNC
+    const tncArr = Array.isArray(d.invoiceTncMap) ? (d.invoiceTncMap as any[]) : [];
+    setTncList(tncArr.map((t, i) => ({ tempId: `edit_tnc_${i}`, tncID: Number(t?.tncID ?? t?.id ?? 0) })));
+
+    // Section 7: Footer notes
+    const fnArr = Array.isArray(d.footerXML) ? (d.footerXML as any[]) : [];
+    setFooterNotes(fnArr.map((f, i) => ({ tempId: `edit_fn_${i}`, title: editStr(f?.title), note: editStr(f?.note) })));
+
+    // Section 8: Financial
+    setRecBy(editStr(d.recBy));
+    setDueDays(d.dueDays ?? 0);
+    setRoundOff(d.roundOff ?? 0);
+    setProfit(d.profit ?? 0);
+    setProfitPer(Number((d as any).profitPer ?? 0));
+    setRecAmt(Number((d as any).recAmt ?? 0));
+    setBillStatus(Number((d as any).billStatus ?? 0));
+    setPrecision(Number((d as any).precision ?? 0));
+
+    prefilledRef.current = true;
+  }, [editInvCode, editDetail, allLedgers, loadingLedgers]);
 
   // ── Section 3: References ─────────────────────────────────────
   const [refNo, setRefNo] = useState("");
@@ -411,7 +572,11 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
     const itemSubTotal = lineItems.reduce((s, li) => s + li.amount, 0);
     let cgst = 0, sgst = 0, igst = 0;
     lineItems.forEach((li) => { cgst += li.cgstAmount; sgst += li.sgstAmount; igst += li.igstAmount; });
-    const extraSubTotal = cgst + sgst + igst;
+    // extra_SubTotal reconciles with invoiceExtraCharges: GST postings (ids 6/7/8)
+    // plus any user-added additive charges (effectOnTotal 1).
+    const gstTotal = cgst + sgst + igst;
+    const userAdditive = extraCharges.filter((ec) => ec.effectOnTotal === 1).reduce((s, ec) => s + ec.amount, 0);
+    const extraSubTotal = gstTotal + userAdditive;
     const ecTotal = extraCharges.reduce((s, ec) => s + ec.amount, 0);
     const grandTotal = itemSubTotal + extraSubTotal + roundOff;
     return { itemSubTotal, extraSubTotal, cgst, sgst, igst, ecTotal, grandTotal };
@@ -419,9 +584,22 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
 
   // ── Validation ───────────────────────────────────────────────
   const isValid =
-    selectedLedgerIds.length > 0 && spCode > 0 &&
+    selectedLedgerIds.length > 0 && spCode !== null &&
+    billNo.trim().length > 0 && recBy.trim().length > 0 && recAmt > 0 &&
     lineItems.length > 0 &&
     lineItems.every((li) => li.item_ID > 0 && li.std_Qty > 0);
+
+  // Human-readable list of what's still blocking submit (shown under the button).
+  const validationIssues = [
+    selectedLedgerIds.length === 0 && "Select a party",
+    spCode === null && "Select a stock place",
+    billNo.trim().length === 0 && "Bill No. is required",
+    recBy.trim().length === 0 && "Rec By is required",
+    recAmt <= 0 && "Rec Amount is required",
+    lineItems.length === 0 && "Add at least one item",
+    lineItems.length > 0 && lineItems.some((li) => li.item_ID <= 0) && "Pick an item for every line",
+    lineItems.length > 0 && lineItems.some((li) => li.std_Qty <= 0) && "Every line needs a quantity above zero",
+  ].filter(Boolean) as string[];
 
   // ── Submit ───────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
@@ -435,7 +613,7 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
     // Build item details — only include non-zero sub-details
     const itemDetails = lineItems.map((li, idx) => ({
       id: 0, sessionId: "", invDetID: 0, invCode: 0, sno: idx + 1,
-      item_ID: li.item_ID, sp_Code: spCode,
+      item_ID: li.item_ID, sp_Code: spCode ?? 0,
       mfrItemName: li.mfrItemName, invType,
       std_Qty: li.std_Qty, conv_Qty: li.conv_Qty, conv_Unit: li.conv_Unit,
       std_Rate: li.std_Rate, conv_Rate: li.conv_Rate,
@@ -449,31 +627,49 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
       igstPercent: li.igstPercent, igstAmount: li.igstAmount,
       vehicleWeigth: li.vehicleWeigth, emptyBoxWeigth: li.emptyBoxWeigth,
       totalWeigth: li.totalWeigth, emptyBoxes: li.emptyBoxes, rackId: li.rackId,
-      invoiceItemSubDetail: li.invoiceItemSubDetail
-        .filter(sd => sd.qty > 0)
-        .map(sd => ({ ...sd, sessionId: "" })),
-      currentStck: li.currentStck, conversion: li.conversion,
+      invoiceItemSubDetail: buildStockSubDetail(li, invType).map((sd) => ({ ...sd, sessionId: "" })),
+      currentStck: li.currentStck, conversion: li.conversion || 1,
     }));
 
-    const ec = extraCharges.map((r) => ({
-      id: 0, sessionId: "", extra_Charge_ID: r.extra_Charge_ID,
-      taxType: r.taxType, perVal: r.perVal, charges: r.charges,
-      cstPer: r.cstPer, vatPer: r.vatPer, amount: r.amount,
-      effectOnTotal: r.effectOnTotal, vatAssessValue: r.vatAssessValue, taxEffect: r.taxEffect,
-    }));
+    // User-entered extra charges, minus any GST postings restored from edit prefill
+    // (ids 6/7/8) — GST is always recomputed fresh below so it tracks the line items.
+    const ec = extraCharges
+      .filter((r) => ![6, 7, 8].includes(r.extra_Charge_ID))
+      .map((r) => ({
+        id: 0, sessionId: "", extra_Charge_ID: r.extra_Charge_ID,
+        taxType: r.taxType, perVal: r.perVal, charges: r.charges,
+        cstPer: r.cstPer, vatPer: r.vatPer, amount: r.amount,
+        effectOnTotal: r.effectOnTotal, vatAssessValue: r.vatAssessValue, taxEffect: r.taxEffect,
+      }));
+
+    // The backend posts GST as extra charges (CGST=6, SGST=7, IGST=8) and validates
+    // extra_SubTotal against the sum of invoiceExtraCharges. Generate those entries so
+    // the totals reconcile even when the user added no manual charges.
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    const gstCharges: InvoiceCreateExtraCharge[] = [];
+    if (totals.cgst > 0) {
+      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 6, taxType: 0, perVal: 0, charges: r2(totals.cgst), cstPer: 0, vatPer: 0, amount: r2(totals.cgst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
+    }
+    if (totals.sgst > 0) {
+      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 7, taxType: 0, perVal: 0, charges: r2(totals.sgst), cstPer: 0, vatPer: 0, amount: r2(totals.sgst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
+    }
+    if (totals.igst > 0) {
+      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 8, taxType: 0, perVal: 0, charges: r2(totals.igst), cstPer: 0, vatPer: 0, amount: r2(totals.igst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
+    }
+    const allCharges = [...ec, ...gstCharges];
 
     const tnc = tncList.map((r) => ({ id: 0, sessionId: "", tncID: r.tncID }));
     const footer = footerNotes.map((r) => ({ title: r.title, note: r.note }));
 
     const payload = {
-      id: 0, inv_Type: invType, spCode, ledger_ID: selectedLedgerIds[0] || 0,
+      id: editInvCode ?? 0, inv_Type: invType, spCode: spCode ?? 0, ledger_ID: selectedLedgerIds[0] || 0,
       gstType, invoiceNo, bill_No: billNo,
       date: new Date(date).toISOString(), useInCompany,
       refNo, refDate: refDate ? new Date(refDate).toISOString() : nowISO(),
       orderNo, orderDate: orderDate ? new Date(orderDate).toISOString() : nowISO(),
       projectSiteId,
       invoiceItemDetail: itemDetails,
-      invoiceExtraCharges: ec,
+      invoiceExtraCharges: allCharges,
       invoiceTncMap: tnc,
       item_SubTotal: totals.itemSubTotal,
       extra_SubTotal: totals.extraSubTotal,
@@ -491,7 +687,11 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
 
     createMutation.mutate(payload, {
       onSuccess: (data) => {
-        toast.success(`${title} created! Bill: ${data.bill_No}`);
+        toast.success(
+          editInvCode
+            ? `${title} updated! Bill: ${data.bill_No}`
+            : `${title} created! Bill: ${data.bill_No}`
+        );
         router.push(backUrl);
       },
       onError: (err) => { toast.error(`Failed: ${err}`); console.error(err); },
@@ -502,12 +702,32 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
     otherRefNo, otherRefDate, subject, note, lineItems, extraCharges, tncList, footerNotes,
     totals, roundOff, shipToName, shipToAddress, partyName, partyAddress, attenTo,
     recBy, recAmt, dueDays, isMaxVAT, isRoundOff, precision, profit, profitPer, billStatus,
-    stateCode, title, backUrl, router, createMutation,
+    stateCode, title, backUrl, router, createMutation, editInvCode,
   ]);
 
   // ══════════════════════════════════════════════════════════════
   //  RENDER
   // ══════════════════════════════════════════════════════════════
+
+  // Edit mode: block the form until the invoice is loaded (and prefilled).
+  if (editInvCode) {
+    if (editError) {
+      return (
+        <div className="flex flex-col items-center gap-3 p-16">
+          <p className="font-medium text-destructive">Failed to load the {title.toLowerCase()}.</p>
+          <Button variant="outline" onClick={() => router.push(backUrl)}>Go back</Button>
+        </div>
+      );
+    }
+    if (loadingEdit || !editDetail) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-3 p-16 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p>Loading {title.toLowerCase()} for editing…</p>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -518,7 +738,9 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="text-sm text-muted-foreground">Create a new {title.toLowerCase()}</p>
+          <p className="text-sm text-muted-foreground">
+            {editInvCode ? `Edit ${title.toLowerCase()}` : `Create a new ${title.toLowerCase()}`}
+          </p>
         </div>
         {lineItems.length > 0 && (
           <Badge variant="secondary">{lineItems.length} item{lineItems.length > 1 ? "s" : ""}</Badge>
@@ -539,7 +761,7 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
                   <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Bill No.</Label>
+                  <Label>Bill No. *</Label>
                   <Input placeholder="Auto" value={billNo} onChange={(e) => setBillNo(e.target.value)} className="h-9" />
                 </div>
                 <div className="space-y-1.5">
@@ -562,7 +784,7 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label>Stock Place *</Label>
-                  <Select value={spCode.toString()} onValueChange={(v) => setSpCode(Number(v))} disabled={loadingSp}>
+                  <Select value={spCode === null ? "" : spCode.toString()} onValueChange={(v) => setSpCode(Number(v))} disabled={loadingSp}>
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
                       {stockPlaces.map((sp) => (
@@ -1121,11 +1343,11 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
               <Separator />
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Rec. By</Label>
+                  <Label className="text-xs">Rec. By *</Label>
                   <Input value={recBy} onChange={(e) => setRecBy(e.target.value)} className="h-8" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Rec. Amt</Label>
+                  <Label className="text-xs">Rec. Amt *</Label>
                   <Input type="number" step="any" value={recAmt}
                     onChange={(e) => setRecAmt(parseFloat(e.target.value) || 0)} className="h-8" />
                 </div>
@@ -1141,11 +1363,18 @@ export function InvoiceCreateForm({ invType, title, backUrl }: InvoiceCreateForm
           <Button className="w-full gap-2 h-11 text-base"
             onClick={handleSubmit} disabled={createMutation.isPending || !isValid}>
             {createMutation.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Creating...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> {editInvCode ? "Updating..." : "Creating..."}</>
             ) : (
-              <><Save className="h-4 w-4" /> Create {title}</>
+              <><Save className="h-4 w-4" /> {editInvCode ? `Update ${title}` : `Create ${title}`}</>
             )}
           </Button>
+          {!isValid && !createMutation.isPending && validationIssues.length > 0 && (
+            <div className="space-y-0.5 px-1 text-xs text-destructive">
+              {validationIssues.map((issue) => (
+                <p key={issue}>• {issue}</p>
+              ))}
+            </div>
+          )}
           <Button variant="outline" className="w-full" onClick={() => router.push(backUrl)}>Cancel</Button>
         </div>
       </div>

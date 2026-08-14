@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,25 +19,46 @@ import remarkGfm from "remark-gfm";
 export interface ModuleAIAssistantProps {
   moduleName: string;
   moduleData: Record<string, unknown>;
+  dataKey?: string; // Optional key to specify which data array to use
   onAgenticAction?: (action: string, params: Record<string, unknown>) => Promise<void>;
+}
+
+function extractDataArray(moduleData: Record<string, unknown>, dataKey?: string): unknown[] {
+  // If dataKey is provided, use that specific key
+  if (dataKey && moduleData[dataKey]) {
+    const value = moduleData[dataKey];
+    return Array.isArray(value) ? value : [];
+  }
+
+  // Otherwise, find the first array value in moduleData
+  for (const key of Object.keys(moduleData)) {
+    const value = moduleData[key];
+    if (Array.isArray(value) && value.length > 0) {
+      return value;
+    }
+  }
+
+  // Fallback: return empty array
+  return [];
 }
 
 export function ModuleAIAssistant({
   moduleName,
   moduleData,
+  dataKey,
   onAgenticAction,
 }: ModuleAIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Extract invoices from moduleData
-  const invoices = (moduleData.invoices as unknown[]) || [];
-  
+  // Extract data array from moduleData (flexible - handles different data structures)
+  const dataArray = useMemo(() => extractDataArray(moduleData, dataKey), [moduleData, dataKey]);
+
   // Use Gemini chat hook
   const { messages, loading, sendMessage } = useInvoiceChat({
-    invoices,
-    invoiceType: moduleName,
+    data: dataArray,
+    moduleName,
   });
 
   const scrollToBottom = () => {
