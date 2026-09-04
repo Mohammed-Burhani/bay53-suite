@@ -407,6 +407,7 @@ export interface InvoiceCreatePayload {
   spCode: number;
   ledger_ID: number;
   gstType: number;
+  taxableType: number; // backend stored proc requires @TaxableType (same as gstType)
   invoiceNo: number;
   bill_No: string;
   date: string;
@@ -417,7 +418,7 @@ export interface InvoiceCreatePayload {
   orderDate: string;
   projectSiteId: number;
   invoiceItemDetail: InvoiceCreateItemDetail[];
-  invoiceExtraCharges: InvoiceCreateExtraCharge[];
+  invoiceExtraCharges: InvoiceCreateExtraCharge[]; // empty array when no charges
   invoiceTncMap: InvoiceCreateTncMap[];
   item_SubTotal: number;
   extra_SubTotal: number;

@@ -41,11 +41,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useInvoiceCreate, useInvoiceById } from "@/lib/hooks/useInvoices";
+import { useInvoiceCreate, useInvoiceById, useTncSearch, useExtraChargeSearch } from "@/lib/hooks/useInvoices";
 import { useStockPlaces, useItemSearch, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import type { Item } from "@/lib/types/reports.types";
-import type { InvoiceDetail, InvoiceCreateExtraCharge } from "@/lib/types/invoice.types";
+import type { InvoiceDetail, InvoiceCreateExtraCharge, InvoiceCreatePayload } from "@/lib/types/invoice.types";
+import type { Tnc, ExtraCharge } from "@/lib/types/master.types";
 import { auth } from "@/lib/auth";
 import {
   Command,
@@ -302,6 +303,129 @@ function ItemSearchCell({
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  TNC SEARCH COMBOBOX (for Terms & Conditions dropdown)
+// ═══════════════════════════════════════════════════════════════════
+
+function TncSearchCell({
+  value, onSelect,
+}: {
+  value: number; onSelect: (tnc: Tnc) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selectedTnc, setSelectedTnc] = useState<Tnc | null>(null);
+  const { data: results = [], isFetching } = useTncSearch(search);
+  const hasSearch = search.trim().length > 0;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open}
+          className="w-full justify-between font-normal text-left h-9">
+          {selectedTnc ? <span className="truncate">{selectedTnc.name}</span>
+            : <span className="text-muted-foreground">Search TNC...</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[420px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Search TNC..." value={search} onValueChange={setSearch} />
+          <CommandList>
+            {!hasSearch ? (
+              <CommandEmpty>Type to search TNC...</CommandEmpty>
+            ) : results.length === 0 ? (
+              <CommandEmpty>
+                {isFetching ? (
+                  <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                ) : (
+                  "No TNC found."
+                )}
+              </CommandEmpty>
+            ) : (
+              <CommandGroup className="max-h-[250px] overflow-auto">
+                {results.map((tnc) => (
+                  <CommandItem key={tnc.tncID} value={`${tnc.name} ${tnc.tncID}`}
+                    onSelect={() => { setSelectedTnc(tnc); onSelect(tnc); setOpen(false); setSearch(""); }}>
+                    <Check className={cn("mr-2 h-4 w-4 shrink-0", value === tnc.tncID ? "opacity-100" : "opacity-0")} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{tnc.name}</div>
+                      {tnc.description && <div className="text-[10px] text-muted-foreground truncate">{tnc.description}</div>}
+                      <div className="text-[10px] text-muted-foreground">ID: {tnc.tncID}</div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXTRA CHARGE SEARCH COMBOBOX (for Extra Charges dropdown)
+// ═══════════════════════════════════════════════════════════════════
+
+function ExtraChargeSearchCell({
+  value, onSelect,
+}: {
+  value: number; onSelect: (ec: ExtraCharge) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selectedEC, setSelectedEC] = useState<ExtraCharge | null>(null);
+  const { data: results = [], isFetching } = useExtraChargeSearch(search);
+  const hasSearch = search.trim().length > 0;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open}
+          className="w-full justify-between font-normal text-left h-9">
+          {selectedEC ? <span className="truncate">{selectedEC.name}</span>
+            : <span className="text-muted-foreground">Search Extra Charge...</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[420px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Search Extra Charge..." value={search} onValueChange={setSearch} />
+          <CommandList>
+            {!hasSearch ? (
+              <CommandEmpty>Type to search Extra Charge...</CommandEmpty>
+            ) : results.length === 0 ? (
+              <CommandEmpty>
+                {isFetching ? (
+                  <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                ) : (
+                  "No Extra Charges found."
+                )}
+              </CommandEmpty>
+            ) : (
+              <CommandGroup className="max-h-[250px] overflow-auto">
+                {results.map((ec) => (
+                  <CommandItem key={ec.extraCharges_ID} value={`${ec.name} ${ec.extraCharges_ID}`}
+                    onSelect={() => { setSelectedEC(ec); onSelect(ec); setOpen(false); setSearch(""); }}>
+                    <Check className={cn("mr-2 h-4 w-4 shrink-0", value === ec.extraCharges_ID ? "opacity-100" : "opacity-0")} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{ec.name}</div>
+                      <div className="flex gap-2 text-[10px] text-muted-foreground">
+                        {ec.taxPercent !== undefined && <span>Tax: {ec.taxPercent}%</span>}
+                        {ec.vatPercent !== undefined && <span>VAT: {ec.vatPercent}%</span>}
+                        <span>ID: {ec.extraCharges_ID}</span>
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  PROPS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -535,6 +659,23 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
   const updateExtraCharge = (id: string, patch: Partial<ExtraChargeRow>) =>
     setExtraCharges((p) => p.map((r) => r.tempId === id ? { ...r, ...patch } : r));
 
+  // Auto-calculate amount for percent-based charges when itemSubTotal changes
+  useEffect(() => {
+    const itemSubTotal = lineItems.reduce((s, li) => s + li.amount, 0);
+    if (itemSubTotal === 0) return;
+    
+    setExtraCharges((prev) =>
+      prev.map((ec) => {
+        // Only auto-calc if perVal > 0 (percent-based charge)
+        if (ec.perVal > 0) {
+          const calculatedAmount = Math.round((itemSubTotal * ec.perVal) / 100 * 100) / 100;
+          return { ...ec, amount: calculatedAmount, charges: calculatedAmount }; // sync charges = amount
+        }
+        return ec;
+      })
+    );
+  }, [lineItems]);
+
   // ── Section 6: TNC ───────────────────────────────────────────
   const [tncList, setTncList] = useState<TncRow[]>([]);
   const addTnc = () => setTncList((p) => [...p, { tempId: `tnc_${Date.now()}_${p.length}`, tncID: 0 }]);
@@ -572,13 +713,12 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
     const itemSubTotal = lineItems.reduce((s, li) => s + li.amount, 0);
     let cgst = 0, sgst = 0, igst = 0;
     lineItems.forEach((li) => { cgst += li.cgstAmount; sgst += li.sgstAmount; igst += li.igstAmount; });
-    // extra_SubTotal reconciles with invoiceExtraCharges: GST postings (ids 6/7/8)
-    // plus any user-added additive charges (effectOnTotal 1).
-    const gstTotal = cgst + sgst + igst;
-    const userAdditive = extraCharges.filter((ec) => ec.effectOnTotal === 1).reduce((s, ec) => s + ec.amount, 0);
-    const extraSubTotal = gstTotal + userAdditive;
+    // extra_SubTotal = only user-selected extra charges (freight, packing, etc)
+    // GST is already included in line item amounts, not counted as extra charges
+    const userAdditive = extraCharges.filter((ec) => ec.extra_Charge_ID > 0 && ec.effectOnTotal === 1).reduce((s, ec) => s + ec.amount, 0);
+    const extraSubTotal = userAdditive;
     const ecTotal = extraCharges.reduce((s, ec) => s + ec.amount, 0);
-    const grandTotal = itemSubTotal + extraSubTotal + roundOff;
+    const grandTotal = itemSubTotal + cgst + sgst + igst + extraSubTotal + roundOff;
     return { itemSubTotal, extraSubTotal, cgst, sgst, igst, ecTotal, grandTotal };
   }, [lineItems, extraCharges, roundOff]);
 
@@ -631,10 +771,11 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
       currentStck: li.currentStck, conversion: li.conversion || 1,
     }));
 
-    // User-entered extra charges, minus any GST postings restored from edit prefill
-    // (ids 6/7/8) — GST is always recomputed fresh below so it tracks the line items.
+    // User-entered extra charges only (freight, packing, discounts, etc)
+    // GST is NOT sent as extra charges - it's already in line item amounts
+    // Only send additive charges (effectOnTotal === 1) to match extra_SubTotal calculation
     const ec = extraCharges
-      .filter((r) => ![6, 7, 8].includes(r.extra_Charge_ID))
+      .filter((r) => r.extra_Charge_ID > 0 && r.effectOnTotal === 1) // only selected additive charges
       .map((r) => ({
         id: 0, sessionId: "", extra_Charge_ID: r.extra_Charge_ID,
         taxType: r.taxType, perVal: r.perVal, charges: r.charges,
@@ -642,34 +783,19 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
         effectOnTotal: r.effectOnTotal, vatAssessValue: r.vatAssessValue, taxEffect: r.taxEffect,
       }));
 
-    // The backend posts GST as extra charges (CGST=6, SGST=7, IGST=8) and validates
-    // extra_SubTotal against the sum of invoiceExtraCharges. Generate those entries so
-    // the totals reconcile even when the user added no manual charges.
-    const r2 = (n: number) => Math.round(n * 100) / 100;
-    const gstCharges: InvoiceCreateExtraCharge[] = [];
-    if (totals.cgst > 0) {
-      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 6, taxType: 0, perVal: 0, charges: r2(totals.cgst), cstPer: 0, vatPer: 0, amount: r2(totals.cgst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
-    }
-    if (totals.sgst > 0) {
-      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 7, taxType: 0, perVal: 0, charges: r2(totals.sgst), cstPer: 0, vatPer: 0, amount: r2(totals.sgst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
-    }
-    if (totals.igst > 0) {
-      gstCharges.push({ id: 0, sessionId: "", extra_Charge_ID: 8, taxType: 0, perVal: 0, charges: r2(totals.igst), cstPer: 0, vatPer: 0, amount: r2(totals.igst), effectOnTotal: 1, vatAssessValue: r2(totals.itemSubTotal), taxEffect: false });
-    }
-    const allCharges = [...ec, ...gstCharges];
-
     const tnc = tncList.map((r) => ({ id: 0, sessionId: "", tncID: r.tncID }));
     const footer = footerNotes.map((r) => ({ title: r.title, note: r.note }));
 
-    const payload = {
+    const payload: Omit<InvoiceCreatePayload, "sessionId"> = {
       id: editInvCode ?? 0, inv_Type: invType, spCode: spCode ?? 0, ledger_ID: selectedLedgerIds[0] || 0,
-      gstType, invoiceNo, bill_No: billNo,
+      gstType, taxableType: gstType, // backend stored proc expects @TaxableType (same value as gstType)
+      invoiceNo, bill_No: billNo,
       date: new Date(date).toISOString(), useInCompany,
       refNo, refDate: refDate ? new Date(refDate).toISOString() : nowISO(),
       orderNo, orderDate: orderDate ? new Date(orderDate).toISOString() : nowISO(),
       projectSiteId,
       invoiceItemDetail: itemDetails,
-      invoiceExtraCharges: allCharges,
+      invoiceExtraCharges: ec, // empty array when no charges
       invoiceTncMap: tnc,
       item_SubTotal: totals.itemSubTotal,
       extra_SubTotal: totals.extraSubTotal,
@@ -1114,11 +1240,26 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                 <CardContent className="border-t pt-4 space-y-3">
                   {extraCharges.map((ec) => (
                     <div key={ec.tempId} className="flex flex-wrap items-end gap-2 p-2 border rounded-md">
-                      <div className="space-y-1 w-[120px]">
-                        <Label className="text-xs">Charge ID</Label>
-                        <Input type="number" min={0} value={ec.extra_Charge_ID || ""}
-                          onChange={(e) => updateExtraCharge(ec.tempId, { extra_Charge_ID: parseFloat(e.target.value) || 0 })}
-                          className="h-8" />
+                      <div className="space-y-1 w-[200px]">
+                        <Label className="text-xs">Charge</Label>
+                        <ExtraChargeSearchCell
+                          value={ec.extra_Charge_ID}
+                          onSelect={(sel) => {
+                            const amt = sel.fixedAmount ?? 0;
+                            updateExtraCharge(ec.tempId, {
+                              extra_Charge_ID: sel.extraCharges_ID,
+                              taxType: Number(sel.taxType ?? sel.tax_Type ?? 0),
+                              perVal: sel.taxPercent ?? 0,
+                              vatPer: 0, // not in API response for these charges
+                              cstPer: 0, // not in API response
+                              charges: amt, // sync with amount
+                              amount: amt,
+                              effectOnTotal: sel.isPositiveEffect ? 1 : 0,
+                              vatAssessValue: 0,
+                              taxEffect: sel.vatEffect ?? true,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="space-y-1 w-[80px]">
                         <Label className="text-xs">Tax Type</Label>
@@ -1133,9 +1274,12 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                           className="h-8" />
                       </div>
                       <div className="space-y-1 w-[80px]">
-                        <Label className="text-xs">Charges</Label>
-                        <Input type="number" min={0} step="any" value={ec.charges || ""}
-                          onChange={(e) => updateExtraCharge(ec.tempId, { charges: parseFloat(e.target.value) || 0 })}
+                        <Label className="text-xs">Amount</Label>
+                        <Input type="number" min={0} step="any" value={ec.amount || ""}
+                          onChange={(e) => {
+                            const amt = parseFloat(e.target.value) || 0;
+                            updateExtraCharge(ec.tempId, { amount: amt, charges: amt }); // sync charges = amount
+                          }}
                           className="h-8" />
                       </div>
                       <div className="space-y-1 w-[70px]">
@@ -1148,12 +1292,6 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                         <Label className="text-xs">VAT%</Label>
                         <Input type="number" min={0} step="any" value={ec.vatPer || ""}
                           onChange={(e) => updateExtraCharge(ec.tempId, { vatPer: parseFloat(e.target.value) || 0 })}
-                          className="h-8" />
-                      </div>
-                      <div className="space-y-1 w-[80px]">
-                        <Label className="text-xs">Amount</Label>
-                        <Input type="number" min={0} step="any" value={ec.amount || ""}
-                          onChange={(e) => updateExtraCharge(ec.tempId, { amount: parseFloat(e.target.value) || 0 })}
                           className="h-8" />
                       </div>
                       <div className="space-y-1 w-[70px]">
@@ -1199,10 +1337,11 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                   {tncList.map((t) => (
                     <div key={t.tempId} className="flex items-end gap-2">
                       <div className="space-y-1 flex-1">
-                        <Label className="text-xs">TNC ID</Label>
-                        <Input type="number" min={0} value={t.tncID || ""}
-                          onChange={(e) => updateTnc(t.tempId, { tncID: parseInt(e.target.value) || 0 })}
-                          className="h-8" />
+                        <Label className="text-xs">TNC</Label>
+                        <TncSearchCell
+                          value={t.tncID}
+                          onSelect={(sel) => updateTnc(t.tempId, { tncID: sel.tncID })}
+                        />
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70"
                         onClick={() => removeTnc(t.tempId)}>
@@ -1280,7 +1419,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Extra Charges</span>
-                <span className="font-mono">₹{totals.ecTotal.toFixed(2)}</span>
+                <span className="font-mono">₹{totals.extraSubTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm items-center">
                 <span className="text-muted-foreground">Round Off</span>

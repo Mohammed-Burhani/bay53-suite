@@ -21,6 +21,17 @@ import { cn } from "@/lib/utils";
 import { useInvoiceChat } from "@/lib/hooks/useInvoiceChat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+
+// Use default markdown rendering - the AI decides formatting automatically
+
+
+export interface ModuleAIAssistantProps {
+  moduleName: string;
+  moduleData: Record<string, unknown>;
+  dataKey?: string; // Optional key to specify which data array to use
+  onAgenticAction?: (action: string, params: Record<string, unknown>) => Promise<void>;
+}
 
 export interface ModuleAIAssistantProps {
   moduleName: string;
@@ -216,19 +227,24 @@ export function ModuleAIAssistant({
                   <p className="mb-3 font-medium text-foreground">
                     Ask me about your {moduleName.toLowerCase()}
                   </p>
-                  <div className="space-y-2">
-                    {suggestions.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          setInput(s);
-                          handleSend();
-                        }}
-                        className="block w-full text-xs border rounded-lg px-3 py-2 hover:bg-blue-50 hover:border-blue-300 transition text-left"
-                      >
-                        {s}
-                      </button>
-                    ))}
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2 text-left">Quick Questions</p>
+                      <div className="space-y-2">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => {
+                              setInput(s);
+                              handleSend();
+                            }}
+                            className="block w-full text-xs border rounded-lg px-3 py-2 hover:bg-blue-50 hover:border-blue-300 transition text-left"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -292,8 +308,11 @@ export function ModuleAIAssistant({
                             ) : (
                               <>
                                 {message.role === "model" ? (
-                                  <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  <div className="text-sm max-w-none">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      rehypePlugins={[rehypeRaw]}
+                                    >
                                       {message.text}
                                     </ReactMarkdown>
                                   </div>

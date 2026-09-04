@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoiceService } from "@/lib/api/invoice.service";
 import { auth } from "@/lib/auth";
 import type { InvoiceSearchPayload, InvoiceDetail, InvoiceCreatePayload, InvoiceDeletePayload } from "@/lib/types/invoice.types";
+import type { TncSearchPayload, ExtraChargeSearchPayload, Tnc, ExtraCharge } from "@/lib/types/master.types";
 
 // Search invoices with mutation (for on-demand filtering)
 export function useInvoiceSearch() {
@@ -92,5 +93,54 @@ export function useInvoiceDelete() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
+  });
+}
+
+// ==================== TNC Master Search ====================
+// Hook for searching TNC (Terms & Conditions) master records
+export function useTncSearch(searchTerm: string = "") {
+  const sessionId = auth.getSessionId();
+  const debouncedTerm = searchTerm.trim(); // no debounce here; UI can debounce if needed
+
+  return useQuery<Tnc[]>({
+    queryKey: ["tnc-search", sessionId, debouncedTerm],
+    queryFn: async () => {
+      if (!sessionId) throw new Error("No session");
+      return invoiceService.searchTnc({
+        sessionId,
+        pageSize: 0, // fetch all
+        pageNumber: 0,
+        isSync: false,
+        lastModifiedDate: new Date().toISOString(),
+        text: debouncedTerm,
+      });
+    },
+    enabled: !!sessionId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    placeholderData: (previousData) => previousData, // keep old results while typing
+  });
+}
+
+// ==================== Extra Charge Master Search ====================
+// Hook for searching Extra Charge master records
+export function useExtraChargeSearch(searchTerm: string = "") {
+  const sessionId = auth.getSessionId();
+  const debouncedTerm = searchTerm.trim();
+
+  return useQuery<ExtraCharge[]>({
+    queryKey: ["extra-charge-search", sessionId, debouncedTerm],
+    queryFn: async () => {
+      if (!sessionId) throw new Error("No session");
+      return invoiceService.searchExtraCharge({
+        sessionId,
+        pageSize: 0, // fetch all
+        pageNumber: 0,
+        isSync: false,
+        lastModifiedDate: new Date().toISOString(),
+      });
+    },
+    enabled: !!sessionId && debouncedTerm.length > 0, // only run when search has text
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes (rarely changes)
+    placeholderData: (previousData) => previousData, // keep old results while typing
   });
 }
