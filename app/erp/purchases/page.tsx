@@ -19,6 +19,7 @@ export default function PurchasesPage() {
         showInvoiceTypeFilter={false}
         icon={ShoppingCart}
         iconColor="bg-violet-500"
+        createUrl="/erp/purchases/create"
       />
     </div>
   );

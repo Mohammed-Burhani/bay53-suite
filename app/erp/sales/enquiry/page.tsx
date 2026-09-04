@@ -20,6 +20,7 @@ export default function SalesEnquiryPage() {
         icon={MessageSquare}
         iconColor="bg-teal-500"
         hideActions={true}
+        createUrl="/erp/sales/enquiry/create"
       />
     </div>
   );

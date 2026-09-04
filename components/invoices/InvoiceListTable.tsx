@@ -37,6 +37,7 @@ import {
   XCircle,
   FileDown,
   Trash2,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
@@ -82,13 +83,25 @@ interface InvoiceListTableProps {
   icon?: React.ElementType;
   iconColor?: string;
   hideActions?: boolean; // When true, hides Duplicate/Convert/Cancel context menu actions (Edit & Delete stay)
+  /** Route to the create form for this invoice type. Omit to hide the "New" button (e.g. an "all types" list). */
+  createUrl?: string;
 }
 
-// Invoice type → create-form page used for editing (the form doubles as an editor via ?edit=invCode).
+// Invoice type → create-form page used for both creating and editing
+// (the form doubles as an editor via ?edit=invCode). Keep in sync with the
+// `create/page.tsx` under each invoice section.
 const EDIT_CREATE_PAGE: Record<number, string> = {
-  1: "/erp/sales/create",
-  7: "/erp/sales/challan/create",
-  23: "/erp/sales/enquiry/create",
+  1: "/erp/sales/create", // Sales Invoice
+  2: "/erp/sales/cash/create", // Cash Invoice
+  3: "/erp/sales/returns/create", // Sales Return
+  4: "/erp/sales/quotation/create", // Sales Quotation
+  5: "/erp/sales/order/create", // Sales Order
+  6: "/erp/sales/performa/create", // Performa Invoice
+  7: "/erp/sales/challan/create", // Sales Challan
+  8: "/erp/purchases/po/create", // Purchase Order
+  9: "/erp/purchases/create", // Purchase Invoice
+  10: "/erp/purchases/returns/create", // Purchase Return
+  23: "/erp/sales/enquiry/create", // Sales Enquiry
 };
 
 export function InvoiceListTable({
@@ -98,6 +111,7 @@ export function InvoiceListTable({
   icon: Icon = FileText,
   iconColor = "bg-[var(--report-accent)]",
   hideActions = false,
+  createUrl,
 }: InvoiceListTableProps) {
   const router = useRouter();
   
@@ -862,6 +876,16 @@ export function InvoiceListTable({
         </CardContent>
       </Card>
 
+      {/* New button (shown even with no results, so the page isn't a dead end) */}
+      {createUrl && (
+        <div className="flex justify-end">
+          <Button size="sm" className="h-9" onClick={() => router.push(createUrl)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            New {title.replace(/s$/, "")}
+          </Button>
+        </div>
+      )}
+
       {/* Results Table */}
       {filteredInvoices.length > 0 ? (
         <Card className="border-0 shadow-lg">
@@ -887,6 +911,7 @@ export function InvoiceListTable({
                     <TableHead className="text-right font-semibold">Amount</TableHead>
                     <TableHead className="font-semibold">Payment</TableHead>
                     <TableHead className="font-semibold text-center">Status</TableHead>
+                    <TableHead className="font-semibold text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -962,6 +987,28 @@ export function InvoiceListTable({
                               Pending
                             </Badge>
                           )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Edit"
+                              onClick={(e) => { e.stopPropagation(); handleEditInvoice(invoice); }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive/70 hover:text-destructive"
+                              title="Delete"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(invoice); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     </ContextMenu>

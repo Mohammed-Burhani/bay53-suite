@@ -1,31 +1,28 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { InvoiceCreateForm } from "@/components/invoice/InvoiceCreateForm";
 
-export default function CreatePurchasePage() {
-  const router = useRouter();
+function CreatePurchaseInvoicePageInner() {
+  const searchParams = useSearchParams();
+  const editRaw = searchParams.get("edit");
+  const editInvCode = editRaw ? Number(editRaw) || undefined : undefined;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Purchase</h1>
-          <p className="text-sm text-muted-foreground">Record a new purchase from supplier</p>
-        </div>
-      </div>
+    <InvoiceCreateForm
+      invType={9}
+      title="Purchase Invoice"
+      backUrl="/erp/purchases"
+      editInvCode={editInvCode}
+    />
+  );
+}
 
-      <Card className="py-4">
-        <CardContent className="p-12 text-center">
-          <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground/30" />
-          <p className="mt-4 text-muted-foreground">Purchase entry form coming soon</p>
-        </CardContent>
-      </Card>
-    </div>
+export default function CreatePurchaseInvoicePage() {
+  return (
+    <Suspense fallback={null}>
+      <CreatePurchaseInvoicePageInner />
+    </Suspense>
   );
 }

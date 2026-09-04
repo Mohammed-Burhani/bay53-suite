@@ -47,6 +47,7 @@ import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import type { Item } from "@/lib/types/reports.types";
 import type { InvoiceDetail, InvoiceCreateExtraCharge, InvoiceCreatePayload } from "@/lib/types/invoice.types";
 import type { Tnc, ExtraCharge } from "@/lib/types/master.types";
+import { getValidationIssues } from "@/lib/invoice-validation";
 import { auth } from "@/lib/auth";
 import {
   Command,
@@ -659,19 +660,34 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
   const updateExtraCharge = (id: string, patch: Partial<ExtraChargeRow>) =>
     setExtraCharges((p) => p.map((r) => r.tempId === id ? { ...r, ...patch } : r));
 
-  // Auto-calculate amount for percent-based charges when itemSubTotal changes
+  // Auto-calculate amount for charges based on type/percent when totals change
   useEffect(() => {
     const itemSubTotal = lineItems.reduce((s, li) => s + li.amount, 0);
     if (itemSubTotal === 0) return;
     
     setExtraCharges((prev) =>
       prev.map((ec) => {
-        // Only auto-calc if perVal > 0 (percent-based charge)
+        let calculatedAmount = 0;
+        
+        // Percent-based charge: apply perVal% to item subtotal
         if (ec.perVal > 0) {
-          const calculatedAmount = Math.round((itemSubTotal * ec.perVal) / 100 * 100) / 100;
-          return { ...ec, amount: calculatedAmount, charges: calculatedAmount }; // sync charges = amount
+          calculatedAmount = (itemSubTotal * ec.perVal) / 100;
         }
-        return ec;
+        // Fixed amount from dropdown selection
+        else if (ec.charges > 0) {
+          calculatedAmount = ec.charges;
+        }
+        // CST/VAT based - apply rate to taxable + GST
+        else if (ec.cstPer > 0) {
+          const gstTotal = lineItems.reduce((s, li) => s + li.cgstAmount + li.sgstAmount + li.igstAmount, 0);
+          calculatedAmount = ((itemSubTotal + gstTotal) * ec.cstPer) / 100;
+        } else if (ec.vatPer > 0) {
+          const gstTotal = lineItems.reduce((s, li) => s + li.cgstAmount + li.sgstAmount + li.igstAmount, 0);
+          calculatedAmount = ((itemSubTotal + gstTotal) * ec.vatPer) / 100;
+        }
+        
+        const roundedAmount = Math.round(calculatedAmount * 100) / 100;
+        return { ...ec, amount: roundedAmount, charges: roundedAmount };
       })
     );
   }, [lineItems]);
@@ -718,33 +734,37 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
     const userAdditive = extraCharges.filter((ec) => ec.extra_Charge_ID > 0 && ec.effectOnTotal === 1).reduce((s, ec) => s + ec.amount, 0);
     const extraSubTotal = userAdditive;
     const ecTotal = extraCharges.reduce((s, ec) => s + ec.amount, 0);
-    const grandTotal = itemSubTotal + cgst + sgst + igst + extraSubTotal + roundOff;
+    // Backend might expect grandTotal = taxable + extra + roundOff (GST separate)
+    // OR grandTotal = taxable + GST + extra + roundOff
+    // Try without GST first - backend may calculate GST internally from item amounts
+    const grandTotal = itemSubTotal + extraSubTotal + roundOff;
     return { itemSubTotal, extraSubTotal, cgst, sgst, igst, ecTotal, grandTotal };
   }, [lineItems, extraCharges, roundOff]);
 
   // ── Validation ───────────────────────────────────────────────
-  const isValid =
-    selectedLedgerIds.length > 0 && spCode !== null &&
-    billNo.trim().length > 0 && recBy.trim().length > 0 && recAmt > 0 &&
-    lineItems.length > 0 &&
-    lineItems.every((li) => li.item_ID > 0 && li.std_Qty > 0);
-
-  // Human-readable list of what's still blocking submit (shown under the button).
-  const validationIssues = [
-    selectedLedgerIds.length === 0 && "Select a party",
-    spCode === null && "Select a stock place",
-    billNo.trim().length === 0 && "Bill No. is required",
-    recBy.trim().length === 0 && "Rec By is required",
-    recAmt <= 0 && "Rec Amount is required",
-    lineItems.length === 0 && "Add at least one item",
-    lineItems.length > 0 && lineItems.some((li) => li.item_ID <= 0) && "Pick an item for every line",
-    lineItems.length > 0 && lineItems.some((li) => li.std_Qty <= 0) && "Every line needs a quantity above zero",
-  ].filter(Boolean) as string[];
+  // GLOBAL_RULES (lib/invoice-validation.ts) apply to every invoice type by
+  // default; INVOICE_TYPE_VALIDATION_OVERRIDES lets a specific invType disable
+  // rules that don't apply to it (e.g. Quotation/Enquiry have no payment yet)
+  // or add its own local-only rules.
+  const validationIssues = useMemo(
+    () =>
+      getValidationIssues({
+        invType,
+        selectedLedgerIds,
+        spCode,
+        billNo,
+        recBy,
+        recAmt,
+        lineItems,
+      }),
+    [invType, selectedLedgerIds, spCode, billNo, recBy, recAmt, lineItems]
+  );
+  const isValid = validationIssues.length === 0;
 
   // ── Submit ───────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!isValid) {
-      toast.error("Party, Stock Place, and at least one item with qty are required");
+      toast.error(validationIssues[0] ?? "Please fix the errors below");
       return;
     }
     const sessionId = auth.getSessionId();
@@ -787,28 +807,44 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
     const footer = footerNotes.map((r) => ({ title: r.title, note: r.note }));
 
     const payload: Omit<InvoiceCreatePayload, "sessionId"> = {
-      id: editInvCode ?? 0, inv_Type: invType, spCode: spCode ?? 0, ledger_ID: selectedLedgerIds[0] || 0,
-      gstType, taxableType: gstType, // backend stored proc expects @TaxableType (same value as gstType)
-      invoiceNo, bill_No: billNo,
-      date: new Date(date).toISOString(), useInCompany,
-      refNo, refDate: refDate ? new Date(refDate).toISOString() : nowISO(),
-      orderNo, orderDate: orderDate ? new Date(orderDate).toISOString() : nowISO(),
-      projectSiteId,
-      invoiceItemDetail: itemDetails,
-      invoiceExtraCharges: ec, // empty array when no charges
-      invoiceTncMap: tnc,
+      id: editInvCode ?? 0,
+      ledger_ID: selectedLedgerIds[0] || 0,
+      project_Ledger_ID: null,
+      inv_Type: invType,
+      invoiceNo,
+      bill_No: billNo,
+      date: new Date(date).toISOString(),
+      spCode: spCode ?? 0,
+      dueDays,
       item_SubTotal: totals.itemSubTotal,
       extra_SubTotal: totals.extraSubTotal,
+      roundOff,
       grandTotal: totals.grandTotal,
-      roundOff, shipToName, shipToAddress, partyName, partyAddress,
-      voucherId: 0, attenTo, subject, recBy, recAmt, dueDays,
+      profit,
+      recBy,
+      billType: 0, // TODO: add UI field if needed
+      salesLedger: 0, // TODO: add UI field if needed
+      purchaseLedger: 0, // TODO: add UI field if needed
+      taxableType: gstType, 
+      roundedBill: isRoundOff,
+      salesman: null,
+      isSalesAllowed: true,
+      refNo,
+      refDate: refDate ? new Date(refDate).toISOString() : nowISO(),
+      orderNo,
+      orderDate: orderDate ? new Date(orderDate).toISOString() : nowISO(),
+      projectSiteId,
+      invoiceItemDetail: itemDetails,
+      invoiceExtraCharges: ec,
+      invoiceTncMap: tnc,
       footerXML: footer,
-      isMaxVAT, isRoundOff, precision, profit, profitPer, billStatus,
+      shipToName,
+      shipToAddress,
+      attenTo,
+      subject,
+      isRoundOff,
+      precision,
       state: stateCode,
-      yourRefNo, yourRefDate: yourRefDate ? new Date(yourRefDate).toISOString() : nowISO(),
-      poNumber, otherRefNo,
-      otherRefDate: otherRefDate ? new Date(otherRefDate).toISOString() : nowISO(),
-      note,
     };
 
     createMutation.mutate(payload, {
@@ -823,7 +859,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
       onError: (err) => { toast.error(`Failed: ${err}`); console.error(err); },
     });
   }, [
-    isValid, invType, spCode, selectedLedgerIds, gstType, invoiceNo, billNo, date, useInCompany,
+    isValid, validationIssues, invType, spCode, selectedLedgerIds, gstType, invoiceNo, billNo, date, useInCompany,
     projectSiteId, refNo, refDate, orderNo, orderDate, yourRefNo, yourRefDate, poNumber,
     otherRefNo, otherRefDate, subject, note, lineItems, extraCharges, tncList, footerNotes,
     totals, roundOff, shipToName, shipToAddress, partyName, partyAddress, attenTo,
@@ -1275,12 +1311,8 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                       </div>
                       <div className="space-y-1 w-[80px]">
                         <Label className="text-xs">Amount</Label>
-                        <Input type="number" min={0} step="any" value={ec.amount || ""}
-                          onChange={(e) => {
-                            const amt = parseFloat(e.target.value) || 0;
-                            updateExtraCharge(ec.tempId, { amount: amt, charges: amt }); // sync charges = amount
-                          }}
-                          className="h-8" />
+                        <Input type="number" value={ec.amount || ""} readOnly disabled
+                          className="h-8 bg-muted" title="Auto-calculated" />
                       </div>
                       <div className="space-y-1 w-[70px]">
                         <Label className="text-xs">CST%</Label>

@@ -19,6 +19,7 @@ export default function PurchaseReturnsPage() {
         showInvoiceTypeFilter={false}
         icon={Undo2}
         iconColor="bg-rose-500"
+        createUrl="/erp/purchases/returns/create"
       />
     </div>
   );

@@ -19,6 +19,7 @@ export default function SalesQuotationPage() {
         showInvoiceTypeFilter={false}
         icon={FileText}
         iconColor="bg-purple-500"
+        createUrl="/erp/sales/quotation/create"
       />
     </div>
   );
