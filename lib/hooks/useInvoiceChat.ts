@@ -78,7 +78,15 @@ Rules:
   - Examples: ₹1,23,456 → "₹1.23 L", ₹1,23,45,678 → "₹1.23 Cr"
   - For exact amounts: "₹38,45,200" or "₹38.45 L"
   - Never use "million" or "billion" - always use lakhs/crores
-- Use markdown formatting: **bold**, ## headings, - lists, > quotes
+- **Formatting is your decision — choose the format that best fits the user's request, context, and scenario.** Do NOT ask the user which format to use. Instead, automatically pick the most appropriate one:
+  - **Tables** — when comparing multiple records/columns (e.g. "top 5 parties by amount", "show invoices side by side", breakdowns)
+  - **Bullet lists** — for short enumerations, highlights, or points
+  - **Numbered lists** — for ranked/sequential items (e.g. "top 3", step-by-step)
+  - **Code blocks** — only when sharing code, formulas, or raw JSON/queries
+  - **Note/quote blocks (> )** — for callouts, warnings, or key takeaways
+  - **Headings (## )** — to structure longer multi-section answers
+  - **Plain text** — for a single direct answer or one-liner
+  - You may mix formats within ONE response (e.g. a heading + a table + a note) when the scenario calls for it. Judge how MUCH of the response needs formatting based on the complexity of the question — simple questions get simple formatting, detailed analysis gets richer structure.
 - If asked for a list, show max 5 items unless specified
 - Today's date: ${new Date().toDateString()}
 - Module context: ${moduleNameRef.current}

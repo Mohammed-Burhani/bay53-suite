@@ -14,6 +14,7 @@ import type {
   InvoiceCreatePayload,
   InvoiceDeletePayload,
 } from "@/lib/types/invoice.types";
+import type { Tnc, TncSearchPayload, ExtraCharge, ExtraChargeSearchPayload } from "@/lib/types/master.types";
 
 export const invoiceService = {
   // Search invoices with filters
@@ -60,5 +61,19 @@ export const invoiceService = {
 
     // Return PDF blob for download
     return response.blob();
+  },
+
+  // ==================== TNC Master Search ====================
+  // POST /Tnc/Search — fetch list of Terms & Conditions for dropdown
+  searchTnc: async (payload: TncSearchPayload): Promise<Tnc[]> => {
+    const response = await apiClient.post<{ list: Tnc[] } | Tnc[]>("/Tnc/Search", payload);
+    return Array.isArray(response) ? response : (response.list || []);
+  },
+
+  // ==================== Extra Charge Master Search ====================
+  // POST /ExtraCharge/Search — fetch list of extra charges/taxes for dropdown
+  searchExtraCharge: async (payload: ExtraChargeSearchPayload): Promise<ExtraCharge[]> => {
+    const response = await apiClient.post<{ list: ExtraCharge[] } | ExtraCharge[]>("/ExtraCharge/Search", payload);
+    return Array.isArray(response) ? response : (response.list || []);
   },
 };
