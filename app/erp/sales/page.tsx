@@ -20,6 +20,7 @@ export default function SalesPage() {
         icon={TrendingUp}
         iconColor="bg-cyan-500"
         hideActions={true}
+        createUrl="/erp/sales/create"
       />
     </div>
   );

@@ -4,25 +4,25 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { InvoiceCreateForm } from "@/components/invoice/InvoiceCreateForm";
 
-function CreatePurchaseInvoicePageInner() {
+function CreatePurchaseReturnPageInner() {
   const searchParams = useSearchParams();
   const editRaw = searchParams.get("edit");
   const editInvCode = editRaw ? Number(editRaw) || undefined : undefined;
 
   return (
     <InvoiceCreateForm
-      invType={9}
-      title="Purchase Invoice"
-      backUrl="/erp/purchases"
+      invType={10}
+      title="Purchase Return"
+      backUrl="/erp/purchases/returns"
       editInvCode={editInvCode}
     />
   );
 }
 
-export default function CreatePurchaseInvoicePage() {
+export default function CreatePurchaseReturnPage() {
   return (
     <Suspense fallback={null}>
-      <CreatePurchaseInvoicePageInner />
+      <CreatePurchaseReturnPageInner />
     </Suspense>
   );
 }

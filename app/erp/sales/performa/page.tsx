@@ -19,6 +19,7 @@ export default function SalesPerformaPage() {
         showInvoiceTypeFilter={false}
         icon={FileCheck}
         iconColor="bg-indigo-500"
+        createUrl="/erp/sales/performa/create"
       />
     </div>
   );

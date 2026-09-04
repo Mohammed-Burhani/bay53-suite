@@ -403,51 +403,43 @@ export interface InvoiceCreateTncMap {
 export interface InvoiceCreatePayload {
   id: number;
   sessionId: string;
-  inv_Type: number;
-  spCode: number;
   ledger_ID: number;
-  gstType: number;
-  taxableType: number; // backend stored proc requires @TaxableType (same as gstType)
+  project_Ledger_ID: number | null;
+  inv_Type: number;
   invoiceNo: number;
   bill_No: string;
   date: string;
-  useInCompany: boolean;
+  spCode: number;
+  dueDays: number;
+  item_SubTotal: number;
+  extra_SubTotal: number;
+  roundOff: number;
+  grandTotal: number;
+  profit: number;
+  recBy: string;
+  billType: number;
+  salesLedger: number;
+  purchaseLedger: number;
+  taxableType: number;
+  roundedBill: boolean;
+  salesman: string | null;
+  isSalesAllowed: boolean;
   refNo: string;
   refDate: string;
   orderNo: string;
   orderDate: string;
   projectSiteId: number;
   invoiceItemDetail: InvoiceCreateItemDetail[];
-  invoiceExtraCharges: InvoiceCreateExtraCharge[]; // empty array when no charges
+  invoiceExtraCharges: InvoiceCreateExtraCharge[];
   invoiceTncMap: InvoiceCreateTncMap[];
-  item_SubTotal: number;
-  extra_SubTotal: number;
-  grandTotal: number;
-  roundOff: number;
+  footerXML: InvoiceFooterNote[];
   shipToName: string;
   shipToAddress: string;
-  partyName: string;
-  partyAddress: string;
-  voucherId: number;
   attenTo: string;
   subject: string;
-  recBy: string;
-  recAmt: number;
-  dueDays: number;
-  footerXML: InvoiceFooterNote[];
-  isMaxVAT: boolean;
   isRoundOff: boolean;
   precision: number;
-  profit: number;
-  profitPer: number;
-  billStatus: number;
   state: number;
-  yourRefNo: string;
-  yourRefDate: string;
-  poNumber: string;
-  otherRefNo: string;
-  otherRefDate: string;
-  note: string;
 }
 
 // Common invoice type IDs (these may vary based on your setup)

@@ -19,6 +19,7 @@ export default function SalesOrderPage() {
         showInvoiceTypeFilter={false}
         icon={ShoppingCart}
         iconColor="bg-blue-500"
+        createUrl="/erp/sales/order/create"
       />
     </div>
   );

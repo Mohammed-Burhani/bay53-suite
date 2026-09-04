@@ -19,6 +19,7 @@ export default function SalesReturnsPage() {
         showInvoiceTypeFilter={false}
         icon={Undo2}
         iconColor="bg-red-500"
+        createUrl="/erp/sales/returns/create"
       />
     </div>
   );

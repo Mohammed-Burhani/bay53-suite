@@ -19,6 +19,7 @@ export default function PurchasePOPage() {
         showInvoiceTypeFilter={false}
         icon={FileText}
         iconColor="bg-yellow-500"
+        createUrl="/erp/purchases/po/create"
       />
     </div>
   );

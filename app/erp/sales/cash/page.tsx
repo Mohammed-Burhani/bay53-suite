@@ -19,6 +19,7 @@ export default function SalesCashPage() {
         showInvoiceTypeFilter={false}
         icon={Wallet}
         iconColor="bg-green-500"
+        createUrl="/erp/sales/cash/create"
       />
     </div>
   );

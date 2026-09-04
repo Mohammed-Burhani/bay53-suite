@@ -19,6 +19,7 @@ export default function PurchaseOrdersPage() {
         showInvoiceTypeFilter={false}
         icon={ShoppingBag}
         iconColor="bg-amber-500"
+        createUrl="/erp/purchases/po/create"
       />
     </div>
   );

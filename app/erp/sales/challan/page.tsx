@@ -20,6 +20,7 @@ export default function SalesChallanPage() {
         icon={Truck}
         iconColor="bg-orange-500"
         hideActions={true}
+        createUrl="/erp/sales/challan/create"
       />
     </div>
   );
