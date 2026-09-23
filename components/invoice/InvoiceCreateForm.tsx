@@ -493,8 +493,17 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
   // ── Edit prefill: map /Invoice/GetById detail back into the form state ──
   // Runs once, after BOTH the detail and the ledger master data have loaded.
   const prefilledRef = useRef(false);
+  
+  // Reset prefill flag when editInvCode changes (navigating between invoices)
   useEffect(() => {
-    if (!editInvCode || !editDetail || !editDetail.id || prefilledRef.current) return;
+    prefilledRef.current = false;
+  }, [editInvCode]);
+
+  useEffect(() => {
+    if (!editInvCode || !editDetail || prefilledRef.current) return;
+    // Ensure the detail has valid data (id or invCode)
+    const invoiceId = editDetail.id ?? (editDetail as any).invCode;
+    if (!invoiceId) return;
     if (loadingLedgers) return; // wait so the party ledger name resolves
 
     const d = editDetail;
@@ -885,7 +894,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
       return (
         <div className="flex flex-col items-center justify-center gap-3 p-16 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <p>Loading {title.toLowerCase()} for editing…</p>
+          <p>Loading {editInvCode ? `${title.toLowerCase()} for editing` : `${title.toLowerCase()}`}…</p>
         </div>
       );
     }
@@ -899,7 +908,9 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {editInvCode ? `Edit ${title}` : title}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {editInvCode ? `Edit ${title.toLowerCase()}` : `Create a new ${title.toLowerCase()}`}
           </p>
