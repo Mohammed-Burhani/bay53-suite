@@ -226,9 +226,9 @@ function PlatformPopoverContent({
         Switch Platform
       </div>
 
-      {/* Platform options — CRM is hidden from the switcher */}
+      {/* Platform options */}
       <div className="space-y-0.5">
-        {PLATFORMS.filter((platform) => platform.id !== "crm").map((platform) => (
+        {PLATFORMS.map((platform) => (
           <button
             key={platform.id}
             onClick={() => onSelect(platform.id)}
