@@ -9,7 +9,7 @@ export interface InvoiceSearchPayload {
   toDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
   fromDate: string | null; // "DD/MM/YYYY HH:mm:ss" or null
   invoiceNo: number | null;
-  bill_No: string | null;
+  bill_No: number | null;
   spIds: number[]; // Stock place IDs
   partyName: string | null;
   itemName: string | null;
