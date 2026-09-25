@@ -174,6 +174,9 @@ export function InvoiceListTable({
     // Parse invoice number (should be numeric)
     const parsedInvoiceNo = invoiceNo.trim() ? parseInt(invoiceNo.trim(), 10) : null;
     
+    // Parse bill number (should be numeric)
+    const parsedBillNo = billNo.trim() ? parseInt(billNo.trim(), 10) : null;
+    
     // If invoice number is entered, dates should be null
     const shouldUseDates = !isInvoiceNoEntered;
     
@@ -185,7 +188,7 @@ export function InvoiceListTable({
         fromDate: shouldUseDates ? calculatedFromDate : null,
         toDate: shouldUseDates ? calculatedToDate : null,
         invoiceNo: parsedInvoiceNo,
-        bill_No: billNo.trim() || null,
+        bill_No: parsedBillNo,
         spIds: selectedStockPlaceIds,
         partyName: partyName,
         itemName: itemName.trim() || null,
@@ -311,10 +314,16 @@ export function InvoiceListTable({
         onSuccess: () => {
           toast.success(`Invoice "${deleteTarget.bill_No}" deleted`);
           setDeleteTarget(null);
-          // Refresh the listing
+          // Refresh the listing with current month dates
           if (invoiceData) {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const fromDate = startOfMonth.toISOString().split('T')[0];
+            const toDate = endOfMonth.toISOString().split('T')[0];
+            
             searchInvoices(
-              { pageSize: 0, pageNumber: 0, invType: selectedInvType, fromDate: null, toDate: null, invoiceNo: null, bill_No: null, spIds: [0], partyName: null, itemName: null },
+              { pageSize: 0, pageNumber: 0, invType: selectedInvType, fromDate, toDate, invoiceNo: null, bill_No: null, spIds: [0], partyName: null, itemName: null },
               { onError: () => toast.error("Failed to refresh list") }
             );
           }

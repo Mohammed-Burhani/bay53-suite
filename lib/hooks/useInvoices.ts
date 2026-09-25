@@ -72,7 +72,33 @@ export function useInvoiceCreate() {
       if (!sessionId) throw new Error("No session");
       return invoiceService.createInvoice({ ...payload, sessionId });
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
+      // Calculate current month date range for post-create refresh
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      const fromDate = startOfMonth.toISOString().split('T')[0];
+      const toDate = endOfMonth.toISOString().split('T')[0];
+      
+      // Call /Invoice/Search to refresh list with current month filters
+      const searchPayload: InvoiceSearchPayload = {
+        sessionId: sessionId!,
+        pageSize: 0,
+        pageNumber: 0,
+        invType: variables.inv_Type,
+        fromDate,
+        toDate,
+        invoiceNo: null,
+        bill_No: 0,
+        spIds: [0],
+        partyName: null,
+        itemName: null,
+      };
+      
+      // Execute search to update cache
+      await invoiceService.searchInvoices(searchPayload);
+      
       // Invalidate invoice lists so they refetch
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },

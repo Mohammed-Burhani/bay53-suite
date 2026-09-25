@@ -17,15 +17,10 @@ export function useSession(): AuthSession | null {
 
 export function useLogin() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: async (data, variables) => {
-      // TEMPORARY: Skip OTP validation - comment out for direct login
-      // TODO: Re-enable OTP validation when backend is fixed
-      
-      /* 
       // Login success → auto-call GenerateOtp
       try {
         const otpResponse = await authService.generateOtp({ userName: variables.userName });
@@ -40,19 +35,6 @@ export function useLogin() {
         console.error("Failed to generate OTP:", error);
         throw error;
       }
-      */
-      
-      // Direct login without OTP - using login response data
-      const session: AuthSession = {
-        user: data.user,
-        company: data.company,
-        roles: data.roles,
-        rights: data.rights,
-      };
-      
-      auth.setSession(session);
-      queryClient.setQueryData(["auth", "session"], session);
-      router.push("/erp/dashboard");
     },
   });
 }

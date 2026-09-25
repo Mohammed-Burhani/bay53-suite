@@ -24,7 +24,6 @@ export interface InvoiceValidationRule {
 export const GLOBAL_RULES: InvoiceValidationRule[] = [
   { id: "party", message: "Select a party", check: (c) => c.selectedLedgerIds.length > 0 },
   { id: "stockPlace", message: "Select a stock place", check: (c) => c.spCode !== null },
-  { id: "billNo", message: "Bill No. is required", check: (c) => c.billNo.trim().length > 0 },
   { id: "recBy", message: "Rec By is required", check: (c) => c.recBy.trim().length > 0 },
   { id: "recAmt", message: "Rec Amount is required", check: (c) => c.recAmt > 0 },
   { id: "items", message: "Add at least one item", check: (c) => c.lineItems.length > 0 },
