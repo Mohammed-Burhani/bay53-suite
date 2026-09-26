@@ -76,11 +76,22 @@ export interface FilterSelectProps {
 }
 
 export function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
+  const isActive = value !== "all";
   return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+        {label}
+        {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[var(--report-accent)]" />}
+      </label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger
+          className={cn(
+            "h-9 w-full rounded-lg text-xs font-medium shadow-none transition-colors",
+            isActive
+              ? "border-[var(--report-accent-border)] bg-[var(--report-accent-bg)] text-[var(--report-accent)]"
+              : "border-border/80 bg-background hover:bg-muted/40"
+          )}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

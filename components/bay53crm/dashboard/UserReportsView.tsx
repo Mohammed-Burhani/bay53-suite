@@ -70,9 +70,12 @@ export function UserReportsView() {
     });
   }, [filteredLeads, pipelineRegion, pipelineCustomerState, pipelineVertical, pipelineAssignedTo, pipelineStage, pipelineSource, pipelineMonth, monthPrefixMap]);
 
-  const pipelineFiltersActive =
-    pipelineRegion !== "all" || pipelineCustomerState !== "all" || pipelineVertical !== "all" ||
-    pipelineAssignedTo !== "all" || pipelineStage !== "all" || pipelineSource !== "all" || pipelineMonth !== "all";
+  const activePipelineFilterCount = [
+    pipelineRegion, pipelineCustomerState, pipelineVertical,
+    pipelineAssignedTo, pipelineStage, pipelineSource, pipelineMonth,
+  ].filter((v) => v !== "all").length;
+
+  const pipelineFiltersActive = activePipelineFilterCount > 0;
 
   const clearPipelineFilters = () => {
     setPipelineRegion("all"); setPipelineCustomerState("all"); setPipelineVertical("all");
@@ -206,21 +209,28 @@ export function UserReportsView() {
         </div>
 
         {/* Filter Bar */}
-        <Card className="shadow-sm border-0 ring-1 ring-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                Filters
+        <Card className="shadow-sm border-0 ring-1 ring-border/50 overflow-hidden gap-0 py-0">
+          <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--report-accent-bg)]">
+                <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--report-accent)]" />
               </div>
-              {pipelineFiltersActive && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearPipelineFilters}>
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  Clear Filters
-                </Button>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filters</span>
+              {activePipelineFilterCount > 0 && (
+                <Badge className="h-5 rounded-full border-0 bg-[var(--report-accent)] px-2 text-[10px] font-semibold text-white">
+                  {activePipelineFilterCount} active
+                </Badge>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            {pipelineFiltersActive && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground" onClick={clearPipelineFilters}>
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
               <FilterSelect
                 label="Region" value={pipelineRegion} onChange={setPipelineRegion}
                 options={regions.map((r) => ({ label: r.name, value: r.code || r.name }))}
