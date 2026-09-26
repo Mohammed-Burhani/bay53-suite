@@ -55,7 +55,7 @@ export function useVerifyOtp() {
       
       auth.setSession(session);
       queryClient.setQueryData(["auth", "session"], session);
-      router.push("/erp/dashboard");
+      router.push("/crm/dashboard"); // DEMO BRANCH: CRM is the first redirect
     },
   });
 }
@@ -81,7 +81,7 @@ export function useLogout() {
   return () => {
     auth.clearSession();
     queryClient.clear();
-    router.push("/login");
+    router.push("/crm/dashboard"); // DEMO BRANCH: auth disabled, keep user in the app
   };
 }
 
@@ -129,7 +129,7 @@ export function useCompanySetup() {
     },
     onSuccess: () => {
       // Session created by Supabase auth.signUp, just redirect
-      router.push("/erp/dashboard");
+      router.push("/crm/dashboard"); // DEMO BRANCH: CRM is the first redirect
     },
   });
 }

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  redirect("/login");
+  // DEMO BRANCH: land on CRM dashboard instead of /login
+  redirect("/crm/dashboard");
 }
