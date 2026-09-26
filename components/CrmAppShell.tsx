@@ -54,7 +54,8 @@ const NAV_MODULES: NavModule[] = [
     color: "text-lime-400",
     activeBg: "bg-lime-500/20",
     subItems: [
-      { href: "/crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/crm/dashboard", label: "Admin Reports", icon: LayoutDashboard },
+      { href: "/crm/dashboard/user-reports", label: "User Reports", icon: BarChart3 },
     ],
   },
   {
