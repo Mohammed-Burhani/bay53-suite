@@ -66,6 +66,8 @@ const NAV_MODULES: NavModule[] = [
     activeBg: "bg-lime-500/20",
     subItems: [
       { href: "/crm/leads", label: "All Leads", icon: Users },
+      { href: "/crm/enquiries", label: "Enquiries", icon: Contact },
+      { href: "/crm/quotations", label: "Quotations", icon: FileText },
     ],
   },
   {
