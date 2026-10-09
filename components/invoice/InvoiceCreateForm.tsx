@@ -493,10 +493,14 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
   // ── Edit prefill: map /Invoice/GetById detail back into the form state ──
   // Runs once, after BOTH the detail and the ledger master data have loaded.
   const prefilledRef = useRef(false);
-  
+  // State mirror of prefilledRef so the render can keep showing the loader
+  // until the form fields are actually populated (not just fetched).
+  const [prefilled, setPrefilled] = useState(false);
+
   // Reset prefill flag when editInvCode changes (navigating between invoices)
   useEffect(() => {
     prefilledRef.current = false;
+    setPrefilled(false);
   }, [editInvCode]);
 
   useEffect(() => {
@@ -603,6 +607,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
     setPrecision(Number((d as any).precision ?? 0));
 
     prefilledRef.current = true;
+    setPrefilled(true);
   }, [editInvCode, editDetail, allLedgers, loadingLedgers]);
 
   // ── Section 3: References ─────────────────────────────────────
@@ -890,11 +895,11 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
         </div>
       );
     }
-    if (loadingEdit || !editDetail) {
+    if (loadingEdit || !editDetail || !prefilled) {
       return (
         <div className="flex flex-col items-center justify-center gap-3 p-16 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <p>Loading {editInvCode ? `${title.toLowerCase()} for editing` : `${title.toLowerCase()}`}…</p>
+          <p>Loading {title.toLowerCase()} for editing…</p>
         </div>
       );
     }
