@@ -51,7 +51,9 @@ import type { InvoiceSearchItem } from "@/lib/types/invoice.types";
 import { useInvoiceTypes, useStockPlaces } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
 import { invoiceService } from "@/lib/api/invoice.service";
+import { ledgerService } from "@/lib/api/ledger.service";
 import { auth } from "@/lib/auth";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { DateRangeFilter, type DateFilterType } from "@/components/reports/DateRangeFilter";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -288,6 +290,120 @@ export function InvoiceListTable({
 
   const handleEmailInvoice = (invoice: InvoiceSearchItem) => {
     toast.info(`Email invoice: ${invoice.bill_No}`);
+  };
+
+  // ---- WhatsApp share ----
+  // Browsers cannot attach a file through a wa.me link. So:
+  //  - customer has a phone: download PDF + open that customer's chat with the message
+  //  - no phone: ask user, then open the OS share sheet (Web Share API) so they pick the
+  //    contact and the PDF is attached. Fallback: download PDF + open WhatsApp.
+  const [waPending, setWaPending] = useState<{ file: File; text: string; partyName: string; phone: string | null } | null>(null);
+
+  const toWhatsAppNumber = (raw?: string | null): string | null => {
+    let digits = (raw ?? "").replace(/D/g, "");
+    if (digits.startsWith("00")) digits = digits.slice(2);
+    if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+    if (digits.length === 10) digits = `91${digits}`; // default country code: India
+    return digits.length >= 11 ? digits : null;
+  };
+
+  const downloadFile = (file: File) => {
+    const url = window.URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  };
+
+  const shareViaWhatsApp = async (file: File, text: string, phone: string | null) => {
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: text, text });
+      } catch (err) {
+        if ((err as DOMException)?.name !== "AbortError") throw err;
+      }
+      return;
+    }
+    downloadFile(file);
+    window.open(`https://wa.me/${phone ?? ""}?text=${encodeURIComponent(text)}`, "_blank");
+    toast.success("PDF downloaded. Attach it in WhatsApp.");
+  };
+
+  const handleWhatsAppShare = async (invoice: InvoiceSearchItem) => {
+    const sessionId = auth.getSessionId();
+    if (!sessionId) {
+      toast.error("Session expired");
+      return;
+    }
+
+    const toastId = toast.loading(`Preparing ${invoice.bill_No || "invoice"}...`);
+    try {
+      const cacheKey = `${invoice.invCode}_${invoice.inv_Type}`;
+
+      // Customer phone lookup (a failure here just means "no phone")
+      const phonePromise = ledgerService
+        .getById({ id: invoice.ledger_ID, sessionId })
+        .then((l) => [l.whatsappNo, l.mobile, l.phone_1, l.phone_2].map(toWhatsAppNumber).find(Boolean) ?? null)
+        .catch((err) => {
+          console.error("Ledger lookup failed:", err);
+          return null;
+        });
+
+      let setupInfo = setupInfoCache.current.get(cacheKey);
+      if (!setupInfo) {
+        setupInfo = await invoiceService.getSetupInfo({
+          id: invoice.invCode,
+          invType: invoice.inv_Type,
+          sessionId,
+          fromInvoice: true,
+        });
+        setupInfoCache.current.set(cacheKey, setupInfo);
+      }
+
+      const report = setupInfo.printReports?.[0];
+      if (!report) {
+        toast.error("No print format available for this invoice", { id: toastId });
+        return;
+      }
+
+      const pdfBlob = await invoiceService.printInvoice({
+        id: invoice.invCode,
+        invType: invoice.inv_Type,
+        reportName: report.fileName,
+        sessionId,
+        noOfCopies: 1,
+      });
+
+      const fileName = `${invoice.bill_No || invoice.invCode}.pdf`.replace(/[\/:*?"<>|]/g, "_");
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+      const partyName = invoice.partyName || "this customer";
+      const text = `Invoice ${invoice.bill_No || ""}${invoice.partyName ? ` - ${invoice.partyName}` : ""}`.trim();
+      const phone = await phonePromise;
+
+      toast.dismiss(toastId);
+
+      // Open a dialog first: its button click is a fresh user gesture, which the
+      // share sheet requires (the PDF fetch above can outlive the original click).
+      setWaPending({ file, text, partyName, phone });
+    } catch (error) {
+      toast.error("Failed to prepare invoice for WhatsApp", { id: toastId });
+      console.error("WhatsApp share error:", error);
+    }
+  };
+
+  const handleWaOpenAnyway = async () => {
+    if (!waPending) return;
+    const { file, text, phone } = waPending;
+    setWaPending(null);
+    try {
+      await shareViaWhatsApp(file, text, phone);
+    } catch (error) {
+      toast.error("Failed to open WhatsApp");
+      console.error("WhatsApp share error:", error);
+    }
   };
 
   const handleDuplicateInvoice = (invoice: InvoiceSearchItem) => {
@@ -572,6 +688,12 @@ export function InvoiceListTable({
         onSubmenuOpen: () => loadExportSubmenu(invoice),
       },
       {
+        label: "Share on WhatsApp",
+        icon: WhatsAppIcon,
+        onClick: () => handleWhatsAppShare(invoice),
+        variant: "success",
+      },
+      {
         label: "Email Invoice",
         icon: Mail,
         onClick: () => handleEmailInvoice(invoice),
@@ -651,9 +773,10 @@ export function InvoiceListTable({
             />
           </div>
 
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-3">
             {/* Invoice Number */}
-            <div className="w-[160px]">
+            <div className="w-[160px] space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Invoice No.</label>
               <Input
                 type="number"
                 placeholder="Invoice No."
@@ -664,7 +787,7 @@ export function InvoiceListTable({
             </div>
 
             {/* Date Range */}
-            <div className={`w-[200px] ${isInvoiceNoEntered ? "opacity-50 pointer-events-none" : ""}`}>
+            <div className={`${isInvoiceNoEntered ? "opacity-50 pointer-events-none" : ""}`}>
               <DateRangeFilter
                 dateType={dateType}
                 selectedMonth={selectedMonth}
@@ -682,10 +805,12 @@ export function InvoiceListTable({
                 onToDateChange={setToDate}
                 onDateChange={handleDateChange}
                 label={isInvoiceNoEntered ? "Date (disabled)" : "Date Range"}
+                inline
               />
             </div>
 
             {/* Advanced Filters Drawer */}
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9">
@@ -881,6 +1006,7 @@ export function InvoiceListTable({
               <X className="h-3.5 w-3.5 mr-1.5" />
               Clear
             </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1002,6 +1128,15 @@ export function InvoiceListTable({
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-7 w-7 text-green-600 hover:text-green-700"
+                              title="Share on WhatsApp"
+                              onClick={(e) => { e.stopPropagation(); handleWhatsAppShare(invoice); }}
+                            >
+                              <WhatsAppIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-7 w-7"
                               title="Edit"
                               onClick={(e) => { e.stopPropagation(); handleEditInvoice(invoice); }}
@@ -1072,6 +1207,35 @@ export function InvoiceListTable({
               className="bg-destructive text-white hover:bg-destructive/90"
             >
               {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* WhatsApp share confirmation */}
+      <AlertDialog open={!!waPending} onOpenChange={(open) => { if (!open) setWaPending(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{waPending?.phone ? "Send invoice on WhatsApp" : "No phone number found"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {waPending?.phone ? (
+                <>
+                  Invoice PDF for {waPending.partyName} is ready. Choose WhatsApp, then select the customer
+                  (+{waPending.phone}). The PDF and message will be attached.
+                </>
+              ) : (
+                <>
+                  There is no phone number to send to WhatsApp for {waPending?.partyName}. You can open WhatsApp
+                  and choose the contact yourself. The invoice PDF and message will be attached.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWaOpenAnyway} className="bg-green-600 text-white hover:bg-green-700">
+              <WhatsAppIcon className="h-4 w-4 mr-1.5" />
+              Open WhatsApp
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

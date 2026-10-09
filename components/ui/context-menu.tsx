@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { LucideIcon, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ContextMenuPosition {
@@ -12,7 +12,7 @@ interface ContextMenuPosition {
 
 export interface ContextMenuItem {
   label: string;
-  icon?: LucideIcon;
+  icon?: React.ComponentType<{ className?: string }>;
   onClick?: () => void;
   variant?: "default" | "danger" | "success";
   disabled?: boolean;
