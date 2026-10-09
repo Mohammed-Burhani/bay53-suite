@@ -39,6 +39,7 @@ import {
   Printer,
   Download,
   CheckCircle2,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTenant } from "@/lib/contexts/TenantContext";
@@ -390,15 +391,26 @@ export default function POSPage() {
             Live
           </Badge>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push("/pos/history")}
-          className="gap-2"
-        >
-          <History className="h-4 w-4" />
-          History
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/pos/bill-upload")}
+            className="gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            Bill Upload
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/pos/history")}
+            className="gap-2"
+          >
+            <History className="h-4 w-4" />
+            History
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">

@@ -32,6 +32,8 @@ interface DateRangeFilterProps {
   onDateChange: (fromDate: string | null, toDate: string | null) => void;
   label?: string;
   className?: string;
+  /** Lay the controls out in a single horizontal row (for toolbars). */
+  inline?: boolean;
   financialYearStart?: number;
 }
 
@@ -53,6 +55,7 @@ export function DateRangeFilter({
   onDateChange,
   label = "Date",
   className = "",
+  inline = false,
   financialYearStart = 4,
 }: DateRangeFilterProps) {
 
@@ -238,8 +241,8 @@ export function DateRangeFilter({
   }, [fromDate, toDate]);
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      <div className="space-y-1.5">
+    <div className={`${inline ? "flex flex-wrap items-end gap-2" : "space-y-3"} ${className}`}>
+      <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
         <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
           {label}
@@ -263,7 +266,7 @@ export function DateRangeFilter({
 
       {/* Monthly Selection */}
       {dateType === "monthly" && (
-        <div className="space-y-1.5">
+        <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
           <Label className="text-xs font-medium text-muted-foreground">Select Month</Label>
           <Select value={selectedMonth} onValueChange={onSelectedMonthChange}>
             <SelectTrigger className="h-9 w-full">
@@ -282,8 +285,8 @@ export function DateRangeFilter({
 
       {/* Quarterly Selection */}
       {dateType === "quarterly" && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+        <div className={inline ? "contents" : "grid grid-cols-2 gap-3"}>
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
             <Select value={selectedYear} onValueChange={onSelectedYearChange}>
               <SelectTrigger className="h-9 w-full">
@@ -298,7 +301,7 @@ export function DateRangeFilter({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">Quarter</Label>
             <Select value={selectedQuarter} onValueChange={onSelectedQuarterChange}>
               <SelectTrigger className="h-9 w-full">
@@ -318,8 +321,8 @@ export function DateRangeFilter({
 
       {/* Half Yearly Selection */}
       {dateType === "half_yearly" && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+        <div className={inline ? "contents" : "grid grid-cols-2 gap-3"}>
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
             <Select value={selectedYear} onValueChange={onSelectedYearChange}>
               <SelectTrigger className="h-9 w-full">
@@ -334,7 +337,7 @@ export function DateRangeFilter({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">Half Year</Label>
             <Select value={selectedHalfYear} onValueChange={onSelectedHalfYearChange}>
               <SelectTrigger className="h-9 w-full">
@@ -354,7 +357,7 @@ export function DateRangeFilter({
 
       {/* Yearly Selection */}
       {dateType === "yearly" && (
-        <div className="space-y-1.5">
+        <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
           <Label className="text-xs font-medium text-muted-foreground">Financial Year</Label>
           <Select value={selectedYear} onValueChange={onSelectedYearChange}>
             <SelectTrigger className="h-9 w-full">
@@ -373,8 +376,8 @@ export function DateRangeFilter({
 
       {/* Custom Range */}
       {dateType === "range" && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+        <div className={inline ? "contents" : "grid grid-cols-2 gap-3"}>
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">From Date</Label>
             <Input
               type="date"
@@ -383,7 +386,7 @@ export function DateRangeFilter({
               onChange={(e) => onFromDateChange(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className={inline ? "space-y-1.5 w-[170px]" : "space-y-1.5"}>
             <Label className="text-xs font-medium text-muted-foreground">To Date</Label>
             <Input
               type="date"
