@@ -4,12 +4,6 @@ export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
   "/erp/dashboard": { title: "Dashboard" },
   "/erp/onboarding": { title: "Get Started" },
 
-  // Inventory
-  "/erp/inventory": { title: "All Products" },
-  "/erp/inventory/add": { title: "Add Product" },
-  "/erp/inventory/categories": { title: "Categories" },
-  "/erp/inventory/low-stock": { title: "Low Stock" },
-
   // Sales
   "/erp/sales": { title: "Sales" },
   "/erp/sales/create": { title: "Create Invoice" },
@@ -31,6 +25,9 @@ export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
   "/erp/certificates": { title: "Certificates" },
 
   // Master
+  "/erp/master/items": { title: "Items" },
+  "/erp/master/ledgers": { title: "Ledgers" },
+  "/erp/master/ledgers/create": { title: "Add Ledger" },
   "/erp/master/groups": { title: "Groups" },
   "/erp/master/groups/create": { title: "Create Group" },
 

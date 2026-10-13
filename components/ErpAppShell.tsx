@@ -15,7 +15,6 @@ import {
   ChevronRight,
   IndianRupee,
   ChevronDown,
-  Plus,
   List,
   Trash2,
   Eye,
@@ -30,6 +29,7 @@ import {
   Search,
   Database,
   FolderTree,
+  BookUser,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -89,16 +89,15 @@ const NAV_MODULES: NavModule[] = [
     ],
   },
   {
-    id: "inventory",
-    label: "Inventory",
-    icon: Package,
-    color: "text-emerald-400",
-    activeBg: "bg-emerald-500/20",
+    id: "master",
+    label: "Master",
+    icon: Database,
+    color: "text-amber-400",
+    activeBg: "bg-amber-500/20",
     subItems: [
-      { href: "/erp/inventory", label: "All Products", icon: List },
-      { href: "/erp/inventory/add", label: "Add Product", icon: Plus },
-      { href: "/erp/inventory/categories", label: "Categories", icon: FileText },
-      { href: "/erp/inventory/low-stock", label: "Low Stock Alert", icon: TrendingDown },
+      { href: "/erp/master/items", label: "Items", icon: Package },
+      { href: "/erp/master/groups", label: "Groups", icon: FolderTree },
+      { href: "/erp/master/ledgers", label: "Ledgers", icon: BookUser },
     ],
   },
   {
@@ -157,7 +156,6 @@ const NAV_MODULES: NavModule[] = [
       { href: "/erp/parties/customers", label: "Customers", icon: Users },
       { href: "/erp/parties/suppliers", label: "Suppliers", icon: Users },
       { href: "/erp/parties/add", label: "Add Party", icon: UserPlus },
-      { href: "/erp/ledger", label: "Ledger", icon: FileText },
     ],
   },
   {
@@ -169,16 +167,6 @@ const NAV_MODULES: NavModule[] = [
     subItems: [
       { href: "/erp/certificates", label: "All Certificates", icon: List },
       { href: "/erp/sales/certificates", label: "Invoice Certificates", icon: Receipt },
-    ],
-  },
-  {
-    id: "master",
-    label: "Master",
-    icon: Database,
-    color: "text-amber-400",
-    activeBg: "bg-amber-500/20",
-    subItems: [
-      { href: "/erp/master/groups", label: "Groups", icon: FolderTree },
     ],
   },
   {

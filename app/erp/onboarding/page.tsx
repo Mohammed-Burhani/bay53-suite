@@ -39,8 +39,8 @@ const steps = [
     icon: Package,
     color: "from-blue-500 to-cyan-500",
     actions: [
-      { label: "Add Products", href: "/inventory/add" },
-      { label: "Manage Categories", href: "/inventory/categories" },
+      { label: "Add Items", href: "/erp/master/items" },
+      { label: "Manage Groups", href: "/erp/master/groups" },
     ],
   },
   {

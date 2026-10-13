@@ -371,7 +371,7 @@ export function GroupListTable() {
                             variant="outline"
                             size="sm"
                             className="h-8 w-8"
-                            onClick={() => router.push(`/master/groups/${group.id}/edit`)}
+                            onClick={() => router.push(`/erp/master/groups/${group.id}/edit`)}
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
