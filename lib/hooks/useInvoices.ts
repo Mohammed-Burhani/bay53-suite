@@ -170,3 +170,25 @@ export function useExtraChargeSearch(searchTerm: string = "") {
     placeholderData: (previousData) => previousData, // keep old results while typing
   });
 }
+
+// Hook for loading the full Extra Charge master list (no search term) — the
+// invoice form lists every charge up front and lets the user switch on the ones needed.
+export function useExtraCharges() {
+  const sessionId = auth.getSessionId();
+
+  return useQuery<ExtraCharge[]>({
+    queryKey: ["extra-charges-all", sessionId],
+    queryFn: async () => {
+      if (!sessionId) throw new Error("No session");
+      return invoiceService.searchExtraCharge({
+        sessionId,
+        pageSize: 0, // fetch all
+        pageNumber: 0,
+        isSync: false,
+        lastModifiedDate: new Date().toISOString(),
+      });
+    },
+    enabled: !!sessionId,
+    staleTime: 30 * 60 * 1000, // rarely changes
+  });
+}
