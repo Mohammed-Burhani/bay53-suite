@@ -86,6 +86,13 @@ export interface ItemSaveBody {
   brand: string;
   itemGroup: string;
   isActive: boolean;
+  tariff_No: string;
+  stockMaintain: boolean;
+  isAllowNagativeStock: boolean;
+  expDate: boolean;
+  multiRate: boolean;
+  salesAccountLedgerID: number;
+  purchaseAccountLedgerID: number;
 }
 
 export type ItemSavePayload = ItemSaveBody & { sessionId: string };
@@ -120,6 +127,12 @@ export interface ItemFormValues {
   onCalculation: boolean;
   is_BOM: boolean;
   isActive: boolean;
+  stockMaintain: boolean;
+  isAllowNagativeStock: boolean;
+  expDate: boolean;
+  multiRate: boolean;
+  salesAccountLedgerID: number | null; // ledger picker; null = backend default
+  purchaseAccountLedgerID: number | null;
   description: string;
   bom_Map: BomFormRow[];
 }
