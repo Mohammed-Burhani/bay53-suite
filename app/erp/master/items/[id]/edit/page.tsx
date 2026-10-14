@@ -12,14 +12,14 @@ export default function EditItemPage() {
   const backToList = () => router.push("/erp/master/items");
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 p-3">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" aria-label="Back to items" onClick={backToList}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Item</h1>
-          <p className="text-sm text-muted-foreground">Update item #{itemId}</p>
+          <h1 className="text-lg font-bold leading-tight tracking-tight">Edit Item</h1>
+          <p className="text-xs text-muted-foreground">Update item #{itemId}</p>
         </div>
       </div>
 
