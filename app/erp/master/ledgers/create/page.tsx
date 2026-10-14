@@ -14,14 +14,14 @@ function CreateLedger() {
   const backToList = () => router.push("/erp/master/ledgers");
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 p-3">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" aria-label="Back to ledgers" onClick={backToList}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{copyFromId ? "Save Ledger As" : "Add Ledger"}</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg font-bold leading-tight tracking-tight">{copyFromId ? "Save Ledger As" : "Add Ledger"}</h1>
+          <p className="text-xs text-muted-foreground">
             {copyFromId ? `Create a new ledger based on #${copyFromId}` : "Create a new ledger in the ledger master"}
           </p>
         </div>

@@ -45,6 +45,10 @@ export interface LedgerSaveBody {
   gstNo: string;
   panNo: string;
   tinV: string;
+  tanNo: string;
+  isIndividual: boolean;
+  isHeadOffice: boolean;
+  isBranchOffice: boolean;
   gstType: number;
   state: number;
   country: number;
@@ -88,6 +92,10 @@ export interface LedgerFormValues {
   gstNo: string;
   panNo: string;
   tinV: string;
+  tanNo: string;
+  isIndividual: boolean; // false = Business
+  isHeadOffice: boolean;
+  isBranchOffice: boolean;
   gstType: number;
   state: number; // 0 = not set
   country: number;

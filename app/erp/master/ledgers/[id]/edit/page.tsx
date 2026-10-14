@@ -12,14 +12,14 @@ export default function EditLedgerPage() {
   const backToList = () => router.push("/erp/master/ledgers");
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 p-3">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" aria-label="Back to ledgers" onClick={backToList}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Ledger</h1>
-          <p className="text-sm text-muted-foreground">Update ledger #{ledgerId}</p>
+          <h1 className="text-lg font-bold leading-tight tracking-tight">Edit Ledger</h1>
+          <p className="text-xs text-muted-foreground">Update ledger #{ledgerId}</p>
         </div>
       </div>
 

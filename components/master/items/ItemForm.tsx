@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { Formik, Form } from "formik";
+import { Formik } from "formik";
 import * as Yup from "yup";
 import { toast } from "sonner";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Combobox } from "@/components/ui/combobox";
@@ -26,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Flag, NumberInput, Row, Section, fieldError } from "@/components/master/shared/form-parts";
+import { FieldGrid, Flag, FormToolbar, KeyboardForm, NumberInput, Row, Section, fieldError } from "@/components/master/shared/form-parts";
 import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import { useItems, useLedgersByGroup } from "@/lib/hooks/useReports";
@@ -178,265 +179,269 @@ function ItemFormBody({ raw, items, onSuccess, onCancel }: BodyProps) {
 
   return (
     <Formik initialValues={initialValues} validationSchema={itemSchema} onSubmit={handleSubmit}>
-      {({ values, errors, touched, handleChange, handleBlur, setFieldValue }) => (
-        <Form noValidate>
-          <Card className="overflow-hidden">
-            <div className="sticky top-0 z-10 flex flex-wrap items-center justify-end gap-2 border-b bg-card/95 px-4 py-3 backdrop-blur">
-              <Button type="button" variant="outline" size="sm" disabled={isSaving} onClick={onCancel}>
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isEdit ? "Save Changes" : "Create Item"}
-              </Button>
-            </div>
+      {({ values, errors, touched, handleChange, handleBlur, setFieldValue }) => {
+        const err = (name: keyof ItemFormValues) => fieldError(errors, touched, name);
+        const field = (name: keyof ItemFormValues) => ({
+          name,
+          value: values[name] as string,
+          onChange: handleChange,
+          onBlur: handleBlur,
+        });
 
-            <CardContent className="space-y-6 p-4 sm:p-6">
-              {/* ---------- Identity ---------- */}
-              <Section title="Identity">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Row label={getLabel("item_code")}>
-                    <Input name="item_CodeTxt" value={values.item_CodeTxt} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label={getLabel("item")} required error={fieldError(errors, touched, "name")}>
-                    <Input name="name" value={values.name} onChange={handleChange} onBlur={handleBlur} aria-invalid={!!fieldError(errors, touched, "name")} />
-                  </Row>
-                  <Row label={getLabel("aliases")} className="sm:col-span-2">
-                    <Input name="aliases" value={values.aliases} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  {ITEM_ATTRIBUTES.map(({ field, label }) => (
-                    <Row key={field} label={getLabel(label)}>
-                      <Input
-                        name={field}
-                        value={values[field]}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        list={`item-dl-${field}`}
-                        autoComplete="off"
-                      />
-                      <datalist id={`item-dl-${field}`}>
-                        {suggestions[field].slice(0, 200).map((v) => (
-                          <option key={v} value={v} />
-                        ))}
-                      </datalist>
-                    </Row>
-                  ))}
-                  <Row label="Barcode">
-                    <Input name="barcode" value={values.barcode} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                </div>
-              </Section>
+        return (
+          <KeyboardForm onCancel={onCancel}>
+            <Card className="gap-0 overflow-clip py-0">
+              <FormToolbar saving={isSaving} submitLabel={isEdit ? "Save Changes" : "Create Item"} onCancel={onCancel} />
 
-              {/* ---------- Tax & pricing ---------- */}
-              <Section title="Tax & Pricing">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <Row label="HSN / SAC">
-                    <Input name="hsnNo" value={values.hsnNo} onChange={handleChange} onBlur={handleBlur} list="item-dl-hsn" autoComplete="off" />
-                    <datalist id="item-dl-hsn">
-                      {suggestions.hsnNo.slice(0, 200).map((v) => (
-                        <option key={v} value={v} />
+              <CardContent className="space-y-3 p-3">
+                <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                  {/* ---------- Identity ---------- */}
+                  <Section title="Identity">
+                    <FieldGrid>
+                      <Row label={getLabel("item_code")}>
+                        <Input {...field("item_CodeTxt")} />
+                      </Row>
+                      <Row label={getLabel("item")} required error={err("name")}>
+                        <Input {...field("name")} aria-invalid={!!err("name")} />
+                      </Row>
+                      <Row label={getLabel("aliases")} className="col-span-2">
+                        <Input {...field("aliases")} />
+                      </Row>
+                      {ITEM_ATTRIBUTES.map(({ field: attr, label }) => (
+                        <Row key={attr} label={getLabel(label)}>
+                          <Input {...field(attr)} list={`item-dl-${attr}`} autoComplete="off" />
+                          <datalist id={`item-dl-${attr}`}>
+                            {suggestions[attr].slice(0, 200).map((v) => (
+                              <option key={v} value={v} />
+                            ))}
+                          </datalist>
+                        </Row>
                       ))}
-                    </datalist>
-                  </Row>
-                  <Row label="Tax %" error={fieldError(errors, touched, "vatPer")}>
-                    <NumberInput name="vatPer" value={values.vatPer} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Std Unit" required error={fieldError(errors, touched, "std_Unit")}>
-                    <Input name="std_Unit" value={values.std_Unit} onChange={handleChange} onBlur={handleBlur} list="item-dl-unit" autoComplete="off" aria-invalid={!!fieldError(errors, touched, "std_Unit")} />
-                    <datalist id="item-dl-unit">
-                      {suggestions.std_Unit.map((v) => (
-                        <option key={v} value={v} />
-                      ))}
-                    </datalist>
-                  </Row>
-                  <Row label="MRP" error={fieldError(errors, touched, "mrp")}>
-                    <NumberInput name="mrp" value={values.mrp} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Sell Rate" error={fieldError(errors, touched, "std_Sell_Rate")}>
-                    <NumberInput name="std_Sell_Rate" value={values.std_Sell_Rate} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Discount %" error={fieldError(errors, touched, "discount")}>
-                    <NumberInput name="discount" value={values.discount} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Product Type">
-                    <Select value={String(values.productType)} onValueChange={(v) => setFieldValue("productType", Number(v))}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PRODUCT_TYPE_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Row>
-                </div>
-              </Section>
+                      <Row label="Barcode">
+                        <Input {...field("barcode")} />
+                      </Row>
+                    </FieldGrid>
+                  </Section>
 
-              {/* ---------- Costing & stock levels ---------- */}
-              <Section title="Costing & Stock Levels">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <Row label="Costing On">
-                    <Select value={String(values.costing_On)} onValueChange={(v) => setFieldValue("costing_On", Number(v))}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {COSTING_ON_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Row>
-                  <Row label="Last Pur. Rate">
-                    <NumberInput name="last_Purchaserate" value={values.last_Purchaserate} readOnly disabled />
-                  </Row>
-                  <Row label="Avg. Pur. Rate">
-                    <NumberInput name="avg_Purchaserate" value={values.avg_Purchaserate} readOnly disabled />
-                  </Row>
-                  <Row label="Min Qty" error={fieldError(errors, touched, "minimum_Qty")}>
-                    <NumberInput name="minimum_Qty" value={values.minimum_Qty} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Max Qty" error={fieldError(errors, touched, "maximum_Qty")}>
-                    <NumberInput name="maximum_Qty" value={values.maximum_Qty} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Reorder Qty" error={fieldError(errors, touched, "reOrderQty")}>
-                    <NumberInput name="reOrderQty" value={values.reOrderQty} onChange={handleChange} onBlur={handleBlur} />
-                  </Row>
-                  <Row label="Reorder Days" error={fieldError(errors, touched, "reOrderDays")}>
-                    <NumberInput name="reOrderDays" value={values.reOrderDays} onChange={handleChange} onBlur={handleBlur} step="1" />
-                  </Row>
-                </div>
-              </Section>
+                  {/* ---------- Tax & pricing ---------- */}
+                  <Section title="Tax & Pricing">
+                    <FieldGrid>
+                      <Row label="HSN / SAC">
+                        <Input {...field("hsnNo")} list="item-dl-hsn" autoComplete="off" />
+                        <datalist id="item-dl-hsn">
+                          {suggestions.hsnNo.slice(0, 200).map((v) => (
+                            <option key={v} value={v} />
+                          ))}
+                        </datalist>
+                      </Row>
+                      <Row label="Tax %" error={err("vatPer")}>
+                        <NumberInput {...field("vatPer")} />
+                      </Row>
+                      <Row label="Std Unit" required error={err("std_Unit")}>
+                        <Input {...field("std_Unit")} list="item-dl-unit" autoComplete="off" aria-invalid={!!err("std_Unit")} />
+                        <datalist id="item-dl-unit">
+                          {suggestions.std_Unit.map((v) => (
+                            <option key={v} value={v} />
+                          ))}
+                        </datalist>
+                      </Row>
+                      <Row label="MRP" error={err("mrp")}>
+                        <NumberInput {...field("mrp")} />
+                      </Row>
+                      <Row label="Sell Rate" error={err("std_Sell_Rate")}>
+                        <NumberInput {...field("std_Sell_Rate")} />
+                      </Row>
+                      <Row label="Discount %" error={err("discount")}>
+                        <NumberInput {...field("discount")} />
+                      </Row>
+                      <Row label="Product Type" className="col-span-2">
+                        <Select value={String(values.productType)} onValueChange={(v) => setFieldValue("productType", Number(v))}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PRODUCT_TYPE_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={String(o.value)}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Row>
+                    </FieldGrid>
+                  </Section>
 
-              {/* ---------- Flags ---------- */}
-              <Section title="Options">
-                <div className="flex flex-wrap gap-x-6 gap-y-3">
-                  <Flag id="regular" label="Regular" checked={values.regular} onChange={(c) => setFieldValue("regular", c)} />
-                  <Flag id="mfrCodeReq" label="Batch Code Required" checked={values.mfrCodeReq} onChange={(c) => setFieldValue("mfrCodeReq", c)} />
-                  <Flag id="onCalculation" label="On Calculation" checked={values.onCalculation} onChange={(c) => setFieldValue("onCalculation", c)} />
-                  <Flag id="is_BOM" label="BOM" checked={values.is_BOM} onChange={(c) => setFieldValue("is_BOM", c)} />
-                  <Flag id="isActive" label="Active" checked={values.isActive} onChange={(c) => setFieldValue("isActive", c)} />
-                  <Flag id="stockMaintain" label="Maintain Stock" checked={values.stockMaintain} onChange={(c) => setFieldValue("stockMaintain", c)} />
-                  <Flag id="isAllowNagativeStock" label="Allow Negative Stock" checked={values.isAllowNagativeStock} onChange={(c) => setFieldValue("isAllowNagativeStock", c)} />
-                  <Flag id="expDate" label="Expiry Date" checked={values.expDate} onChange={(c) => setFieldValue("expDate", c)} />
-                  <Flag id="multiRate" label="Multi Rate" checked={values.multiRate} onChange={(c) => setFieldValue("multiRate", c)} />
+                  {/* ---------- Costing & stock levels ---------- */}
+                  <Section title="Costing & Stock Levels" className="lg:col-span-2 xl:col-span-1">
+                    <FieldGrid>
+                      <Row label="Costing On" className="col-span-2">
+                        <Select value={String(values.costing_On)} onValueChange={(v) => setFieldValue("costing_On", Number(v))}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COSTING_ON_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={String(o.value)}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Row>
+                      <Row label="Last Pur. Rate">
+                        <NumberInput name="last_Purchaserate" value={values.last_Purchaserate} readOnly disabled />
+                      </Row>
+                      <Row label="Avg. Pur. Rate">
+                        <NumberInput name="avg_Purchaserate" value={values.avg_Purchaserate} readOnly disabled />
+                      </Row>
+                      <Row label="Min Qty" error={err("minimum_Qty")}>
+                        <NumberInput {...field("minimum_Qty")} />
+                      </Row>
+                      <Row label="Max Qty" error={err("maximum_Qty")}>
+                        <NumberInput {...field("maximum_Qty")} />
+                      </Row>
+                      <Row label="Reorder Qty" error={err("reOrderQty")}>
+                        <NumberInput {...field("reOrderQty")} />
+                      </Row>
+                      <Row label="Reorder Days" error={err("reOrderDays")}>
+                        <NumberInput {...field("reOrderDays")} step="1" />
+                      </Row>
+                    </FieldGrid>
+                  </Section>
                 </div>
-              </Section>
 
-              {/* ---------- Accounts ---------- */}
-              <Section title="Accounts">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Row label="Sales Account Ledger">
-                    <Combobox
-                      options={ledgerOptions}
-                      value={values.salesAccountLedgerID ? String(values.salesAccountLedgerID) : ""}
-                      onValueChange={(v) => setFieldValue("salesAccountLedgerID", v ? Number(v) : null)}
-                      placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
-                      searchPlaceholder="Search ledgers…"
-                    />
-                  </Row>
-                  <Row label="Purchase Account Ledger">
-                    <Combobox
-                      options={ledgerOptions}
-                      value={values.purchaseAccountLedgerID ? String(values.purchaseAccountLedgerID) : ""}
-                      onValueChange={(v) => setFieldValue("purchaseAccountLedgerID", v ? Number(v) : null)}
-                      placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
-                      searchPlaceholder="Search ledgers…"
-                    />
-                  </Row>
-                </div>
-              </Section>
+                <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                  {/* ---------- Flags ---------- */}
+                  <Section title="Options">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                      <Flag id="regular" label="Regular" checked={values.regular} onChange={(c) => setFieldValue("regular", c)} />
+                      <Flag id="isActive" label="Active" checked={values.isActive} onChange={(c) => setFieldValue("isActive", c)} />
+                      <Flag id="stockMaintain" label="Maintain Stock" checked={values.stockMaintain} onChange={(c) => setFieldValue("stockMaintain", c)} />
+                      <Flag id="isAllowNagativeStock" label="Allow Negative Stock" checked={values.isAllowNagativeStock} onChange={(c) => setFieldValue("isAllowNagativeStock", c)} />
+                      <Flag id="mfrCodeReq" label="Batch Code Required" checked={values.mfrCodeReq} onChange={(c) => setFieldValue("mfrCodeReq", c)} />
+                      <Flag id="expDate" label="Expiry Date" checked={values.expDate} onChange={(c) => setFieldValue("expDate", c)} />
+                      <Flag id="onCalculation" label="On Calculation" checked={values.onCalculation} onChange={(c) => setFieldValue("onCalculation", c)} />
+                      <Flag id="multiRate" label="Multi Rate" checked={values.multiRate} onChange={(c) => setFieldValue("multiRate", c)} />
+                      <Flag id="is_BOM" label="BOM" checked={values.is_BOM} onChange={(c) => setFieldValue("is_BOM", c)} />
+                    </div>
+                  </Section>
 
-              {/* ---------- BOM ---------- */}
-              {values.is_BOM && (
-                <Section title="BOM Creation">
-                  <div className="space-y-2">
-                    {values.bom_Map.length === 0 && (
-                      <p className="text-sm text-muted-foreground">No components yet. Add the items that make up this item.</p>
-                    )}
-                    {values.bom_Map.map((row, index) => (
-                      <div key={index} className="grid grid-cols-[1fr_7rem_auto_auto] items-center gap-2">
-                        <ItemSearchCombobox
-                          items={items.filter((i) => i.item_ID !== itemId)}
-                          value={row.includeItemId}
-                          onValueChange={(v) => setFieldValue(`bom_Map.${index}.includeItemId`, v)}
-                          placeholder="Select component…"
+                  {/* ---------- Accounts ---------- */}
+                  <Section title="Accounts">
+                    <div className="space-y-2">
+                      <Row label="Sales Account Ledger">
+                        <Combobox
+                          options={ledgerOptions}
+                          value={values.salesAccountLedgerID ? String(values.salesAccountLedgerID) : ""}
+                          onValueChange={(v) => setFieldValue("salesAccountLedgerID", v ? Number(v) : null)}
+                          placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
+                          searchPlaceholder="Search ledgers…"
                         />
-                        <NumberInput
-                          aria-label="Quantity"
-                          placeholder="Qty"
-                          value={row.qty}
-                          onChange={(e) => setFieldValue(`bom_Map.${index}.qty`, e.target.value)}
+                      </Row>
+                      <Row label="Purchase Account Ledger">
+                        <Combobox
+                          options={ledgerOptions}
+                          value={values.purchaseAccountLedgerID ? String(values.purchaseAccountLedgerID) : ""}
+                          onValueChange={(v) => setFieldValue("purchaseAccountLedgerID", v ? Number(v) : null)}
+                          placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
+                          searchPlaceholder="Search ledgers…"
                         />
-                        <label className="flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">
-                          <Checkbox
-                            checked={row.hasStockEffect}
-                            onCheckedChange={(c) => setFieldValue(`bom_Map.${index}.hasStockEffect`, c === true)}
+                      </Row>
+                    </div>
+                  </Section>
+
+                  {/* ---------- Description ---------- */}
+                  <Section title="Description" className="lg:col-span-2 xl:col-span-1">
+                    <Textarea {...field("description")} rows={3} placeholder="Optional notes about this item" className="min-h-0 resize-none" />
+                  </Section>
+                </div>
+
+                {/* ---------- BOM ---------- */}
+                {values.is_BOM && (
+                  <Section title="BOM Creation">
+                    <div className="space-y-2">
+                      {values.bom_Map.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No components yet. Add the items that make up this item.</p>
+                      )}
+                      {values.bom_Map.map((row, index) => (
+                        <div key={index} className="grid grid-cols-[1fr_7rem_auto_auto] items-center gap-2">
+                          <ItemSearchCombobox
+                            items={items.filter((i) => i.item_ID !== itemId)}
+                            value={row.includeItemId}
+                            onValueChange={(v) => setFieldValue(`bom_Map.${index}.includeItemId`, v)}
+                            placeholder="Select component…"
                           />
-                          Effects inventory
-                        </label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          aria-label="Remove component"
-                          onClick={() => setFieldValue("bom_Map", values.bom_Map.filter((_, i) => i !== index))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setFieldValue("bom_Map", [...values.bom_Map, { includeItemId: null, qty: "1", hasStockEffect: true }])
-                      }
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add component
-                    </Button>
-                  </div>
-                </Section>
-              )}
+                          <NumberInput
+                            aria-label="Quantity"
+                            placeholder="Qty"
+                            value={row.qty}
+                            onChange={(e) => setFieldValue(`bom_Map.${index}.qty`, e.target.value)}
+                          />
+                          <label className="flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">
+                            <Checkbox
+                              checked={row.hasStockEffect}
+                              onCheckedChange={(c) => setFieldValue(`bom_Map.${index}.hasStockEffect`, c === true)}
+                            />
+                            Effects inventory
+                          </label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            aria-label="Remove component"
+                            onClick={() => setFieldValue("bom_Map", values.bom_Map.filter((_, i) => i !== index))}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setFieldValue("bom_Map", [...values.bom_Map, { includeItemId: null, qty: "1", hasStockEffect: true }])
+                        }
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add component
+                      </Button>
+                    </div>
+                  </Section>
+                )}
 
-              {/* ---------- Unit conversions (read-only) ---------- */}
-              {unitConv.length > 0 && (
-                <Section title="Unit Conversion">
-                  <div className="overflow-hidden rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Conv Unit</TableHead>
-                          <TableHead className="text-right">Conv Qty</TableHead>
-                          <TableHead className="text-right">Conv Rate</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {unitConv.map((c, i) => (
-                          <TableRow key={c.unit_Conv_ID ?? i}>
-                            <TableCell>{String(c.convUnit)}</TableCell>
-                            <TableCell className="text-right tabular-nums">{c.convQty}</TableCell>
-                            <TableCell className="text-right tabular-nums">{c.convRate}</TableCell>
+                {/* ---------- Unit conversions (read-only) ---------- */}
+                {unitConv.length > 0 && (
+                  <Section title="Unit Conversion">
+                    <div className="overflow-hidden rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Conv Unit</TableHead>
+                            <TableHead className="text-right">Conv Qty</TableHead>
+                            <TableHead className="text-right">Conv Rate</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Existing conversions are kept as-is when you save.</p>
-                </Section>
-              )}
-
-              {/* ---------- Description ---------- */}
-              <Section title="Description">
-                <Input name="description" value={values.description} onChange={handleChange} onBlur={handleBlur} placeholder="Optional notes about this item" />
-              </Section>
-            </CardContent>
-          </Card>
-
-        </Form>
-      )}
+                        </TableHeader>
+                        <TableBody>
+                          {unitConv.map((c, i) => (
+                            <TableRow key={c.unit_Conv_ID ?? i}>
+                              <TableCell>{String(c.convUnit)}</TableCell>
+                              <TableCell className="text-right tabular-nums">{c.convQty}</TableCell>
+                              <TableCell className="text-right tabular-nums">{c.convRate}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Existing conversions are kept as-is when you save.</p>
+                  </Section>
+                )}
+              </CardContent>
+            </Card>
+          </KeyboardForm>
+        );
+      }}
     </Formik>
   );
 }
-
-// ---------- small building blocks ----------

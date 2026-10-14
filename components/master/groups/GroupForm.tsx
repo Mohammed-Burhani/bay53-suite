@@ -1,6 +1,6 @@
 "use client";
 
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { KeyboardForm } from "@/components/master/shared/form-parts";
 import { useParentGroups } from "@/lib/hooks/useGroups";
 
 export interface GroupFormValues {
@@ -55,7 +56,7 @@ export function GroupForm({
           enableReinitialize
         >
           {({ setFieldValue, values, isSubmitting }) => (
-            <Form className="grid gap-6">
+            <KeyboardForm onCancel={onCancel} className="grid gap-4">
               <div className="rounded-lg border p-4 space-y-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Group Details
@@ -93,7 +94,7 @@ export function GroupForm({
                   {submitLabel}
                 </Button>
               </div>
-            </Form>
+            </KeyboardForm>
           )}
         </Formik>
       </CardContent>
