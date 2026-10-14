@@ -444,7 +444,7 @@ export default function ErpAppShell({ children }: { children: React.ReactNode })
               </SheetContent>
             </Sheet>
 
-            <main className="flex-1 overflow-auto" style={{ paddingTop: "104px" }}>{children}</main>
+            <main className="relative flex-1 overflow-auto" style={{ paddingTop: "104px" }}>{children}</main>
           </>
         ) : (
           <>
@@ -459,7 +459,7 @@ export default function ErpAppShell({ children }: { children: React.ReactNode })
 
             <div className="flex-1 flex flex-col overflow-hidden">
               <TabBar />
-              <main className="flex-1 overflow-auto">{children}</main>
+              <main className="relative flex-1 overflow-auto">{children}</main>
             </div>
           </>
         )}

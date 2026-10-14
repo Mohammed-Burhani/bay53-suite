@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -28,7 +29,7 @@ import {
 import { Flag, NumberInput, Row, Section, fieldError } from "@/components/master/shared/form-parts";
 import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
-import { useItems } from "@/lib/hooks/useReports";
+import { useItems, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { useItemById, useItemCreate, useItemUpdate } from "@/lib/hooks/useItemMaster";
 import { getApiErrorMessage } from "@/lib/utils/api-error";
 import {
@@ -123,6 +124,8 @@ interface BodyProps {
 function ItemFormBody({ raw, items, onSuccess, onCancel }: BodyProps) {
   const { getLabel } = useClassificationLabels();
   const createItem = useItemCreate();
+  const { data: ledgers = [], isLoading: ledgersLoading } = useLedgersByGroup();
+  const ledgerOptions = useMemo(() => ledgers.map((l) => ({ value: String(l.ledger_id), label: l.name })), [ledgers]);
   const updateItem = useItemUpdate();
 
   const initialValues = useMemo<ItemFormValues>(
@@ -310,6 +313,34 @@ function ItemFormBody({ raw, items, onSuccess, onCancel }: BodyProps) {
                   <Flag id="onCalculation" label="On Calculation" checked={values.onCalculation} onChange={(c) => setFieldValue("onCalculation", c)} />
                   <Flag id="is_BOM" label="BOM" checked={values.is_BOM} onChange={(c) => setFieldValue("is_BOM", c)} />
                   <Flag id="isActive" label="Active" checked={values.isActive} onChange={(c) => setFieldValue("isActive", c)} />
+                  <Flag id="stockMaintain" label="Maintain Stock" checked={values.stockMaintain} onChange={(c) => setFieldValue("stockMaintain", c)} />
+                  <Flag id="isAllowNagativeStock" label="Allow Negative Stock" checked={values.isAllowNagativeStock} onChange={(c) => setFieldValue("isAllowNagativeStock", c)} />
+                  <Flag id="expDate" label="Expiry Date" checked={values.expDate} onChange={(c) => setFieldValue("expDate", c)} />
+                  <Flag id="multiRate" label="Multi Rate" checked={values.multiRate} onChange={(c) => setFieldValue("multiRate", c)} />
+                </div>
+              </Section>
+
+              {/* ---------- Accounts ---------- */}
+              <Section title="Accounts">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Row label="Sales Account Ledger">
+                    <Combobox
+                      options={ledgerOptions}
+                      value={values.salesAccountLedgerID ? String(values.salesAccountLedgerID) : ""}
+                      onValueChange={(v) => setFieldValue("salesAccountLedgerID", v ? Number(v) : null)}
+                      placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
+                      searchPlaceholder="Search ledgers…"
+                    />
+                  </Row>
+                  <Row label="Purchase Account Ledger">
+                    <Combobox
+                      options={ledgerOptions}
+                      value={values.purchaseAccountLedgerID ? String(values.purchaseAccountLedgerID) : ""}
+                      onValueChange={(v) => setFieldValue("purchaseAccountLedgerID", v ? Number(v) : null)}
+                      placeholder={ledgersLoading ? "Loading ledgers…" : "Default"}
+                      searchPlaceholder="Search ledgers…"
+                    />
+                  </Row>
                 </div>
               </Section>
 

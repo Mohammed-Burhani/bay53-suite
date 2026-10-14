@@ -28,6 +28,8 @@ export const EMPTY_LEDGER_FORM: LedgerFormValues = {
   panNo: "",
   tinV: "",
   gstType: 0,
+  state: 0,
+  country: 0,
   opening_Date: "",
   opening_Bal: "",
   isCr: false,
@@ -40,6 +42,57 @@ export const EMPTY_LEDGER_FORM: LedgerFormValues = {
   ledgerBankIFSC: "",
   transportBy: "",
   vendorCode: "",
+};
+
+// Every remaining LedgerCreateViewModel field the form does not expose, so a new ledger is
+// created with explicit defaults rather than whatever the server infers for a missing key.
+// `0` for an id / enum means "not set".
+const LEDGER_CREATE_DEFAULTS: Raw = {
+  customerCheckOnContactNo: false,
+  tinC: "",
+  vat_cst: false,
+  account_No: "",
+  account_Bal: 0,
+  closingBal: 0,
+  ecc_no: "",
+  commisionarate_no: "",
+  range: "",
+  division: "",
+  isProject: false,
+  project_Parent: 0,
+  isChildCompany: false,
+  openingDetails: [],
+  bankDetails: [],
+  bankName: "",
+  bankBranch: "",
+  brankAccountNo: "",
+  rateType: 0,
+  schemePointValue: 0,
+  isAccountHolder: false,
+  useOnMultiPay: false,
+  captionText: "",
+  sqNo: 0,
+  baseCurrency: 0,
+  partyMainDetails: "",
+  partyItemDetails: "",
+  custPriceType: 0,
+  gstCategory: 0,
+  hasParant: false,
+  parantLedgerID: 0,
+  assignedUserID: 0,
+  priceCategories: [],
+  addresses: [],
+  contactPersonNumber: "",
+  oldSwRefId: 0,
+  councilRegisterNumber: "",
+  opening_Cur: 0,
+  opening_Rate: 0,
+  cap_PartyName: "",
+  groupBy: "",
+  msmeisledger: false,
+  udyogaAadhaarNo: "",
+  msmecategory: 0,
+  msmesubcategory: 0,
 };
 
 // First defined value among differently-cased keys (the API is inconsistent).
@@ -90,6 +143,8 @@ export function rawToFormValues(raw: Raw): LedgerFormValues {
     panNo: str(raw.panNo),
     tinV: str(raw.tinV),
     gstType: Number(raw.gstType ?? 0),
+    state: Number(raw.state ?? 0) || 0,
+    country: Number(raw.country ?? 0) || 0,
     opening_Date: dateInput(raw.opening_Date),
     opening_Bal: numStr(raw.opening_Bal),
     isCr: raw.isCr === true,
@@ -125,7 +180,7 @@ export function toCopyBase(raw: Raw): Raw {
 // (state/country ids, GST type, opening details, …) are written back unchanged.
 export function buildLedgerPayload(values: LedgerFormValues, raw: Raw | null): LedgerSaveBody {
   const now = new Date().toISOString();
-  const base: Raw = raw ?? {};
+  const base: Raw = raw ?? LEDGER_CREATE_DEFAULTS;
   return {
     ...base,
     id: raw ? getLedgerId(raw) : 0,
@@ -150,10 +205,14 @@ export function buildLedgerPayload(values: LedgerFormValues, raw: Raw | null): L
     panNo: values.panNo.trim().toUpperCase(),
     tinV: values.tinV.trim(),
     gstType: values.gstType,
+    state: values.state,
+    country: values.country,
     // Unedited dates are written back exactly as received; edited ones as a zone-less local date.
     ...(values.opening_Date && values.opening_Date !== dateInput(base.opening_Date)
       ? { opening_Date: `${values.opening_Date}T00:00:00` }
-      : {}),
+      : base.opening_Date
+        ? {}
+        : { opening_Date: now }),
     opening_Bal: num(values.opening_Bal),
     isCr: values.isCr,
     credit_Limit: num(values.credit_Limit),

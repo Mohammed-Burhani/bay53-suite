@@ -13,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Combobox } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, NumberInput, Row, Section, fieldError } from "@/components/master/shared/form-parts";
+import { useDropdown } from "@/lib/hooks/useDropdown";
+import { DROPDOWN_TABLES } from "@/lib/constants/dropdown-tables";
 import { useAllGroups, useLedgerById, useLedgerCreate, useLedgerUpdate } from "@/lib/hooks/useLedgerMaster";
 import { getApiErrorMessage } from "@/lib/utils/api-error";
 import {
@@ -27,11 +29,12 @@ import { GST_TYPE_OPTIONS, PARTY_TYPE_OPTIONS, type LedgerFormValues } from "@/l
 const nonNegative = (label: string) =>
   Yup.string().test("non-negative", `${label} must be a number ≥ 0`, (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= 0));
 
-const buildSchema = (requireAreaCity: boolean) =>
+const buildSchema = (requireAreaCity: boolean, requireState: boolean) =>
   Yup.object({
   name: Yup.string().trim().required("Required"),
   area: requireAreaCity ? Yup.string().trim().required("Required") : Yup.string(),
   city: requireAreaCity ? Yup.string().trim().required("Required") : Yup.string(),
+  state: requireState ? Yup.number().min(1, "Select a state") : Yup.number(),
   group_ID: Yup.number().nullable().required("Select a group"),
   email: Yup.string().trim().email("Enter a valid email"),
   gstNo: Yup.string().test(
@@ -111,7 +114,11 @@ function LedgerFormBody({ raw, isCopy, onSuccess, onCancel }: BodyProps) {
   const { data: groups = [], isLoading: groupsLoading } = useAllGroups();
 
   const isEdit = !!raw && !isCopy;
-  const schema = useMemo(() => buildSchema(!isEdit), [isEdit]);
+  const { data: states = [] } = useDropdown(DROPDOWN_TABLES.state);
+  const { data: countries = [] } = useDropdown(DROPDOWN_TABLES.country);
+  const stateOptions = useMemo(() => states.map((s) => ({ value: String(s.id), label: s.name })), [states]);
+  const countryOptions = useMemo(() => countries.map((c) => ({ value: String(c.id), label: c.name })), [countries]);
+  const schema = useMemo(() => buildSchema(!isEdit, DROPDOWN_TABLES.state !== null && !isEdit), [isEdit]);
   // The record written back on save; a copy drops the source's id and child rows.
   const base = useMemo(() => (raw && isCopy ? toCopyBase(raw) : raw), [raw, isCopy]);
 
@@ -202,6 +209,28 @@ function LedgerFormBody({ raw, isCopy, onSuccess, onCancel }: BodyProps) {
                       <Row label="City" required={!isEdit} error={err("city")}>
                         <Input {...text("city")} aria-invalid={!!err("city")} />
                       </Row>
+                      {DROPDOWN_TABLES.state !== null && (
+                        <Row label="State" required={!isEdit} error={err("state")}>
+                          <Combobox
+                            options={stateOptions}
+                            value={values.state ? String(values.state) : ""}
+                            onValueChange={(v) => setFieldValue("state", v ? Number(v) : 0)}
+                            placeholder="Select a state"
+                            searchPlaceholder="Search states…"
+                          />
+                        </Row>
+                      )}
+                      {DROPDOWN_TABLES.country !== null && (
+                        <Row label="Country">
+                          <Combobox
+                            options={countryOptions}
+                            value={values.country ? String(values.country) : ""}
+                            onValueChange={(v) => setFieldValue("country", v ? Number(v) : 0)}
+                            placeholder="Select a country"
+                            searchPlaceholder="Search countries…"
+                          />
+                        </Row>
+                      )}
                       <Row label="Pin Code">
                         <Input {...text("pinCode")} inputMode="numeric" />
                       </Row>

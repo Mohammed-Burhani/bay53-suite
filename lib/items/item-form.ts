@@ -41,8 +41,60 @@ export const EMPTY_ITEM_FORM: ItemFormValues = {
   onCalculation: false,
   is_BOM: false,
   isActive: true,
+  stockMaintain: true,
+  isAllowNagativeStock: false,
+  expDate: false,
+  multiRate: false,
+  salesAccountLedgerID: null,
+  purchaseAccountLedgerID: null,
   description: "",
   bom_Map: [],
+};
+
+// Every remaining ItemCreateViewModel field the form does not expose, so a new item is
+// created with explicit defaults rather than whatever the server infers for a missing key.
+// `0` for an id / UOM / enum means "not set".
+const ITEM_CREATE_DEFAULTS: Raw = {
+  slabCategory: 0,
+  rateDealer: 0,
+  rateRetailer: 0,
+  sizeQty: 0,
+  usedFor: 0,
+  rebate: 0,
+  sugComission: 0,
+  landCostDiscount: 0,
+  taxEffect: 0,
+  cess: 0,
+  wtKg: 0,
+  cbSqft: 0,
+  isMultiUOM: false,
+  baseUOM: 0,
+  salesUOM: 0,
+  purchaseUOM: 0,
+  length: 0,
+  width: 0,
+  thickness: 0,
+  weight: 0,
+  updatePL: false,
+  steelCutFarmulaOn: "",
+  machineWorkRate: 0,
+  dia: 0,
+  af: 0,
+  rateWO: 0,
+  uniqueItemID: "",
+  machineWorkReq: false,
+  qcReq: false,
+  qcTypeId: 0,
+  classification: 0,
+  rackLocationId: 0,
+  rackLocationName: "",
+  itemCodeSuffix: "",
+  oldSwRefId: 0,
+  areaCalculationOn: 0,
+  calModeOn: 0,
+  stockOn: 0,
+  calModeEffectOn: 0,
+  itemGroupMain: "",
 };
 
 // First defined value among differently-cased keys (the API is inconsistent,
@@ -105,6 +157,12 @@ export function rawToFormValues(raw: Raw): ItemFormValues {
     onCalculation: bool(raw.onCalculation),
     is_BOM: bool(pick(raw, "is_BOM", "isBOM")),
     isActive: bool(raw.isActive, true),
+    stockMaintain: bool(raw.stockMaintain, true),
+    isAllowNagativeStock: bool(raw.isAllowNagativeStock),
+    expDate: bool(raw.expDate),
+    multiRate: bool(raw.multiRate),
+    salesAccountLedgerID: Number(raw.salesAccountLedgerID) || null,
+    purchaseAccountLedgerID: Number(raw.purchaseAccountLedgerID) || null,
     description: str(raw.description),
     bom_Map: bom,
   };
@@ -118,7 +176,7 @@ export function buildItemPayload(
   raw: Raw | null
 ): ItemSaveBody {
   const now = new Date().toISOString();
-  const base: Raw = raw ?? {};
+  const base: Raw = raw ?? ITEM_CREATE_DEFAULTS;
 
   const bom_Map: BomMapRow[] = values.is_BOM
     ? values.bom_Map
@@ -169,6 +227,13 @@ export function buildItemPayload(
     onCalculation: values.onCalculation,
     is_BOM: values.is_BOM,
     isActive: values.isActive,
+    tariff_No: values.hsnNo.trim(),
+    stockMaintain: values.stockMaintain,
+    isAllowNagativeStock: values.isAllowNagativeStock,
+    expDate: values.expDate,
+    multiRate: values.multiRate,
+    salesAccountLedgerID: values.salesAccountLedgerID ?? 0,
+    purchaseAccountLedgerID: values.purchaseAccountLedgerID ?? 0,
     description: values.description.trim(),
     created_Date: str(base.created_Date) || now,
     modified_Date: now,

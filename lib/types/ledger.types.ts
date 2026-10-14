@@ -46,6 +46,8 @@ export interface LedgerSaveBody {
   panNo: string;
   tinV: string;
   gstType: number;
+  state: number;
+  country: number;
   opening_Date?: string;
   opening_Bal: number;
   isCr: boolean;
@@ -87,6 +89,8 @@ export interface LedgerFormValues {
   panNo: string;
   tinV: string;
   gstType: number;
+  state: number; // 0 = not set
+  country: number;
   opening_Date: string; // yyyy-MM-dd, "" when unset
   opening_Bal: string;
   isCr: boolean;
