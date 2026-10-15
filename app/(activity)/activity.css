@@ -1,0 +1,35 @@
+.act-sans {
+  font-family: var(--font-act-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.act-mono {
+  font-family: var(--font-act-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* State transition: the drawer slides in from the right. Skipped for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes act-drawer-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes act-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .act-drawer {
+    animation: act-drawer-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .act-backdrop {
+    animation: act-fade-in 180ms ease-out;
+  }
+}
