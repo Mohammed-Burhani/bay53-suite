@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, Loader2, X, Check, ChevronsUpDown } from "lucide-react";
+import { Search, Loader2, X, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useLedgersByGroup } from "@/lib/hooks/useReports";
 import type { Ledger } from "@/lib/types/reports.types";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,9 @@ interface LedgerSearchInputProps {
   onLedgerNameChange?: (name: string) => void;
   selectedLedgers?: Array<{ ledger_id: number; name: string; group: string | null }>;
   onSelectedLedgersChange?: (ledgers: Array<{ ledger_id: number; name: string; group: string | null }>) => void;
+  /** Shows a quick-add button and dropdown footer. Receives whatever the user had typed. */
+  onQuickAdd?: (typedName: string) => void;
+  quickAddLabel?: string;
 }
 
 export function LedgerSearchInput({
@@ -38,6 +41,8 @@ export function LedgerSearchInput({
   onLedgerNameChange,
   selectedLedgers: externalSelectedLedgers,
   onSelectedLedgersChange,
+  onQuickAdd,
+  quickAddLabel = "Quick add ledger",
 }: LedgerSearchInputProps) {
   const [ledgerSearchOpen, setLedgerSearchOpen] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
@@ -153,13 +158,14 @@ export function LedgerSearchInput({
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--report-accent)]" />
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
+      <div className="flex items-center gap-1.5">
       <Popover open={ledgerSearchOpen} onOpenChange={setLedgerSearchOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={ledgerSearchOpen}
-            className="w-full h-9 justify-between font-normal"
+            className="h-9 min-w-0 flex-1 justify-between font-normal"
           >
             {selectedLedgerIds.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
@@ -232,9 +238,40 @@ export function LedgerSearchInput({
                 </div>
               )}
             </CommandList>
+            {onQuickAdd && (
+              <div className="border-t p-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-primary"
+                  onClick={() => {
+                    setLedgerSearchOpen(false);
+                    onQuickAdd(ledgerSearchTerm.trim());
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  {ledgerSearchTerm.trim() ? `Add "${ledgerSearchTerm.trim()}" as new` : quickAddLabel}
+                </Button>
+              </div>
+            )}
           </Command>
         </PopoverContent>
       </Popover>
+      {onQuickAdd && (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          title={quickAddLabel}
+          aria-label={quickAddLabel}
+          onClick={() => onQuickAdd("")}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      )}
+      </div>
       {multiSelect && selectedLedgers.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {selectedLedgers.map((ledger) => (

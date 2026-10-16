@@ -45,7 +45,10 @@ import { format } from "date-fns";
 import { useInvoiceCreate, useInvoiceById, useTncSearch, useExtraCharges } from "@/lib/hooks/useInvoices";
 import { useStockPlaces, useItemSearch, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
-import type { Item } from "@/lib/types/reports.types";
+import { QuickAddLedgerDialog } from "@/components/invoice/QuickAddLedgerDialog";
+import { QuickAddItemDialog } from "@/components/invoice/QuickAddItemDialog";
+import { isPurchaseSide } from "@/lib/invoices/quick-add";
+import type { Item, Ledger } from "@/lib/types/reports.types";
 import type { InvoiceDetail, InvoiceCreateExtraCharge, InvoiceCreatePayload } from "@/lib/types/invoice.types";
 import type { Tnc } from "@/lib/types/master.types";
 import { computeCharges, defaultInput, sortCharges, type ChargeInput } from "@/lib/invoices/extra-charges";
@@ -242,9 +245,14 @@ function buildStockSubDetail(li: LineItem, invType: number): ItemSubDetail[] {
 // ═══════════════════════════════════════════════════════════════════
 
 function ItemSearchCell({
-  value, onSelect,
+  value, label, onSelect, onQuickAdd,
 }: {
-  value: number; onSelect: (item: Item) => void;
+  value: number;
+  /** Name to show when the row was filled from outside the dropdown (edit prefill, quick add). */
+  label?: string;
+  onSelect: (item: Item) => void;
+  /** Opens quick add. Receives whatever the user had typed in the search box. */
+  onQuickAdd?: (typedName: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -253,12 +261,15 @@ function ItemSearchCell({
   const { data: results = [], isFetching } = useItemSearch(search);
   const hasSearch = search.trim().length > 0;
 
+  const shownName = value ? (label || selectedItem?.name) : undefined;
+
   return (
+    <div className="flex items-center gap-1">
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" aria-expanded={open}
-          className="w-[220px] justify-between font-normal text-left h-9">
-          {selectedItem ? <span className="truncate">{selectedItem.name}</span>
+          className={cn("justify-between font-normal text-left h-9", onQuickAdd ? "w-[184px]" : "w-[220px]")}>
+          {shownName ? <span className="truncate">{shownName}</span>
             : <span className="text-muted-foreground">Search item...</span>}
         </Button>
       </PopoverTrigger>
@@ -295,9 +306,25 @@ function ItemSearchCell({
               </CommandGroup>
             )}
           </CommandList>
+          {onQuickAdd && (
+            <div className="border-t p-1">
+              <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2 text-primary"
+                onClick={() => { setOpen(false); onQuickAdd(search.trim()); }}>
+                <Plus className="h-4 w-4" />
+                {search.trim() ? `Add "${search.trim()}" as new item` : "Quick add item"}
+              </Button>
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
+    {onQuickAdd && (
+      <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0"
+        title="Quick add item" aria-label="Quick add item" onClick={() => onQuickAdd("")}>
+        <Plus className="h-4 w-4" />
+      </Button>
+    )}
+    </div>
   );
 }
 
@@ -613,6 +640,28 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
       )
     );
   }, [interState]);
+
+  // ── Quick add (ledger / item masters) ─────────────────────────
+  const supplierSide = isPurchaseSide(invType);
+  const [quickLedger, setQuickLedger] = useState<{ open: boolean; name: string }>({ open: false, name: "" });
+  // tempId = the line the new item goes on; null = first empty line, or a new one.
+  const [quickItem, setQuickItem] = useState<{ open: boolean; name: string; tempId: string | null }>({ open: false, name: "", tempId: null });
+
+  const handleLedgerCreated = useCallback((ledger: Ledger) => {
+    setSelectedLedgerIds([ledger.ledger_id]);
+    setSelectedLedgers([{ ledger_id: ledger.ledger_id, name: ledger.name, group: ledger.group ?? null }]);
+  }, []);
+
+  const handleQuickItemCreated = useCallback((item: Item) => {
+    const target = quickItem.tempId ?? lineItems.find((li) => !li.item_ID)?.tempId;
+    if (target) {
+      handleItemSelect(target, item);
+      return;
+    }
+    const tempId = `item_${Date.now()}_${lineItems.length}`;
+    setLineItems((prev) => [...prev, emptyLineItem(tempId)]);
+    handleItemSelect(tempId, item);
+  }, [quickItem.tempId, lineItems, handleItemSelect]);
 
   // ── Section 5: Extra Charges ─────────────────────────────────
   // Every master charge is listed; chargeInputs holds only what the user touched.
@@ -940,6 +989,8 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                 onSelectedLedgersChange={setSelectedLedgers}
                 label="Party (Ledger)" placeholder="Search and select party..."
                 groups={null} multiSelect={false} required
+                quickAddLabel={supplierSide ? "Quick add supplier" : "Quick add customer"}
+                onQuickAdd={(name) => setQuickLedger({ open: true, name })}
               />
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-1.5">
@@ -1038,9 +1089,14 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
           <Card className="py-5">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Items</CardTitle>
-              <Button variant="outline" size="sm" onClick={addLineItem}>
-                <Plus className="h-4 w-4 mr-1" /> Add Item
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setQuickItem({ open: true, name: "", tempId: null })}>
+                  <Plus className="h-4 w-4 mr-1" /> Quick Add Item
+                </Button>
+                <Button variant="outline" size="sm" onClick={addLineItem}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Item
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {lineItems.length === 0 ? (
@@ -1075,8 +1131,9 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                               </Button>
                             </TableCell>
                             <TableCell className="py-1">
-                              <ItemSearchCell value={li.item_ID}
-                                onSelect={(item) => handleItemSelect(li.tempId, item)} />
+                              <ItemSearchCell value={li.item_ID} label={li.itemName}
+                                onSelect={(item) => handleItemSelect(li.tempId, item)}
+                                onQuickAdd={(name) => setQuickItem({ open: true, name, tempId: li.tempId })} />
                             </TableCell>
                             <TableCell className="py-1">
                               <Input type="number" min={0} step="any"
@@ -1449,6 +1506,20 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
           <Button variant="outline" className="w-full" onClick={() => router.push(backUrl)}>Cancel</Button>
         </div>
       </div>
+
+      <QuickAddLedgerDialog
+        open={quickLedger.open}
+        onOpenChange={(open) => setQuickLedger((q) => ({ ...q, open }))}
+        supplier={supplierSide}
+        initialName={quickLedger.name}
+        onCreated={handleLedgerCreated}
+      />
+      <QuickAddItemDialog
+        open={quickItem.open}
+        onOpenChange={(open) => setQuickItem((q) => ({ ...q, open }))}
+        initialName={quickItem.name}
+        onCreated={handleQuickItemCreated}
+      />
     </div>
   );
 }
