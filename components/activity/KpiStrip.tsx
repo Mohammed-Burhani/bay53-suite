@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Clock3, FileWarning, Percent, Webhook, type LucideIcon } from "lucide-react";
+import { Ban, Clock3, FileWarning, Percent, Trash2, type LucideIcon } from "lucide-react";
 import { ROLE_LABEL } from "@/lib/activity-catalog";
 import type { ActionCode, KpiValue } from "@/lib/activity-types";
 import { Avatar } from "./badges";
@@ -83,10 +83,10 @@ export function KpiStrip({ onFilterAction }: Props) {
       ) : (
         <div className="grid grid-cols-2 gap-px bg-border md:grid-cols-3 xl:grid-cols-6">
           <Metric label="Voids" value={data.voids} icon={Ban} tone="critical" action="invoice.voided" onFilterAction={onFilterAction} />
-          <Metric label="Edits after sent or paid" value={data.editsAfterSentOrPaid} icon={FileWarning} tone="critical" action="invoice.edited_after_sent" onFilterAction={onFilterAction} />
+          <Metric label="Edits after sent" value={data.editsAfterSentOrPaid} icon={FileWarning} tone="critical" action="invoice.edited_after_sent" onFilterAction={onFilterAction} />
           <Metric label="Discount overrides" value={data.discountOverrides} icon={Percent} tone="critical" action="price.override" onFilterAction={onFilterAction} />
           <Metric label="After-hours activity" value={data.afterHours} icon={Clock3} tone="important" onFilterAction={onFilterAction} />
-          <Metric label="Failed payments" value={data.failedPayments} icon={Webhook} tone="critical" action="webhook.failed" onFilterAction={onFilterAction} />
+          <Metric label="Invoices deleted" value={data.deletions} icon={Trash2} tone="critical" action="invoice.deleted" onFilterAction={onFilterAction} />
           <div className="bg-card p-3">
             <span className="text-xs text-foreground/80">Top actors, 7 days</span>
             <ol className="mt-1.5 space-y-1">

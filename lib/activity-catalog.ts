@@ -16,21 +16,18 @@ export const ACTION_META: Record<
   "invoice.total_changed": { label: "Total changed", importance: "important", entity: "invoice" },
   "invoice.discount_changed": { label: "Discount changed", importance: "important", entity: "invoice" },
   "invoice.tax_changed": { label: "Tax changed", importance: "important", entity: "invoice" },
-  "payment.recorded": { label: "Payment recorded", importance: "important", entity: "payment" },
   "invoice.emailed": { label: "Invoice emailed", importance: "important", entity: "invoice" },
   "invoice.shared": { label: "Invoice shared", importance: "important", entity: "invoice" },
 
   "invoice.voided": { label: "Invoice voided", importance: "critical", entity: "invoice" },
   "invoice.deleted": { label: "Invoice deleted", importance: "critical", entity: "invoice" },
-  "payment.reversed": { label: "Payment reversed", importance: "critical", entity: "payment" },
   "invoice.edited_after_sent": {
-    label: "Edited after sent or paid",
+    label: "Edited after sent",
     importance: "critical",
     entity: "invoice",
   },
   "price.override": { label: "Price override", importance: "critical", entity: "invoice_item" },
   "export.csv": { label: "CSV exported", importance: "critical", entity: "invoice" },
-  "webhook.failed": { label: "Razorpay webhook failed", importance: "critical", entity: "payment" },
 };
 
 export const ACTION_CODES = Object.keys(ACTION_META) as ActionCode[];
@@ -42,13 +39,12 @@ export const IMPORTANCE_LABEL: Record<Importance, string> = {
   critical: "Critical",
 };
 
-export const SOURCES: Source[] = ["web", "mobile", "api", "system", "webhook"];
+export const SOURCES: Source[] = ["web", "mobile", "api", "system"];
 export const SOURCE_LABEL: Record<Source, string> = {
   web: "Web app",
   mobile: "Mobile app",
   api: "API",
   system: "System job",
-  webhook: "Webhook",
 };
 
 export const ROLE_LABEL: Record<ActorRole, string> = {
