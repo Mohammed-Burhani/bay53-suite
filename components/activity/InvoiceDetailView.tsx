@@ -65,29 +65,6 @@ function DetailsTab({ inv }: { inv: Invoice }) {
             </tbody>
           </table>
         </div>
-
-        <div>
-          <h3 className="mb-1.5 text-xs font-semibold text-foreground/80">Payments</h3>
-          {inv.payments.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">No payments recorded.</p>
-          ) : (
-            <ul className="divide-y divide-border rounded-md border border-border">
-              {inv.payments.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[13px]">
-                  <span>
-                    <span className="font-medium text-foreground">{p.method}</span>
-                    <span className="act-mono ml-2 text-xs text-muted-foreground">{p.reference}</span>
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{dateFmt.format(new Date(p.receivedAt))}</span>
-                    <span className={cx("act-mono", p.reversed && "line-through opacity-70")}>{formatINR(p.amount)}</span>
-                    {p.reversed ? <span className="text-xs text-red-700 dark:text-red-300">Reversed</span> : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
       <dl className="h-fit rounded-md border border-border px-3 py-2">
@@ -96,8 +73,6 @@ function DetailsTab({ inv }: { inv: Invoice }) {
         <Row label={`GST (${inv.taxPct}%)`} value={formatINR(inv.tax)} />
         <div className="my-1 border-t border-border" />
         <Row label="Total" value={formatINR(inv.total)} strong />
-        <Row label="Paid" value={formatINR(inv.paid)} />
-        <Row label="Balance due" value={formatINR(inv.balanceDue)} strong />
       </dl>
     </div>
   );

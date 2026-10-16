@@ -83,7 +83,6 @@ const MONEY_FIELDS = new Set([
   "tax",
   "amount",
   "rate",
-  "balanceDue",
   "listPrice",
   "overridePrice",
 ]);
@@ -93,7 +92,6 @@ const FIELD_LABELS: Record<string, string> = {
   discountPct: "Discount %",
   taxPct: "Tax %",
   dueDate: "Due date",
-  balanceDue: "Balance due",
   listPrice: "List price",
   overridePrice: "Override price",
   approvalStatus: "Approval",
