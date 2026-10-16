@@ -76,7 +76,8 @@ const ITEM_CREATE_DEFAULTS: Raw = {
   thickness: 0,
   weight: 0,
   updatePL: false,
-  steelCutFarmulaOn: "",
+  // The server binds this to a non-string type, so "" fails JSON conversion; null is accepted.
+  steelCutFarmulaOn: null,
   machineWorkRate: 0,
   dia: 0,
   af: 0,
