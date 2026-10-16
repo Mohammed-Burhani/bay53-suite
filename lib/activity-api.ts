@@ -235,7 +235,7 @@ export async function getKpis(viewer: Viewer): Promise<Kpis> {
     editsAfterSentOrPaid: count((l) => l.action === "invoice.edited_after_sent"),
     discountOverrides: count((l) => l.action === "price.override"),
     afterHours: count((l) => l.actorRole !== "system" && isAfterHours(l.createdAt)),
-    failedPayments: count((l) => l.action === "webhook.failed"),
+    deletions: count((l) => l.action === "invoice.deleted"),
     topActors,
   };
 }

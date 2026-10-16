@@ -3,9 +3,9 @@
 
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
-export type EntityType = "invoice" | "invoice_item" | "payment";
+export type EntityType = "invoice" | "invoice_item";
 export type Importance = "info" | "important" | "critical";
-export type Source = "web" | "mobile" | "api" | "system" | "webhook";
+export type Source = "web" | "mobile" | "api" | "system";
 export type ActorRole = "admin" | "accountant" | "sales" | "system";
 
 export type ActionCode =
@@ -20,16 +20,13 @@ export type ActionCode =
   | "invoice.total_changed"
   | "invoice.discount_changed"
   | "invoice.tax_changed"
-  | "payment.recorded"
   | "invoice.emailed"
   | "invoice.shared"
   | "invoice.voided"
   | "invoice.deleted"
-  | "payment.reversed"
   | "invoice.edited_after_sent"
   | "price.override"
-  | "export.csv"
-  | "webhook.failed";
+  | "export.csv";
 
 export interface FieldChange {
   old: Json;
@@ -114,11 +111,11 @@ export interface Kpis {
   editsAfterSentOrPaid: KpiValue;
   discountOverrides: KpiValue;
   afterHours: KpiValue;
-  failedPayments: KpiValue;
+  deletions: KpiValue;
   topActors: { actorId: string; name: string; role: ActorRole; count: number }[];
 }
 
-export type InvoiceStatus = "Draft" | "Sent" | "Partially Paid" | "Paid" | "Voided" | "Deleted";
+export type InvoiceStatus = "Draft" | "Sent" | "Voided" | "Deleted";
 
 export interface InvoiceItem {
   id: string;
@@ -126,15 +123,6 @@ export interface InvoiceItem {
   hsn: string;
   qty: number;
   rate: number;
-}
-export interface InvoicePayment {
-  id: string;
-  amount: number;
-  method: string;
-  /** Always masked. Full card, bank or gateway identifiers are never stored or shown. */
-  reference: string;
-  receivedAt: string;
-  reversed: boolean;
 }
 export interface Invoice {
   id: string;
@@ -153,10 +141,7 @@ export interface Invoice {
   discount: number;
   tax: number;
   total: number;
-  paid: number;
-  balanceDue: number;
   notes: string;
-  payments: InvoicePayment[];
 }
 
 export type ActivityErrorCode = "forbidden" | "not_found" | "unavailable";

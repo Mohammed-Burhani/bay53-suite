@@ -22,9 +22,6 @@ import {
   Cpu,
   Trash2,
   TriangleAlert,
-  Undo2,
-  Wallet,
-  Webhook,
   Info,
   OctagonAlert,
   type LucideIcon,
@@ -90,16 +87,13 @@ export const ACTION_ICON: Record<ActionCode, LucideIcon> = {
   "invoice.total_changed": IndianRupee,
   "invoice.discount_changed": Percent,
   "invoice.tax_changed": ReceiptText,
-  "payment.recorded": Wallet,
   "invoice.emailed": Mail,
   "invoice.shared": Share2,
   "invoice.voided": Ban,
   "invoice.deleted": Trash2,
-  "payment.reversed": Undo2,
   "invoice.edited_after_sent": FileWarning,
   "price.override": TriangleAlert,
   "export.csv": FileSpreadsheet,
-  "webhook.failed": Webhook,
 };
 
 export const SOURCE_ICON: Record<Source, LucideIcon> = {
@@ -107,5 +101,4 @@ export const SOURCE_ICON: Record<Source, LucideIcon> = {
   mobile: Smartphone,
   api: Terminal,
   system: Cpu,
-  webhook: Webhook,
 };
