@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { RotateCcw, Search } from "lucide-react";
-import { ACTION_CODES, ACTION_META, IMPORTANCE_LABEL, IMPORTANCE_ORDER, ROLE_LABEL, SOURCES, SOURCE_LABEL } from "@/lib/activity-catalog";
-import { activeFilterCount } from "@/lib/activity-filters";
-import type { ActionCode, ActivityUser, Importance, LogFilters, Source } from "@/lib/activity-types";
+import {
+  IMPORTANCE_LEVELS,
+  IMPORTANCE_TEXT,
+  INVOICE_TYPE_LABELS,
+  LOG_ACTIONS,
+  OUTCOMES,
+  OUTCOME_TEXT,
+} from "@/lib/activity-log/catalog";
+import { activeRealFilterCount, type RealLogFilters } from "@/lib/activity-log/filters";
 import { btnCls, cx, fieldCls, labelCls } from "./ui";
 
 interface Props {
-  filters: LogFilters;
-  users: ActivityUser[];
-  onChange: (patch: Partial<LogFilters>) => void;
+  filters: RealLogFilters;
+  onChange: (patch: Partial<RealLogFilters>) => void;
   onReset: () => void;
 }
 
@@ -24,19 +29,19 @@ function Field({ label, htmlFor, children, className }: { label: string; htmlFor
 }
 
 /** Controlled by URL params. The parent remounts this component on reset so the search box clears. */
-export function FilterBar({ filters, users, onChange, onReset }: Props) {
+export function AdminFilterBar({ filters, onChange, onReset }: Props) {
   const [q, setQ] = useState(filters.q ?? "");
 
-  // Debounce the invoice search so each keystroke does not rewrite the URL.
+  // Debounce the bill-number search so each keystroke does not rewrite the URL.
   useEffect(() => {
     if (q.trim() === (filters.q ?? "")) return;
     const t = setTimeout(() => onChange({ q: q.trim() || undefined }), 300);
     return () => clearTimeout(t);
   }, [q, filters.q, onChange]);
 
-  const active = activeFilterCount(filters);
-  const set = <K extends keyof LogFilters>(k: K, v: string) =>
-    onChange({ [k]: v || undefined } as Partial<LogFilters>);
+  const active = activeRealFilterCount(filters);
+  const set = <K extends keyof RealLogFilters>(k: K, v: string) =>
+    onChange({ [k]: v || undefined } as Partial<RealLogFilters>);
 
   return (
     <form
@@ -51,43 +56,39 @@ export function FilterBar({ filters, users, onChange, onReset }: Props) {
       <Field label="To (IST)" htmlFor="f-to">
         <input id="f-to" type="date" value={filters.to ?? ""} min={filters.from} onChange={(e) => set("to", e.target.value)} className={fieldCls} />
       </Field>
-      <Field label="User" htmlFor="f-user">
-        <select id="f-user" value={filters.user ?? ""} onChange={(e) => set("user", e.target.value)} className={fieldCls}>
-          <option value="">All users</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>{u.name} ({ROLE_LABEL[u.role]})</option>
+      <Field label="Action" htmlFor="f-action">
+        <select id="f-action" value={filters.action ?? ""} onChange={(e) => set("action", e.target.value)} className={fieldCls}>
+          <option value="">All actions</option>
+          {Object.entries(LOG_ACTIONS).map(([code, a]) => (
+            <option key={code} value={code}>{a.label}</option>
           ))}
         </select>
       </Field>
-      <Field label="Action" htmlFor="f-action">
-        <select id="f-action" value={filters.action ?? ""} onChange={(e) => set("action", e.target.value as ActionCode | "")} className={fieldCls}>
-          <option value="">All actions</option>
-          {IMPORTANCE_ORDER.map((imp) => (
-            <optgroup key={imp} label={IMPORTANCE_LABEL[imp]}>
-              {ACTION_CODES.filter((a) => ACTION_META[a].importance === imp).map((a) => (
-                <option key={a} value={a}>{ACTION_META[a].label}</option>
-              ))}
-            </optgroup>
+      <Field label="Outcome" htmlFor="f-outcome">
+        <select id="f-outcome" value={filters.outcome ?? ""} onChange={(e) => set("outcome", e.target.value)} className={fieldCls}>
+          <option value="">Any outcome</option>
+          {OUTCOMES.map((o) => (
+            <option key={o} value={o}>{OUTCOME_TEXT[o]}</option>
           ))}
         </select>
       </Field>
       <Field label="Importance" htmlFor="f-importance">
-        <select id="f-importance" value={filters.importance ?? ""} onChange={(e) => set("importance", e.target.value as Importance | "")} className={fieldCls}>
+        <select id="f-importance" value={filters.importance ?? ""} onChange={(e) => set("importance", e.target.value)} className={fieldCls}>
           <option value="">All levels</option>
-          {IMPORTANCE_ORDER.map((i) => (
-            <option key={i} value={i}>{IMPORTANCE_LABEL[i]}</option>
+          {IMPORTANCE_LEVELS.map((i) => (
+            <option key={i} value={i}>{IMPORTANCE_TEXT[i]}</option>
           ))}
         </select>
       </Field>
-      <Field label="Source" htmlFor="f-source">
-        <select id="f-source" value={filters.source ?? ""} onChange={(e) => set("source", e.target.value as Source | "")} className={fieldCls}>
-          <option value="">All sources</option>
-          {SOURCES.map((s) => (
-            <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
+      <Field label="Invoice type" htmlFor="f-type">
+        <select id="f-type" value={filters.inv_type ?? ""} onChange={(e) => set("inv_type", e.target.value)} className={fieldCls}>
+          <option value="">All types</option>
+          {Object.entries(INVOICE_TYPE_LABELS).map(([id, label]) => (
+            <option key={id} value={id}>{label}</option>
           ))}
         </select>
       </Field>
-      <Field label="Invoice number" htmlFor="f-q" className="col-span-2 sm:col-span-1">
+      <Field label="Bill number" htmlFor="f-q" className="col-span-2 sm:col-span-1">
         <div className="relative">
           <Search aria-hidden className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -95,8 +96,8 @@ export function FilterBar({ filters, users, onChange, onReset }: Props) {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="INV-0042"
-            maxLength={40}
+            placeholder="HO/2026-27/52132"
+            maxLength={60}
             className={cx(fieldCls, "pl-7")}
           />
         </div>

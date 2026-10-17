@@ -1,7 +1,7 @@
 // ==================== Invoice Service ====================
 // All invoice-related API calls
 
-import { apiClient } from "./client";
+import { apiClient, type ApiRequestOptions } from "./client";
 import type {
   InvoiceSearchPayload,
   InvoiceSearchResponse,
@@ -18,30 +18,30 @@ import type { Tnc, TncSearchPayload, ExtraCharge, ExtraChargeSearchPayload } fro
 
 export const invoiceService = {
   // Search invoices with filters
-  searchInvoices: async (payload: InvoiceSearchPayload): Promise<InvoiceSearchResponse> => {
-    return apiClient.post<InvoiceSearchResponse>("/Invoice/Search", payload);
+  searchInvoices: async (payload: InvoiceSearchPayload, opts?: ApiRequestOptions): Promise<InvoiceSearchResponse> => {
+    return apiClient.post<InvoiceSearchResponse>("/Invoice/Search", payload, opts);
   },
 
   // Fetch a single invoice's full detail for the bill/preview view
-  getInvoiceById: async (payload: InvoiceGetByIdPayload): Promise<InvoiceDetail> => {
-    return apiClient.post<InvoiceDetail>("/Invoice/GetById", payload);
+  getInvoiceById: async (payload: InvoiceGetByIdPayload, opts?: ApiRequestOptions): Promise<InvoiceDetail> => {
+    return apiClient.post<InvoiceDetail>("/Invoice/GetById", payload, opts);
   },
 
   // Fetch setup info (print/export templates, extra charges, etc.)
-  getSetupInfo: async (payload: InvoiceSetupInfoPayload): Promise<InvoiceSetupInfoResponse> => {
-    return apiClient.post<InvoiceSetupInfoResponse>("/Invoice/SetupInfo", payload);
+  getSetupInfo: async (payload: InvoiceSetupInfoPayload, opts?: ApiRequestOptions): Promise<InvoiceSetupInfoResponse> => {
+    return apiClient.post<InvoiceSetupInfoResponse>("/Invoice/SetupInfo", payload, opts);
   },
 
   // ==================== Create Invoice ====================
   // POST /Invoice/Create - creates a new invoice
-  createInvoice: async (payload: InvoiceCreatePayload): Promise<{ id: number; bill_No: string }> => {
-    return apiClient.post<{ id: number; bill_No: string }>("/Invoice/Create", payload);
+  createInvoice: async (payload: InvoiceCreatePayload, opts?: ApiRequestOptions): Promise<{ id: number; bill_No: string }> => {
+    return apiClient.post<{ id: number; bill_No: string }>("/Invoice/Create", payload, opts);
   },
 
   // ==================== Delete Invoice ====================
   // POST /Invoice/Delete - deletes/cancels an invoice
-  deleteInvoice: async (payload: InvoiceDeletePayload): Promise<void> => {
-    await apiClient.post<void>("/Invoice/Delete", payload);
+  deleteInvoice: async (payload: InvoiceDeletePayload, opts?: ApiRequestOptions): Promise<void> => {
+    await apiClient.post<void>("/Invoice/Delete", payload, opts);
   },
 
   // Print invoice - call external print API
