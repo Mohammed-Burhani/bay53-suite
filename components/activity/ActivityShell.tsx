@@ -15,7 +15,7 @@ import { ViewerProvider, useViewer } from "./ViewerProvider";
 const THEME_KEY = "bay53.activity.theme";
 
 const NAV: { href: string; match: string; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
-  { href: "/admin/activity", match: "/admin/activity", label: "Activity log", icon: ScrollText, adminOnly: true },
+  { href: "/admin/activity", match: "/admin/activity", label: "Activity log", icon: ScrollText },
   { href: "/my-activity", match: "/my-activity", label: "My activity", icon: UserRound },
   { href: "/invoices/inv-0042?tab=activity", match: "/invoices", label: "Sample invoice", icon: FileText },
 ];
@@ -37,6 +37,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
   const dark = theme === "dark";
   const [failing, setFailing] = useState(false);
+  // The admin page reads real logs with the ERP login, so the mock role switcher and failure toggle do not apply.
+  const live = pathname.startsWith("/admin/activity");
 
   const toggleTheme = () => setTheme(dark ? "light" : "dark");
 
@@ -82,45 +84,50 @@ function Shell({ children }: { children: React.ReactNode }) {
             </nav>
 
             <div className="order-2 ml-auto flex items-center gap-2 md:order-3">
-              <div role="group" aria-label="Demo role" className="inline-flex rounded-md border border-sidebar-border p-0.5">
-                {(["admin", "user"] as const).map((r) => {
-                  const on = (r === "admin") === isAdmin;
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => switchRole(r)}
-                      className={cx(
-                        "h-7 rounded-md px-2.5 text-[13px] font-medium focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sidebar-primary",
-                        on
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white",
-                      )}
-                    >
-                      {r === "admin" ? "Admin" : "User"}
-                    </button>
-                  );
-                })}
-              </div>
+              {live ? null : (
+                <>
+                  <div role="group" aria-label="Demo role" className="inline-flex rounded-md border border-sidebar-border p-0.5">
+                    {(["admin", "user"] as const).map((r) => {
+                      const on = (r === "admin") === isAdmin;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => switchRole(r)}
+                          className={cx(
+                            "h-7 rounded-md px-2.5 text-[13px] font-medium focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sidebar-primary",
+                            on
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white",
+                          )}
+                        >
+                          {r === "admin" ? "Admin" : "User"}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-              {isAdmin ? (
-                <span className="hidden text-[13px] text-sidebar-foreground sm:inline">{user.name}</span>
-              ) : (
-                <select
-                  aria-label="Acting as"
-                  value={user.id}
-                  onChange={(e) => setUserId(e.target.value)}
-                  className="h-8 max-w-[220px] rounded-md border border-sidebar-border bg-sidebar-accent px-2 text-[13px] text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sidebar-primary"
-                >
-                  {personas
-                    .filter((p) => p.role !== "admin")
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({ROLE_LABEL[p.role]})
-                      </option>
-                    ))}
-                </select>
+                  {isAdmin ? (
+                    <span className="hidden text-[13px] text-sidebar-foreground sm:inline">{user.name}</span>
+                  ) : (
+                    <select
+                      aria-label="Acting as"
+                      value={user.id}
+                      onChange={(e) => setUserId(e.target.value)}
+                      className="h-8 max-w-[220px] rounded-md border border-sidebar-border bg-sidebar-accent px-2 text-[13px] text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sidebar-primary"
+                    >
+                      {personas
+                        .filter((p) => p.role !== "admin")
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({ROLE_LABEL[p.role]})
+                          </option>
+                        ))}
+                    </select>
+                  )}
+
+                </>
               )}
 
               <button
@@ -148,10 +155,12 @@ function Shell({ children }: { children: React.ReactNode }) {
         </main>
 
         <footer className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 pb-6 text-xs text-muted-foreground">
-          <p>Prototype with in-memory mock data. It resets on reload. Logs are read-only.</p>
-          <button type="button" onClick={toggleFailure} aria-pressed={failing} className={cx(btnCls, "!h-7 !text-xs")}>
-            {failing ? "Restore API" : "Simulate API error"}
-          </button>
+          <p>{live ? "Live data from Supabase. Logs are read-only." : "Prototype with in-memory mock data. It resets on reload. Logs are read-only."}</p>
+          {live ? null : (
+            <button type="button" onClick={toggleFailure} aria-pressed={failing} className={cx(btnCls, "!h-7 !text-xs")}>
+              {failing ? "Restore API" : "Simulate API error"}
+            </button>
+          )}
         </footer>
       </div>
     </div>

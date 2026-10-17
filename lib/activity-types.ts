@@ -83,36 +83,10 @@ export interface Viewer {
   userId: string;
 }
 
-export interface LogFilters {
-  /** IST calendar day, YYYY-MM-DD. */
-  from?: string;
-  to?: string;
-  user?: string;
-  action?: ActionCode;
-  importance?: Importance;
-  source?: Source;
-  /** Invoice-number search. */
-  q?: string;
-}
-
 export interface Page<T> {
   rows: T[];
   nextCursor: string | null;
   total: number;
-}
-
-export interface KpiValue {
-  current: number;
-  previous: number;
-}
-export interface Kpis {
-  windowDays: number;
-  voids: KpiValue;
-  editsAfterSentOrPaid: KpiValue;
-  discountOverrides: KpiValue;
-  afterHours: KpiValue;
-  deletions: KpiValue;
-  topActors: { actorId: string; name: string; role: ActorRole; count: number }[];
 }
 
 export type InvoiceStatus = "Draft" | "Sent" | "Voided" | "Deleted";

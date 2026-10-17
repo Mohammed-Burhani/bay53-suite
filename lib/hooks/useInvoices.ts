@@ -8,6 +8,8 @@ import { invoiceService } from "@/lib/api/invoice.service";
 import { auth } from "@/lib/auth";
 import type { InvoiceSearchPayload, InvoiceDetail, InvoiceCreatePayload, InvoiceDeletePayload } from "@/lib/types/invoice.types";
 import type { TncSearchPayload, ExtraChargeSearchPayload, Tnc, ExtraCharge } from "@/lib/types/master.types";
+import { recordActivity } from "@/lib/activity-log/recorder";
+import { invoiceDiff, invoiceSnapshot } from "@/lib/activity-log/invoice-changes";
 
 // Search invoices with mutation (for on-demand filtering)
 export function useInvoiceSearch() {
@@ -62,7 +64,8 @@ export function useInvoiceById(
 }
 
 // ==================== Invoice Create Mutation ====================
-// Hook for creating a new invoice via POST /Invoice/Create
+// Hook for creating a new invoice via POST /Invoice/Create. An edit re-posts to the same
+// endpoint with the existing id. Create and the list refresh after it are logged as one activity.
 export function useInvoiceCreate() {
   const sessionId = auth.getSessionId();
   const queryClient = useQueryClient();
@@ -70,51 +73,96 @@ export function useInvoiceCreate() {
   return useMutation({
     mutationFn: (payload: Omit<InvoiceCreatePayload, "sessionId">) => {
       if (!sessionId) throw new Error("No session");
-      return invoiceService.createInvoice({ ...payload, sessionId });
+      const editing = payload.id > 0;
+      const full = { ...payload, sessionId };
+      // The edit form loaded this invoice through useInvoiceById, so the old version is cached.
+      const before = editing
+        ? queryClient.getQueryData<InvoiceDetail>(["invoice-detail", sessionId, payload.id, payload.inv_Type])
+        : undefined;
+      const verb = editing ? "Updated" : "Created";
+
+      return recordActivity(
+        {
+          module: "invoice",
+          action: editing ? "invoice.updated" : "invoice.created",
+          importance: editing ? "important" : "info",
+          entity_type: "invoice",
+          entity_id: editing ? String(payload.id) : null,
+          entity_label: payload.bill_No || null,
+          inv_type: payload.inv_Type,
+          changes: editing ? invoiceDiff(before, full) : invoiceSnapshot(full),
+        },
+        async (trace) => {
+          const result = await invoiceService.createInvoice(full, { trace });
+          // Refresh the list with current month filters
+          await invoiceService.searchInvoices(currentMonthSearch(sessionId, payload.inv_Type), { trace });
+          return result;
+        },
+        (result) => {
+          const billNo = result?.bill_No || payload.bill_No || null;
+          return {
+            entity_id: String(result?.id || payload.id || "") || null,
+            entity_label: billNo,
+            summary: `${verb} ${billNo ?? "invoice"}${payload.shipToName ? ` for ${payload.shipToName}` : ""}, total ${payload.grandTotal}`,
+          };
+        }
+      );
     },
-    onSuccess: async (data, variables) => {
-      // Calculate current month date range for post-create refresh
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
-      const fromDate = startOfMonth.toISOString().split('T')[0];
-      const toDate = endOfMonth.toISOString().split('T')[0];
-      
-      // Call /Invoice/Search to refresh list with current month filters
-      const searchPayload: InvoiceSearchPayload = {
-        sessionId: sessionId!,
-        pageSize: 0,
-        pageNumber: 0,
-        invType: variables.inv_Type,
-        fromDate,
-        toDate,
-        invoiceNo: null,
-        bill_No: 0,
-        spIds: [0],
-        partyName: null,
-        itemName: null,
-      };
-      
-      // Execute search to update cache
-      await invoiceService.searchInvoices(searchPayload);
-      
+    onSuccess: () => {
       // Invalidate invoice lists so they refetch
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
 }
 
+function currentMonthSearch(sessionId: string, invType: number): InvoiceSearchPayload {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    sessionId,
+    pageSize: 0,
+    pageNumber: 0,
+    invType,
+    fromDate: startOfMonth.toISOString().split("T")[0],
+    toDate: endOfMonth.toISOString().split("T")[0],
+    invoiceNo: null,
+    bill_No: 0,
+    spIds: [0],
+    partyName: null,
+    itemName: null,
+  };
+}
+
 // ==================== Invoice Delete Mutation ====================
-// Hook for deleting an invoice via POST /Invoice/Delete
+// Hook for deleting an invoice via POST /Invoice/Delete. `log` carries what the caller knows
+// about the invoice, because after the delete it can no longer be fetched for the log.
+export interface InvoiceDeleteVariables extends Omit<InvoiceDeletePayload, "sessionId"> {
+  log?: { bill_No?: string | null; partyName?: string | null; date?: string | null; grandTotal?: number | null };
+}
+
 export function useInvoiceDelete() {
   const sessionId = auth.getSessionId();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: Omit<InvoiceDeletePayload, "sessionId">) => {
+    mutationFn: ({ log, ...payload }: InvoiceDeleteVariables) => {
       if (!sessionId) throw new Error("No session");
-      return invoiceService.deleteInvoice({ ...payload, sessionId });
+      const label = log?.bill_No || `#${payload.id}`;
+      return recordActivity(
+        {
+          module: "invoice",
+          action: "invoice.deleted",
+          importance: "critical",
+          entity_type: "invoice",
+          entity_id: String(payload.id),
+          entity_label: log?.bill_No ?? null,
+          inv_type: payload.invType,
+          changes: log ? { snapshot: log } : null,
+          summary: `Deleted ${label}${log?.partyName ? ` for ${log.partyName}` : ""}`,
+        },
+        (trace) => invoiceService.deleteInvoice({ ...payload, sessionId }, { trace })
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });

@@ -1,45 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Download, LoaderCircle, RefreshCw, SearchX } from "lucide-react";
-import { toast } from "sonner";
-import { exportLogs, subscribeToCritical } from "@/lib/activity-api";
-import { ACTION_META } from "@/lib/activity-catalog";
-import { filtersToParams, parseFilters } from "@/lib/activity-filters";
-import type { ActionCode, ActivityRow, LogFilters } from "@/lib/activity-types";
-import { FilterBar } from "./FilterBar";
-import { useLogs, useUsers } from "./hooks";
-import { KpiStrip } from "./KpiStrip";
-import { LiveCriticalFeed } from "./LiveCriticalFeed";
-import { LogDrawer } from "./LogDrawer";
-import { LogTable } from "./LogTable";
-import { EmptyState, ForbiddenState, QueryError, TableSkeleton } from "./states";
-import { btnCls, btnPrimaryCls, cx, panel } from "./ui";
-import { useViewer } from "./ViewerProvider";
-
-function downloadCsv(filename: string, csv: string) {
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+import { useQueryClient } from "@tanstack/react-query";
+import { LogIn, RefreshCw, SearchX } from "lucide-react";
+import { ActivityFetchError, hasErpSession } from "@/lib/activity-log/client";
+import type { ActivityLogRow } from "@/lib/activity-log/contract";
+import { parseRealFilters, realFiltersToParams, type RealLogFilters } from "@/lib/activity-log/filters";
+import { AdminFilterBar } from "./AdminFilterBar";
+import { AdminLogDrawer } from "./AdminLogDrawer";
+import { AdminLogTable } from "./AdminLogTable";
+import { useActivityLogs } from "./hooks";
+import { EmptyState, ErrorState, TableSkeleton } from "./states";
+import { btnCls, cx, panel } from "./ui";
 
 export function AdminDashboard() {
-  const { isAdmin } = useViewer();
-  if (!isAdmin) {
-    return <ForbiddenState message="The activity log dashboard is for admins. Use the role switcher in the top bar to view it as Admin, or open My activity." />;
+  // Logs are read with the ERP login this browser already holds; there is no separate sign-in.
+  if (!hasErpSession()) {
+    return (
+      <div className={cx(panel, "p-3")}>
+        <EmptyState
+          title="Log in to the ERP first"
+          hint="The activity log is read with your ERP session. Log in, then open this page again."
+          action={
+            <Link href="/login" className={cx(btnCls, "mt-1")}>
+              <LogIn aria-hidden className="size-3.5" />
+              Go to login
+            </Link>
+          }
+        />
+      </div>
+    );
   }
   return <Dashboard />;
 }
 
 function Dashboard() {
-  const { viewer } = useViewer();
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -47,13 +44,13 @@ function Dashboard() {
 
   // Filters live in the URL so views can be shared and survive reloads.
   const spKey = sp.toString();
-  const filters = useMemo(() => parseFilters(new URLSearchParams(spKey)), [spKey]);
+  const filters = useMemo(() => parseRealFilters(new URLSearchParams(spKey)), [spKey]);
   const [resetCount, setResetCount] = useState(0);
 
   const setFilters = useCallback(
-    (patch: Partial<LogFilters>) => {
-      const next = { ...parseFilters(new URLSearchParams(spKey)), ...patch };
-      const qs = filtersToParams(next).toString();
+    (patch: Partial<RealLogFilters>) => {
+      const next = { ...parseRealFilters(new URLSearchParams(spKey)), ...patch };
+      const qs = realFiltersToParams(next).toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     [spKey, router, pathname],
@@ -63,46 +60,16 @@ function Dashboard() {
     setResetCount((n) => n + 1);
   }, [router, pathname]);
 
-  const logs = useLogs(filters);
-  const users = useUsers();
+  const logs = useActivityLogs(filters);
   const rows = useMemo(() => logs.data?.pages.flatMap((p) => p.rows) ?? [], [logs.data]);
-  const total = logs.data?.pages[logs.data.pages.length - 1]?.total ?? 0;
 
-  const [selected, setSelected] = useState<ActivityRow | null>(null);
-  const closeDrawer = useCallback(() => setSelected(null), []);
+  // Keep the open row in sync with refetches by storing only its id.
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selected = useMemo(() => rows.find((r) => r.id === selectedId) ?? null, [rows, selectedId]);
+  const closeDrawer = useCallback(() => setSelectedId(null), []);
+  const select = useCallback((r: ActivityLogRow) => setSelectedId(r.id), []);
 
-  // Live critical feed: subscribe once per admin; every event toasts and refreshes the metrics.
-  const [live, setLive] = useState<ActivityRow[]>([]);
-  const [pendingNew, setPendingNew] = useState(0);
-  useEffect(() => {
-    return subscribeToCritical(viewer, (row) => {
-      setLive((prev) => [row, ...prev].slice(0, 20));
-      setPendingNew((n) => n + 1);
-      toast.error(ACTION_META[row.action].label, {
-        description: `${row.entityLabel}, ${row.actorName} via ${row.source}`,
-        action: { label: "View", onClick: () => setSelected(row) },
-      });
-      qc.invalidateQueries({ queryKey: ["activity", "kpis"] });
-      qc.invalidateQueries({ queryKey: ["activity", "critical-head"] });
-    });
-  }, [viewer, qc]);
-
-  const refreshLog = () => {
-    setPendingNew(0);
-    qc.invalidateQueries({ queryKey: ["activity", "logs"] });
-  };
-
-  const exportMutation = useMutation({
-    mutationFn: () => exportLogs(viewer, filters),
-    onSuccess: ({ filename, csv, rowCount }) => {
-      downloadCsv(filename, csv);
-      toast.success(`Exported ${rowCount} rows`, { description: "An export.csv entry was added to the log." });
-      qc.invalidateQueries({ queryKey: ["activity"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Export failed"),
-  });
-
-  const filterByAction = (action: ActionCode) => setFilters({ action, importance: undefined });
+  const refreshing = logs.isFetching && !logs.isPending && !logs.isFetchingNextPage;
 
   return (
     <div className="space-y-3">
@@ -110,76 +77,55 @@ function Dashboard() {
         <div>
           <h1 className="text-lg font-semibold text-foreground">Activity log</h1>
           <p className="text-[13px] text-muted-foreground">
-            Immutable record of every meaningful invoice change. All times are shown in IST.
+            Immutable record of invoice actions and the API calls behind them. All times are shown in IST.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => exportMutation.mutate()}
-          disabled={exportMutation.isPending || logs.isPending || total === 0}
-          className={cx(btnCls, btnPrimaryCls)}
+          onClick={() => qc.invalidateQueries({ queryKey: ["activity-real"] })}
+          disabled={logs.isFetching}
+          className={btnCls}
         >
-          {exportMutation.isPending ? (
-            <LoaderCircle aria-hidden className="size-3.5 motion-safe:animate-spin" />
-          ) : (
-            <Download aria-hidden className="size-3.5" />
-          )}
-          Export CSV{total > 0 && !logs.isPending ? ` (${total})` : ""}
+          <RefreshCw aria-hidden className={cx("size-3.5", refreshing && "motion-safe:animate-spin")} />
+          Refresh
         </button>
       </div>
 
-      <KpiStrip onFilterAction={filterByAction} />
-
       <div className={cx(panel, "p-3")}>
-        <FilterBar key={resetCount} filters={filters} users={users.data ?? []} onChange={setFilters} onReset={reset} />
+        <AdminFilterBar key={resetCount} filters={filters} onChange={setFilters} onReset={reset} />
       </div>
 
-      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section aria-label="Log entries" className={cx(panel, "overflow-hidden")}>
-          {pendingNew > 0 ? (
-            <div className="flex items-center justify-between gap-2 border-b border-border bg-muted px-3 py-1.5 text-xs">
-              <span className="text-foreground">
-                {pendingNew} new critical {pendingNew === 1 ? "event" : "events"} since you loaded this view
-              </span>
-              <button type="button" onClick={refreshLog} className={cx(btnCls, "!h-6 !px-2 !text-xs")}>
-                <RefreshCw aria-hidden className="size-3" />
-                Refresh
+      <section aria-label="Log entries" className={cx(panel, "overflow-hidden")}>
+        {logs.isPending ? (
+          <TableSkeleton />
+        ) : logs.isError ? (
+          <ErrorState
+            error={logs.error}
+            onRetry={logs.error instanceof ActivityFetchError && logs.error.status === 401 ? undefined : () => logs.refetch()}
+          />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            title="No matching activity"
+            hint="Nothing has been logged yet, or no entry matches these filters. Create, edit or delete an invoice to see it here."
+            action={
+              <button type="button" onClick={reset} className={cx(btnCls, "mt-1")}>
+                <SearchX aria-hidden className="size-3.5" />
+                Clear filters
               </button>
-            </div>
-          ) : null}
-          {logs.isPending ? (
-            <TableSkeleton />
-          ) : logs.isError ? (
-            <QueryError error={logs.error} onRetry={() => logs.refetch()} />
-          ) : rows.length === 0 ? (
-            <EmptyState
-              title="No matching activity"
-              hint="No log entries match these filters. Widen the date range or clear a filter."
-              action={
-                <button type="button" onClick={reset} className={cx(btnCls, "mt-1")}>
-                  <SearchX aria-hidden className="size-3.5" />
-                  Clear filters
-                </button>
-              }
-            />
-          ) : (
-            <LogTable
-              rows={rows}
-              total={total}
-              hasMore={!!logs.hasNextPage}
-              loadingMore={logs.isFetchingNextPage}
-              onLoadMore={() => logs.fetchNextPage()}
-              onSelect={setSelected}
-            />
-          )}
-        </section>
+            }
+          />
+        ) : (
+          <AdminLogTable
+            rows={rows}
+            hasMore={!!logs.hasNextPage}
+            loadingMore={logs.isFetchingNextPage}
+            onLoadMore={() => logs.fetchNextPage()}
+            onSelect={select}
+          />
+        )}
+      </section>
 
-        <div className="xl:sticky xl:top-16">
-          <LiveCriticalFeed live={live} onSelect={setSelected} />
-        </div>
-      </div>
-
-      <LogDrawer log={selected} onClose={closeDrawer} />
+      <AdminLogDrawer log={selected} onClose={closeDrawer} />
     </div>
   );
 }
