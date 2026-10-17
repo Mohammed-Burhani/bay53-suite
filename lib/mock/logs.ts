@@ -418,32 +418,3 @@ export function buildSeed(now: number): { logs: ActivityLog[]; invoices: Invoice
   const logs = inputs.map((i, idx) => makeLog(`log_${String(idx + 1).padStart(6, "0")}`, i)).reverse();
   return { logs, invoices: built.map((b) => b.inv) };
 }
-
-// ---------- Live feed simulation ----------
-
-const LIVE_ACTIONS = ["price.override", "invoice.edited_after_sent", "invoice.voided"] as const;
-
-/** Builds the next simulated critical event. Uses only still-active invoices. */
-export function nextLiveInput(now: number, invoices: Invoice[], n: number): LogInput {
-  const pool = invoices.filter((i) => i.status === "Sent");
-  const inv = pool[(n * 5 + 2) % pool.length];
-  const ref = { id: inv.id, number: inv.number };
-  const action = LIVE_ACTIONS[n % LIVE_ACTIONS.length];
-
-  switch (action) {
-    case "price.override": {
-      const it = inv.items[0];
-      return { at: now, action, actorId: inv.ownerId, invoice: ref, ref: it.id,
-        changes: { rate: { old: it.rate, new: Math.round(it.rate * 0.82) } },
-        metadata: { discountPct: 18, thresholdPct: 15, approvalRequired: true, reason: "Customer asked for matching rate" } };
-    }
-    case "invoice.edited_after_sent":
-      return { at: now, action, actorId: inv.accountantId, invoice: ref,
-        changes: { notes: { old: inv.notes, new: "Updated delivery address" } },
-        metadata: { statusAtEdit: inv.status, reason: "Address change requested by customer" } };
-    default:
-      return { at: now, action: "invoice.voided", actorId: "u_admin", invoice: ref,
-        changes: { status: { old: inv.status, new: "Voided" } },
-        metadata: { reason: "Raised against the wrong customer", total: inv.total } };
-  }
-}

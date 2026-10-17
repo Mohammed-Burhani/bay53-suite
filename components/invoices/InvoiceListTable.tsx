@@ -425,7 +425,16 @@ export function InvoiceListTable({
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
     deleteMutation.mutate(
-      { id: deleteTarget.invCode, invType: deleteTarget.inv_Type },
+      {
+        id: deleteTarget.invCode,
+        invType: deleteTarget.inv_Type,
+        log: {
+          bill_No: deleteTarget.bill_No,
+          partyName: deleteTarget.partyName ?? null,
+          date: deleteTarget.date,
+          grandTotal: deleteTarget.grandTotal,
+        },
+      },
       {
         onSuccess: () => {
           toast.success(`Invoice "${deleteTarget.bill_No}" deleted`);

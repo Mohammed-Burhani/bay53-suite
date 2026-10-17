@@ -1,59 +1,26 @@
 "use client";
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import {
-  getInvoice,
-  getInvoiceTimeline,
-  getKpis,
-  getMyActivity,
-  listLogs,
-  listUsers,
-} from "@/lib/activity-api";
-import type { Importance, LogFilters } from "@/lib/activity-types";
+import { getInvoice, getInvoiceTimeline, getMyActivity } from "@/lib/activity-api";
+import { ActivityFetchError, fetchActivityLogs } from "@/lib/activity-log/client";
+import type { RealLogFilters } from "@/lib/activity-log/filters";
+import type { Importance } from "@/lib/activity-types";
 import { useViewer } from "./ViewerProvider";
 
 // Every key starts with "activity" so one invalidation refreshes the module.
 const STALE = 15_000;
 
-export function useLogs(filters: LogFilters) {
-  const { viewer, ready } = useViewer();
+/** The admin log, read from Supabase through /api/activity/logs. Refreshes itself every 30 s while visible. */
+export function useActivityLogs(filters: RealLogFilters) {
   return useInfiniteQuery({
-    queryKey: ["activity", "logs", viewer.userId, filters],
-    queryFn: ({ pageParam }) => listLogs(viewer, filters, pageParam),
+    queryKey: ["activity-real", "logs", filters],
+    queryFn: ({ pageParam }) => fetchActivityLogs(filters, pageParam),
     initialPageParam: null as string | null,
-    getNextPageParam: (last) => last.nextCursor,
-    enabled: ready,
+    getNextPageParam: (last) => last.next_cursor,
     staleTime: STALE,
-  });
-}
-
-export function useCriticalHead() {
-  const { viewer, ready } = useViewer();
-  return useQuery({
-    queryKey: ["activity", "critical-head", viewer.userId],
-    queryFn: () => listLogs(viewer, { importance: "critical" }, null, 6),
-    enabled: ready,
-    staleTime: STALE,
-  });
-}
-
-export function useKpis() {
-  const { viewer, ready } = useViewer();
-  return useQuery({
-    queryKey: ["activity", "kpis", viewer.userId],
-    queryFn: () => getKpis(viewer),
-    enabled: ready,
-    staleTime: STALE,
-  });
-}
-
-export function useUsers() {
-  const { viewer, ready } = useViewer();
-  return useQuery({
-    queryKey: ["activity", "users", viewer.userId],
-    queryFn: () => listUsers(viewer),
-    enabled: ready,
-    staleTime: 5 * 60_000,
+    refetchInterval: 30_000,
+    // A 401/503 will not fix itself by retrying; show it straight away.
+    retry: (count, error) => !(error instanceof ActivityFetchError) && count < 2,
   });
 }
 
