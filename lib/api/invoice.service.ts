@@ -64,7 +64,7 @@ export const invoiceService = {
     return response.blob();
   },
 
-  // Render the invoice PDF server-side, store it, and get a time-limited download URL
+  // Render the invoice PDF server-side, store it, and get a short time-limited download URL
   // (used to share the invoice on WhatsApp, where a file cannot be attached from a link).
   createShareLink: async (payload: PrintInvoicePayload & { fileName: string }): Promise<string> => {
     const actor = currentActor();
@@ -82,7 +82,8 @@ export const invoiceService = {
       const { error } = (await response.json().catch(() => ({}))) as { error?: string };
       throw new Error(error ?? `Share link failed: ${response.statusText}`);
     }
-    return ((await response.json()) as { url: string }).url;
+    const { id } = (await response.json()) as { id: string };
+    return `${window.location.origin}/i/${id}`;
   },
 
   // ==================== TNC Master Search ====================
