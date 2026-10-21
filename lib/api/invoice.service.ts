@@ -2,6 +2,8 @@
 // All invoice-related API calls
 
 import { apiClient, type ApiRequestOptions } from "./client";
+import { ACTOR_HEADER } from "@/lib/activity-log/contract";
+import { currentActor } from "@/lib/activity-log/recorder";
 import type {
   InvoiceSearchPayload,
   InvoiceSearchResponse,
@@ -46,8 +48,7 @@ export const invoiceService = {
 
   // Print invoice - call external print API
   printInvoice: async (payload: PrintInvoicePayload): Promise<Blob> => {
-    const PRINT_API_BASE = "https://printapi.bay53.in/api";
-    const response = await fetch(`${PRINT_API_BASE}/Print/PrintInvoice`, {
+    const response = await fetch("/api/print-invoice", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,6 +62,27 @@ export const invoiceService = {
 
     // Return PDF blob for download
     return response.blob();
+  },
+
+  // Render the invoice PDF server-side, store it, and get a time-limited download URL
+  // (used to share the invoice on WhatsApp, where a file cannot be attached from a link).
+  createShareLink: async (payload: PrintInvoicePayload & { fileName: string }): Promise<string> => {
+    const actor = currentActor();
+    if (!actor) throw new Error("Session expired");
+    const response = await fetch("/api/invoice-share-link", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: payload.sessionId,
+        [ACTOR_HEADER]: encodeURIComponent(JSON.stringify(actor)),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const { error } = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(error ?? `Share link failed: ${response.statusText}`);
+    }
+    return ((await response.json()) as { url: string }).url;
   },
 
   // ==================== TNC Master Search ====================
