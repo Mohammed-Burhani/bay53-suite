@@ -255,7 +255,7 @@ export default function DashboardPage() {
     invoiceSearchMutation.mutate({
       pageSize: 0,
       pageNumber: 0,
-      invType: 0, // All types
+      invType: 1,
       fromDate: thirtyDaysAgo.toLocaleDateString('en-GB', {
         day: '2-digit',
         month: '2-digit',
@@ -275,10 +275,10 @@ export default function DashboardPage() {
       invoiceNo: null,
       bill_No: null,
       spIds: [0], // Pass 0 in spId array
-      partyName: null,
+      partyName: selectedLedgers.length > 0 ? selectedLedgers[0].name : null,
       itemName: null,
     });
-    
+
     // Fetch ledger outstanding summary for selected ledgers
     ledgerOutstandingMutation.mutate({
       groupId: 16,
