@@ -88,7 +88,7 @@ function redact(v: Json, key = ""): Json {
 
 function toRow(log: ActivityLog, admin: boolean): ActivityRow {
   const { ip, userAgent, metadata, changes, ...rest } = log;
-  const base = { ...rest, changes: changes ? (redact(changes as Json) as Changes) : null };
+  const base = { ...rest, changes: changes ? (redact(changes as unknown as Json) as unknown as Changes) : null };
   if (!admin) return base;
   return { ...base, ip, userAgent, metadata: redact(metadata) as Record<string, Json> };
 }

@@ -92,12 +92,8 @@ export function useInvoiceCreate() {
           inv_type: payload.inv_Type,
           changes: editing ? invoiceDiff(before, full) : invoiceSnapshot(full),
         },
-        async (trace) => {
-          const result = await invoiceService.createInvoice(full, { trace });
-          // Refresh the list with current month filters
-          await invoiceService.searchInvoices(currentMonthSearch(sessionId, payload.inv_Type), { trace });
-          return result;
-        },
+        // The list refreshes through the invalidation in onSuccess, so no separate search call here.
+        (trace) => invoiceService.createInvoice(full, { trace }),
         (result) => {
           const billNo = result?.bill_No || payload.bill_No || null;
           return {
@@ -113,25 +109,6 @@ export function useInvoiceCreate() {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
-}
-
-function currentMonthSearch(sessionId: string, invType: number): InvoiceSearchPayload {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    sessionId,
-    pageSize: 0,
-    pageNumber: 0,
-    invType,
-    fromDate: startOfMonth.toISOString().split("T")[0],
-    toDate: endOfMonth.toISOString().split("T")[0],
-    invoiceNo: null,
-    bill_No: 0,
-    spIds: [0],
-    partyName: null,
-    itemName: null,
-  };
 }
 
 // ==================== Invoice Delete Mutation ====================
