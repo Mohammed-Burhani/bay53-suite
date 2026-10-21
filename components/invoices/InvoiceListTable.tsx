@@ -293,43 +293,17 @@ export function InvoiceListTable({
   };
 
   // ---- WhatsApp share ----
-  // Browsers cannot attach a file through a wa.me link. So:
-  //  - customer has a phone: download PDF + open that customer's chat with the message
-  //  - no phone: ask user, then open the OS share sheet (Web Share API) so they pick the
-  //    contact and the PDF is attached. Fallback: download PDF + open WhatsApp.
-  const [waPending, setWaPending] = useState<{ file: File; text: string; partyName: string; phone: string | null } | null>(null);
+  // Browsers cannot attach a file through a wa.me link, so the message carries a time-limited
+  // download link to the PDF instead. WhatsApp (app or Web) opens on the customer's chat when a
+  // phone is known.
+  const [waPending, setWaPending] = useState<{ text: string; partyName: string; phone: string | null } | null>(null);
 
   const toWhatsAppNumber = (raw?: string | null): string | null => {
-    let digits = (raw ?? "").replace(/D/g, "");
+    let digits = (raw ?? "").replace(/\D/g, "");
     if (digits.startsWith("00")) digits = digits.slice(2);
     if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
     if (digits.length === 10) digits = `91${digits}`; // default country code: India
     return digits.length >= 11 ? digits : null;
-  };
-
-  const downloadFile = (file: File) => {
-    const url = window.URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-  };
-
-  const shareViaWhatsApp = async (file: File, text: string, phone: string | null) => {
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: text, text });
-      } catch (err) {
-        if ((err as DOMException)?.name !== "AbortError") throw err;
-      }
-      return;
-    }
-    downloadFile(file);
-    window.open(`https://wa.me/${phone ?? ""}?text=${encodeURIComponent(text)}`, "_blank");
-    toast.success("PDF downloaded. Attach it in WhatsApp.");
   };
 
   const handleWhatsAppShare = async (invoice: InvoiceSearchItem) => {
@@ -369,41 +343,37 @@ export function InvoiceListTable({
         return;
       }
 
-      const pdfBlob = await invoiceService.printInvoice({
+      const fileName = `${invoice.bill_No || invoice.invCode}.pdf`.replace(/[\/:*?"<>|]/g, "_");
+      const link = await invoiceService.createShareLink({
         id: invoice.invCode,
         invType: invoice.inv_Type,
         reportName: report.fileName,
         sessionId,
         noOfCopies: 1,
+        fileName,
       });
 
-      const fileName = `${invoice.bill_No || invoice.invCode}.pdf`.replace(/[\/:*?"<>|]/g, "_");
-      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
       const partyName = invoice.partyName || "this customer";
-      const text = `Invoice ${invoice.bill_No || ""}${invoice.partyName ? ` - ${invoice.partyName}` : ""}`.trim();
+      const title = `Invoice ${invoice.bill_No || ""}${invoice.partyName ? ` - ${invoice.partyName}` : ""}`.trim();
+      const text = `${title}\nDownload PDF (valid 7 days): ${link}`;
       const phone = await phonePromise;
 
       toast.dismiss(toastId);
 
-      // Open a dialog first: its button click is a fresh user gesture, which the
-      // share sheet requires (the PDF fetch above can outlive the original click).
-      setWaPending({ file, text, partyName, phone });
+      // Open a dialog first: its button click is a fresh user gesture, which popup
+      // blockers require (the PDF fetch above can outlive the original click).
+      setWaPending({ text, partyName, phone });
     } catch (error) {
       toast.error("Failed to prepare invoice for WhatsApp", { id: toastId });
       console.error("WhatsApp share error:", error);
     }
   };
 
-  const handleWaOpenAnyway = async () => {
+  const handleWaOpenAnyway = () => {
     if (!waPending) return;
-    const { file, text, phone } = waPending;
+    const { text, phone } = waPending;
     setWaPending(null);
-    try {
-      await shareViaWhatsApp(file, text, phone);
-    } catch (error) {
-      toast.error("Failed to open WhatsApp");
-      console.error("WhatsApp share error:", error);
-    }
+    window.open(`https://wa.me/${phone ?? ""}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const handleDuplicateInvoice = (invoice: InvoiceSearchItem) => {
@@ -1229,13 +1199,13 @@ export function InvoiceListTable({
             <AlertDialogDescription>
               {waPending?.phone ? (
                 <>
-                  Invoice PDF for {waPending.partyName} is ready. Choose WhatsApp, then select the customer
-                  (+{waPending.phone}). The PDF and message will be attached.
+                  Invoice PDF link for {waPending.partyName} is ready. WhatsApp (app or Web) will open a chat
+                  with +{waPending.phone} and the download link filled in. Press send there.
                 </>
               ) : (
                 <>
                   There is no phone number to send to WhatsApp for {waPending?.partyName}. You can open WhatsApp
-                  and choose the contact yourself. The invoice PDF and message will be attached.
+                  and choose the contact yourself. The message will contain the invoice PDF download link.
                 </>
               )}
             </AlertDialogDescription>
