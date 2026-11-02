@@ -113,6 +113,7 @@ interface LineItem {
   // Stock
   inventoryMoved: number;
   currentStck: number;
+  unitName?: string;
   conversion: number;
   // Sub-details
   invoiceItemSubDetail: ItemSubDetail[];
@@ -152,6 +153,8 @@ const nowISO = () => new Date().toISOString();
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
 // Edit-prefill helpers: coerce unknown API values into form-shaped strings.
+const REC_BY_OPTIONS = ["Credit", "Cash", "Bank", "Adjust"];
+
 function editStr(v: unknown): string {
   if (v === null || v === undefined) return "";
   return String(v);
@@ -519,7 +522,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
     setLineItems(items.map((li, i) => ({
       tempId: `edit_${i}`,
       item_ID: li.item_ID,
-      itemName: editStr(li.mfrItemName ?? li.itemDescription),
+      itemName: editStr(li.mfrItemName || li.itemDescription),
       sno: li.sno || i + 1,
       std_Qty: li.std_Qty, conv_Qty: li.conv_Qty, conv_Unit: li.conv_Unit,
       std_Rate: li.std_Rate, conv_Rate: li.conv_Rate, cost_Rate: li.cost_Rate,
@@ -595,15 +598,9 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
 
   // ── Section 4: Items ─────────────────────────────────────────
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [activeRow, setActiveRow] = useState<string | null>(null);
+  const activeLine = lineItems.find((l) => l.tempId === activeRow) ?? lineItems[0];
 
-  const toggleItemExpand = (id: string) => {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
 
   const addLineItem = useCallback(() => {
     setLineItems((prev) => [...prev, emptyLineItem(`item_${Date.now()}_${prev.length}`)]);
@@ -633,6 +630,7 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
           ...li,
           item_ID: item.item_ID,
           itemName: item.name,
+          unitName: item.std_Unit,
           std_Rate: item.std_Sell_Rate || 0,
           vatPer: item.vatPer || 0,
           discount1: 0, discount2: 0, discount3: 0,
@@ -698,6 +696,12 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
 
   // ── Section 8: Financial Settings ────────────────────────────
   const [recBy, setRecBy] = useState("");
+  // Display-only (not in the save payload yet)
+  const [transportBy, setTransportBy] = useState("");
+  const [vehicleNo, setVehicleNo] = useState("");
+  const [lrNo, setLrNo] = useState("");
+  const [salesLedgerName, setSalesLedgerName] = useState("GST Sales");
+  const [salesmanName, setSalesmanName] = useState("");
   const [recAmt, setRecAmt] = useState(0);
   const [dueDays, setDueDays] = useState(0);
   const [billStatus, setBillStatus] = useState(0);
@@ -910,9 +914,9 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
         )}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* ═══ LEFT COLUMN ════════════════════════════════════════ */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
 
           {/* ─── Section 1: Basic Info ──────────────────────── */}
           <Card className="py-5">
@@ -1025,66 +1029,6 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
             </CardContent>
           </Card>
 
-          {/* ─── Section 3: References (collapsible) ────────── */}
-          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">References</CardTitle>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", showAdvanced && "rotate-180")} />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4 border-t pt-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>Ref No.</Label>
-                      <Input value={refNo} onChange={(e) => setRefNo(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Ref Date</Label>
-                      <Input type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Order No.</Label>
-                      <Input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Order Date</Label>
-                      <Input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Your Ref No.</Label>
-                      <Input value={yourRefNo} onChange={(e) => setYourRefNo(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Your Ref Date</Label>
-                      <Input type="date" value={yourRefDate} onChange={(e) => setYourRefDate(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>PO Number</Label>
-                      <Input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Other Ref No.</Label>
-                      <Input value={otherRefNo} onChange={(e) => setOtherRefNo(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Other Ref Date</Label>
-                      <Input type="date" value={otherRefDate} onChange={(e) => setOtherRefDate(e.target.value)} className="h-9" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Note</Label>
-                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-
           {/* ─── Section 4: Items ───────────────────────────── */}
           <Card className="py-5">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -1102,180 +1046,112 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
               {lineItems.length === 0 ? (
                 <div className="py-12 text-center text-sm text-muted-foreground">No items added.</div>
               ) : (
+                <>
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-[1700px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[36px]" />
-                        <TableHead className="w-[220px]">Item</TableHead>
-                        <TableHead className="w-[56px] text-center">Qty</TableHead>
-                        <TableHead className="w-[56px] text-center">Conv</TableHead>
-                        <TableHead className="w-[80px] text-right">Rate</TableHead>
-                        <TableHead className="w-[56px] text-right">Disc%</TableHead>
-                        <TableHead className="w-[56px] text-right">GST%</TableHead>
-                        <TableHead className="w-[80px] text-right">Amount</TableHead>
-                        <TableHead className="w-[36px]" />
+                        <TableHead className="w-[44px] ">Sr</TableHead>
+                        <TableHead className="w-[260px] ">Particular</TableHead>
+                        <TableHead className="w-[80px] text-right">Qty</TableHead>
+                        <TableHead className="w-[70px] ">Unit</TableHead>
+                        <TableHead className="w-[100px] text-right">Rate</TableHead>
+                        <TableHead className="w-[72px] text-right">D1</TableHead>
+                        <TableHead className="w-[72px] text-right">D2</TableHead>
+                        <TableHead className="w-[72px] text-right">D3</TableHead>
+                        <TableHead className="w-[100px] text-right">Tax %</TableHead>
+                        <TableHead className="w-[100px] text-right">Amount</TableHead>
+                        <TableHead className="w-[80px] text-right">CGST %</TableHead>
+                        <TableHead className="w-[90px] text-right">CGST ₹</TableHead>
+                        <TableHead className="w-[80px] text-right">SGST %</TableHead>
+                        <TableHead className="w-[90px] text-right">SGST ₹</TableHead>
+                        <TableHead className="w-[80px] text-right">IGST %</TableHead>
+                        <TableHead className="w-[90px] text-right">IGST ₹</TableHead>
+                        <TableHead className="min-w-[260px]">Item Desc</TableHead>
+                        <TableHead className="w-[44px]" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lineItems.map((li) => (
-                        <FragmentRow key={li.tempId}>
-                          {/* Main row */}
-                          <TableRow>
-                            <TableCell className="py-1">
-                              <Button variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => toggleItemExpand(li.tempId)}>
-                                {expandedItems.has(li.tempId)
-                                  ? <ChevronDown className="h-3.5 w-3.5" />
-                                  : <ChevronRight className="h-3.5 w-3.5" />}
-                              </Button>
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <ItemSearchCell value={li.item_ID} label={li.itemName}
-                                onSelect={(item) => handleItemSelect(li.tempId, item)}
-                                onQuickAdd={(name) => setQuickItem({ open: true, name, tempId: li.tempId })} />
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <Input type="number" min={0} step="any"
-                                value={li.std_Qty || ""}
-                                onChange={(e) => updateLineItem(li.tempId, { std_Qty: parseFloat(e.target.value) || 0 })}
-                                className="h-9 w-full text-center" />
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <Input type="number" min={0} step="any"
-                                value={li.conv_Qty || ""}
-                                onChange={(e) => updateLineItem(li.tempId, { conv_Qty: parseFloat(e.target.value) || 0 })}
-                                className="h-9 w-full text-center" />
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <Input type="number" min={0} step="any"
-                                value={li.std_Rate || ""}
-                                onChange={(e) => updateLineItem(li.tempId, { std_Rate: parseFloat(e.target.value) || 0 })}
-                                className="h-9 w-full text-right" />
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <Input type="number" min={0} max={100} step="any"
-                                value={li.discount1 || ""}
-                                onChange={(e) => updateLineItem(li.tempId, { discount1: parseFloat(e.target.value) || 0 })}
-                                className="h-9 w-full text-right" />
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <Select value={li.vatPer.toString()}
-                                onValueChange={(v) => updateLineItem(li.tempId, { vatPer: Number(v) })}>
-                                <SelectTrigger className="h-9 w-[56px]"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {[0, 5, 12, 18, 28].map((r) => (
-                                    <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="py-1 text-right font-mono text-sm">{li.amount.toFixed(2)}</TableCell>
-                            <TableCell className="py-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"
-                                onClick={() => removeLineItem(li.tempId)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                          {/* Expanded sub-fields */}
-                          {expandedItems.has(li.tempId) && (
-                            <TableRow>
-                              <TableCell colSpan={9} className="bg-muted/20 p-3">
-                                <div className="grid gap-3 sm:grid-cols-4">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Mfr Item Name</Label>
-                                    <Input value={li.mfrItemName}
-                                      onChange={(e) => updateLineItem(li.tempId, { mfrItemName: e.target.value })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Conv. Unit</Label>
-                                    <Input type="number" min={0} value={li.conv_Unit || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { conv_Unit: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Conv. Rate</Label>
-                                    <Input type="number" min={0} step="any" value={li.conv_Rate || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { conv_Rate: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Cost Rate</Label>
-                                    <Input type="number" min={0} step="any" value={li.cost_Rate || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { cost_Rate: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Discount 2%</Label>
-                                    <Input type="number" min={0} max={100} step="any" value={li.discount2 || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { discount2: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Discount 3%</Label>
-                                    <Input type="number" min={0} max={100} step="any" value={li.discount3 || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { discount3: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Rate Discount</Label>
-                                    <Input type="number" min={0} step="any" value={li.rateDiscount || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { rateDiscount: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Inventory Moved</Label>
-                                    <Input type="number" min={0} value={li.inventoryMoved || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { inventoryMoved: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Vehicle Weight</Label>
-                                    <Input type="number" min={0} step="any" value={li.vehicleWeigth || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { vehicleWeigth: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Empty Box Wt.</Label>
-                                    <Input type="number" min={0} step="any" value={li.emptyBoxWeigth || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { emptyBoxWeigth: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Total Weight</Label>
-                                    <Input type="number" min={0} step="any" value={li.totalWeigth || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { totalWeigth: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Empty Boxes</Label>
-                                    <Input type="number" min={0} value={li.emptyBoxes || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { emptyBoxes: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Rack ID</Label>
-                                    <Input type="number" min={0} value={li.rackId || ""}
-                                      onChange={(e) => updateLineItem(li.tempId, { rackId: parseFloat(e.target.value) || 0 })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                  <div className="sm:col-span-3 space-y-1">
-                                    <Label className="text-xs">Item Description</Label>
-                                    <Input value={li.itemDescription}
-                                      onChange={(e) => updateLineItem(li.tempId, { itemDescription: e.target.value })}
-                                      className="h-8 text-xs" />
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </FragmentRow>
+                      {lineItems.map((li, idx) => (
+                        <TableRow key={li.tempId} onClick={() => setActiveRow(li.tempId)}
+                          className={cn(activeLine?.tempId === li.tempId && "bg-muted/40")}>
+                          <TableCell className="py-1 text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="py-1">
+                            <ItemSearchCell value={li.item_ID} label={li.itemName}
+                              onSelect={(item) => handleItemSelect(li.tempId, item)}
+                              onQuickAdd={(name) => setQuickItem({ open: true, name, tempId: li.tempId })} />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Input type="number" min={0} step="any" value={li.std_Qty || ""}
+                              onChange={(e) => updateLineItem(li.tempId, { std_Qty: parseFloat(e.target.value) || 0 })}
+                              className="h-9 w-[72px] text-right" />
+                          </TableCell>
+                          <TableCell className="py-1 text-sm">{li.unitName || "—"}</TableCell>
+                          <TableCell className="py-1">
+                            <Input type="number" min={0} step="any" value={li.std_Rate || ""}
+                              onChange={(e) => updateLineItem(li.tempId, { std_Rate: parseFloat(e.target.value) || 0 })}
+                              className="h-9 w-[92px] text-right" />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Input type="number" min={0} step="any" value={li.discount1 || ""}
+                              onChange={(e) => updateLineItem(li.tempId, { discount1: parseFloat(e.target.value) || 0 })}
+                              className="h-9 w-[64px] text-right" />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Input type="number" min={0} step="any" value={li.discount2 || ""}
+                              onChange={(e) => updateLineItem(li.tempId, { discount2: parseFloat(e.target.value) || 0 })}
+                              className="h-9 w-[64px] text-right" />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Input type="number" min={0} step="any" value={li.discount3 || ""}
+                              onChange={(e) => updateLineItem(li.tempId, { discount3: parseFloat(e.target.value) || 0 })}
+                              className="h-9 w-[64px] text-right" />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Select value={li.vatPer.toString()}
+                              onValueChange={(v) => updateLineItem(li.tempId, { vatPer: Number(v) })}>
+                              <SelectTrigger className="h-9 w-[92px]"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {[0, 5, 12, 18, 28].map((r) => (
+                                  <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.amount.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.cgstPercent.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.cgstAmount.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.sgstPercent.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.sgstAmount.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.igstPercent.toFixed(2)}</TableCell>
+                          <TableCell className="py-1 text-right font-mono text-sm">{li.igstAmount.toFixed(2)}</TableCell>
+                          <TableCell className="py-1">
+                            <Input value={li.itemDescription}
+                              onChange={(e) => updateLineItem(li.tempId, { itemDescription: e.target.value })}
+                              className="h-9" />
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"
+                              onClick={() => removeLineItem(li.tempId)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-4 py-3 text-xs text-muted-foreground">
+                  <span>HSN/SAC - <b className="text-foreground">N/A</b></span>
+                  <span>Current stock - <b className="text-foreground">{activeLine ? activeLine.currentStck.toFixed(2) : "N/A"}</b></span>
+                  <span>Ref Qty - <b className="text-foreground">N/A</b></span>
+                  <span>Ordered stock - <b className="text-foreground">{activeLine ? "0.00" : "N/A"}</b></span>
+                  <span>Blocked stock - <b className="text-foreground">{activeLine ? "0.00" : "N/A"}</b></span>
+                  <span>Last Pur Rate - <b className="text-foreground">{activeLine ? activeLine.cost_Rate.toFixed(2) : "N/A"}</b></span>
+                  <Button type="button" variant="outline" size="sm" className="ml-auto h-7" disabled={!activeLine}
+                    onClick={() => toast.info(`Current stock: ${activeLine?.currentStck.toFixed(2)}`)}>Check Stock</Button>
+                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1287,7 +1163,14 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label>Rec. By *</Label>
-                  <Input value={recBy} onChange={(e) => setRecBy(e.target.value)} className="h-9" />
+                  <Select value={recBy} onValueChange={setRecBy}>
+                    <SelectTrigger className="h-9 w-full"><SelectValue placeholder="Select pay mode" /></SelectTrigger>
+                    <SelectContent>
+                      {(REC_BY_OPTIONS.includes(recBy) || !recBy ? REC_BY_OPTIONS : [recBy, ...REC_BY_OPTIONS]).map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Rec. Amt *</Label>
@@ -1295,86 +1178,36 @@ export function InvoiceCreateForm({ invType, title, backUrl, editInvCode }: Invo
                     onChange={(e) => setRecAmt(parseFloat(e.target.value) || 0)} className="h-9" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Due Days</Label>
+                  <Label>Cr. Days</Label>
                   <Input type="number" min={0} value={dueDays}
                     onChange={(e) => setDueDays(parseInt(e.target.value) || 0)} className="h-9" />
                 </div>
               </div>
+              <div className="mt-5 border-t pt-4">
+                <div className="mb-3 text-sm font-medium text-muted-foreground">Other Details</div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5"><Label>Transport By</Label>
+                    <Input value={transportBy} onChange={(e) => setTransportBy(e.target.value)} className="h-9" /></div>
+                  <div className="space-y-1.5"><Label>Vehicle No</Label>
+                    <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} className="h-9" /></div>
+                  <div className="space-y-1.5"><Label>L R No</Label>
+                    <Input value={lrNo} onChange={(e) => setLrNo(e.target.value)} className="h-9" /></div>
+                  <div className="space-y-1.5 sm:col-span-3"><Label>Note</Label>
+                    <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-9" /></div>
+                  <div className="space-y-1.5"><Label>Sales Ledger</Label>
+                    <Select value={salesLedgerName} onValueChange={setSalesLedgerName}>
+                      <SelectTrigger className="h-9 w-full"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{["GST Sales", "Sales", "Export Sales"].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                  <div className="space-y-1.5"><Label>Salesman</Label>
+                    <Select value={salesmanName} onValueChange={setSalesmanName}>
+                      <SelectTrigger className="h-9 w-full"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{["Counter", "Field Sales"].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select></div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-
-          {/* ─── Section 6: TNC (collapsible) ───────────────── */}
-          <Collapsible open={showTnc} onOpenChange={setShowTnc}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Terms & Conditions ({tncList.length})</CardTitle>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", showTnc && "rotate-180")} />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="border-t pt-4 space-y-2">
-                  {tncList.map((t) => (
-                    <div key={t.tempId} className="flex items-end gap-2">
-                      <div className="space-y-1 flex-1">
-                        <Label className="text-xs">TNC</Label>
-                        <TncSearchCell
-                          value={t.tncID}
-                          onSelect={(sel) => updateTnc(t.tempId, { tncID: sel.tncID })}
-                        />
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70"
-                        onClick={() => removeTnc(t.tempId)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addTnc}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add TNC
-                  </Button>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-
-          {/* ─── Section 7: Footer Notes (collapsible) ──────── */}
-          <Collapsible open={showFooter} onOpenChange={setShowFooter}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Footer Notes ({footerNotes.length})</CardTitle>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", showFooter && "rotate-180")} />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="border-t pt-4 space-y-2">
-                  {footerNotes.map((fn) => (
-                    <div key={fn.tempId} className="flex items-end gap-2">
-                      <div className="space-y-1 flex-1">
-                        <Label className="text-xs">Title</Label>
-                        <Input value={fn.title} onChange={(e) => updateFooterNote(fn.tempId, { title: e.target.value })} className="h-8" />
-                      </div>
-                      <div className="space-y-1 flex-[2]">
-                        <Label className="text-xs">Note</Label>
-                        <Input value={fn.note} onChange={(e) => updateFooterNote(fn.tempId, { note: e.target.value })} className="h-8" />
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70"
-                        onClick={() => removeFooterNote(fn.tempId)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addFooterNote}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Footer Note
-                  </Button>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
 
         </div>
 

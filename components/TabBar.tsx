@@ -2,7 +2,7 @@
 
 import { useTabStore } from "@/lib/stores/tab-store";
 import { useRouter, usePathname } from "next/navigation";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, removeTab } = useTabStore();
+  const { tabs, activeTabId, setActiveTab, removeTab, clearAllTabs, closeOtherTabs } = useTabStore();
   const router = useRouter();
   const pathname = usePathname();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -80,11 +80,39 @@ export function TabBar() {
     }
   };
 
+  const handleCloseAll = () => {
+    clearAllTabs();
+    router.push("/erp/dashboard");
+  };
+
+  const handleCloseOthers = () => {
+    const current = tabs.find((t) => t.isActive) ?? tabs[0];
+    if (current) closeOtherTabs(current.id);
+  };
+
   if (tabs.length === 0) return null;
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center h-10 bg-muted/30 border-b border-border relative">
+        {/* Bulk close */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-10 w-8 rounded-none shrink-0 hover:bg-muted" onClick={handleCloseAll}>
+              <X className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Close all tabs</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-10 w-8 rounded-none shrink-0 border-r border-border hover:bg-muted" disabled={tabs.length < 2} onClick={handleCloseOthers}>
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Close all except current</TooltipContent>
+        </Tooltip>
+
         {/* Left scroll button */}
         {showLeftScroll && (
           <Button

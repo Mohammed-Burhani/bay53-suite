@@ -20,6 +20,7 @@ interface TabStore {
   setActiveTab: (tabId: string) => void;
   updateTab: (tabId: string, updates: Partial<Tab>) => void;
   clearAllTabs: () => void;
+  closeOtherTabs: (tabId: string) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
 }
 
@@ -109,6 +110,13 @@ export const useTabStore = create<TabStore>()(
 
       clearAllTabs: () => {
         set({ tabs: [], activeTabId: null });
+      },
+
+      closeOtherTabs: (tabId) => {
+        set((state) => ({
+          tabs: state.tabs.filter((t) => t.id === tabId).map((t) => ({ ...t, isActive: true })),
+          activeTabId: tabId,
+        }));
       },
 
       reorderTabs: (fromIndex, toIndex) => {
