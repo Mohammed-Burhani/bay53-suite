@@ -10,6 +10,7 @@ import { useItems } from "@/lib/hooks/useReports";
 import { useItemById } from "@/lib/hooks/useItemMaster";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import { rawToFormValues } from "@/lib/items/item-form";
+import { DealerItemDetails } from "@/components/admin-proto/parts";
 import { COSTING_ON_OPTIONS, ITEM_ATTRIBUTES, PRODUCT_TYPE_OPTIONS, type UnitConv } from "@/lib/types/item.types";
 
 interface ItemDetailsSheetProps {
@@ -92,6 +93,8 @@ export function ItemDetailsSheet({ itemId, onClose, onEdit }: ItemDetailsSheetPr
                 <Field label="Reorder Qty" value={show(values.reOrderQty)} />
                 <Field label="Reorder Days" value={show(values.reOrderDays)} />
               </Group>
+
+              {itemId !== null && <DealerItemDetails itemId={itemId} sellRate={Number(values.std_Sell_Rate) || null} />}
 
               <Group title="Options">
                 <div className="col-span-2 flex flex-wrap gap-2">

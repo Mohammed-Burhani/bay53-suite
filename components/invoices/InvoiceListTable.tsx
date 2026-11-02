@@ -47,6 +47,23 @@ import { TablePagination, usePagination } from "@/components/ui/table-pagination
 import { ModuleAIAssistant } from "@/components/ModuleAIAssistant";
 import { InvoicePreviewDialog } from "@/components/invoices/InvoicePreviewDialog";
 import { useInvoiceSearch, useInvoiceDelete } from "@/lib/hooks/useInvoices";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Truck } from "lucide-react";
+import {
+  ORDER_STATUSES,
+  PAYMENT_STATUSES,
+  docKindOf,
+  mockOrder,
+  type OrderStatus,
+  type PaymentStatus,
+} from "@/lib/admin-proto/mock";
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+  UpdateOrderStatusDialog,
+  fmtDate,
+} from "@/components/admin-proto/parts";
 import type { InvoiceSearchItem } from "@/lib/types/invoice.types";
 import { useInvoiceTypes, useStockPlaces } from "@/lib/hooks/useReports";
 import { toast } from "sonner";
@@ -151,6 +168,15 @@ export function InvoiceListTable({
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<number[]>([]);
   const [selectedLedgers, setSelectedLedgers] = useState<Array<{ ledger_id: number; name: string; group: string | null }>>([]);
 
+  // Dealer-portal fields (UI prototype: derived from the real row, not returned by the API yet)
+  const [orderStatusFilter, setOrderStatusFilter] = useState<OrderStatus | "all">("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | "all">("all");
+  const [includeCancelled, setIncludeCancelled] = useState(true);
+  const [statusTarget, setStatusTarget] = useState<InvoiceSearchItem | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const showDealerCols = invType === 0 || docKindOf(invType) !== "other";
+  const showOrderStatus = invType === 0 || docKindOf(invType) === "order";
+
   // Check if invoice number is entered (disables date filter)
   const isInvoiceNoEntered = invoiceNo.trim().length > 0;
 
@@ -226,6 +252,9 @@ export function InvoiceListTable({
     setSelectedLedgerIds([]);
     setSelectedLedgers([]);
     setSearchTerm("");
+    setOrderStatusFilter("all");
+    setPaymentStatusFilter("all");
+    setIncludeCancelled(true);
   };
 
   // Filter and search
@@ -234,6 +263,12 @@ export function InvoiceListTable({
     if (!invoices || invoices.length === 0) return [];
 
     return invoices.filter((inv) => {
+      if (showDealerCols) {
+        const m = mockOrder(inv);
+        if (!includeCancelled && m.orderStatus === "Cancelled") return false;
+        if (orderStatusFilter !== "all" && m.orderStatus !== orderStatusFilter) return false;
+        if (paymentStatusFilter !== "all" && m.paymentStatus !== paymentStatusFilter) return false;
+      }
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
       return (
@@ -247,7 +282,7 @@ export function InvoiceListTable({
         String(inv.invoiceNo ?? "").includes(search)
       );
     });
-  }, [invoiceData?.list, searchTerm]);
+  }, [invoiceData?.list, searchTerm, showDealerCols, includeCancelled, orderStatusFilter, paymentStatusFilter]);
 
   // Calculate stats
   const totalAmount = filteredInvoices.reduce(
@@ -267,7 +302,22 @@ export function InvoiceListTable({
     billNo,
     itemName,
     selectedLedgerIds.length > 0,
+    showDealerCols && orderStatusFilter !== "all",
+    showDealerCols && paymentStatusFilter !== "all",
+    showDealerCols && !includeCancelled,
   ].filter(Boolean).length;
+
+  // Summary strip (invoicedTotal / creditNoteTotal / debitNoteTotal in /Invoice/Search)
+  const dealerSummary = useMemo(() => {
+    let balance = 0;
+    let creditNotes = 0;
+    for (const inv of filteredInvoices) {
+      const m = mockOrder(inv);
+      balance += m.balanceAmount;
+      creditNotes += m.creditNoteTotal;
+    }
+    return { balance, creditNotes };
+  }, [filteredInvoices]);
 
   // Context menu handlers
   const handleViewInvoice = (invoice: InvoiceSearchItem) => {
@@ -680,6 +730,15 @@ export function InvoiceListTable({
       },
     ];
 
+    if (docKindOf(invoice.inv_Type) === "order") {
+      items.push({
+        label: "Update Order Status",
+        icon: Truck,
+        onClick: () => setStatusTarget(invoice),
+        divider: true,
+      });
+    }
+
     // Edit & Delete are always available (delete shows a confirmation dialog first).
     items.push({
       label: "Edit",
@@ -734,6 +793,20 @@ export function InvoiceListTable({
             <div className="mt-4 text-sm opacity-90">
               {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? "s" : ""}
             </div>
+            {showDealerCols && (
+              <div className="mt-3 flex flex-wrap gap-x-8 gap-y-1 border-t border-white/20 pt-3 text-sm">
+                <span>
+                  Balance due <strong className="ml-1">{formatCurrency(dealerSummary.balance)}</strong>
+                </span>
+                <span>
+                  Credit notes <strong className="ml-1">{formatCurrency(dealerSummary.creditNotes)}</strong>
+                </span>
+                <span>
+                  Net receivable{" "}
+                  <strong className="ml-1">{formatCurrency(Math.max(0, dealerSummary.balance - dealerSummary.creditNotes))}</strong>
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -829,6 +902,49 @@ export function InvoiceListTable({
                         </SelectContent>
                       </Select>
                     </div>
+                  )}
+
+                  {showDealerCols && (
+                    <>
+                      {showOrderStatus && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Order Status</label>
+                          <Select value={orderStatusFilter} onValueChange={(v) => setOrderStatusFilter(v as OrderStatus | "all")}>
+                            <SelectTrigger className="h-9 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All statuses</SelectItem>
+                              {ORDER_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Payment Status</label>
+                        <Select value={paymentStatusFilter} onValueChange={(v) => setPaymentStatusFilter(v as PaymentStatus | "all")}>
+                          <SelectTrigger className="h-9 w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All</SelectItem>
+                            {PAYMENT_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                        <label className="text-sm font-medium">Include cancelled</label>
+                        <Switch checked={includeCancelled} onCheckedChange={setIncludeCancelled} />
+                      </div>
+                    </>
                   )}
 
                   {/* Bill Number */}
@@ -1023,6 +1139,14 @@ export function InvoiceListTable({
                     <TableHead className="font-semibold">Party</TableHead>
                     <TableHead className="font-semibold">Stock Place</TableHead>
                     <TableHead className="text-right font-semibold">Amount</TableHead>
+                    {showOrderStatus && <TableHead className="font-semibold text-center">Order Status</TableHead>}
+                    {showDealerCols && (
+                      <>
+                        <TableHead className="font-semibold text-center">Payment Status</TableHead>
+                        <TableHead className="font-semibold">Due Date</TableHead>
+                        <TableHead className="text-right font-semibold">Balance</TableHead>
+                      </>
+                    )}
                     <TableHead className="font-semibold">Payment</TableHead>
                     <TableHead className="font-semibold text-center">Status</TableHead>
                     <TableHead className="font-semibold text-center">Actions</TableHead>
@@ -1075,6 +1199,26 @@ export function InvoiceListTable({
                         <TableCell className="text-right font-medium">
                           {formatCurrency(invoice.grandTotal)}
                         </TableCell>
+                        {showDealerCols && (() => {
+                          const m = mockOrder(invoice);
+                          return (
+                            <>
+                              {showOrderStatus && (
+                                <TableCell className="text-center">
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <OrderStatusBadge status={m.orderStatus} />
+                                    <span className="text-[10px] text-muted-foreground">{m.source}</span>
+                                  </div>
+                                </TableCell>
+                              )}
+                              <TableCell className="text-center">
+                                <PaymentStatusBadge status={m.paymentStatus} />
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.dueDate)}</TableCell>
+                              <TableCell className="text-right text-sm font-medium tabular-nums">{formatCurrency(m.balanceAmount)}</TableCell>
+                            </>
+                          );
+                        })()}
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {invoice.recBy || "N/A"}
@@ -1104,6 +1248,17 @@ export function InvoiceListTable({
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1">
+                            {docKindOf(invoice.inv_Type) === "order" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-violet-600 hover:text-violet-700"
+                                title="Update order status"
+                                onClick={(e) => { e.stopPropagation(); setStatusTarget(invoice); }}
+                              >
+                                <Truck className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1178,6 +1333,12 @@ export function InvoiceListTable({
               Are you sure you want to delete invoice &quot;{deleteTarget?.bill_No}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteTarget && docKindOf(deleteTarget.inv_Type) === "order" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Cancel reason (shared with the dealer; the order limit is released)</label>
+              <Textarea rows={2} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="e.g. Item discontinued" />
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -1219,6 +1380,15 @@ export function InvoiceListTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Order status update (dealer portal) */}
+      <UpdateOrderStatusDialog
+        key={statusTarget?.invCode ?? "none"}
+        open={!!statusTarget}
+        onOpenChange={(open) => { if (!open) setStatusTarget(null); }}
+        billNo={statusTarget?.bill_No ?? ""}
+        current={statusTarget ? mockOrder(statusTarget) : null}
+      />
 
       {/* Invoice bill preview */}
       <InvoicePreviewDialog

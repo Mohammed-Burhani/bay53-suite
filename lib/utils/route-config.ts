@@ -24,6 +24,13 @@ export const ROUTE_CONFIG: Record<string, { title: string; icon?: string }> = {
   // Certificates
   "/erp/certificates": { title: "Certificates" },
 
+  // Dealer Portal (admin)
+  "/erp/dealer-portal/overview": { title: "Dealer Portal" },
+  "/erp/dealer-portal/limit-requests": { title: "Limit Requests" },
+  "/erp/dealer-portal/notifications": { title: "Portal Notifications" },
+  "/erp/dealer-portal/catalogues": { title: "Catalogues" },
+  "/erp/dealer-portal/document-setup": { title: "Document Setup" },
+
   // Master
   "/erp/master/items": { title: "Items" },
   "/erp/master/ledgers": { title: "Ledgers" },

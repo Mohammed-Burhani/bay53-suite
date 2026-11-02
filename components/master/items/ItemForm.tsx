@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { FieldGrid, Flag, FormToolbar, KeyboardForm, NumberInput, Row, Section, fieldError } from "@/components/master/shared/form-parts";
 import { ItemSearchCombobox } from "@/components/ui/item-search-combobox";
+import { DealerItemFormSection } from "@/components/admin-proto/parts";
 import { useClassificationLabels } from "@/lib/contexts/ClassificationContext";
 import { useItems, useLedgersByGroup } from "@/lib/hooks/useReports";
 import { useItemById, useItemCreate, useItemUpdate } from "@/lib/hooks/useItemMaster";
@@ -355,6 +356,9 @@ function ItemFormBody({ raw, items, onSuccess, onCancel }: BodyProps) {
                     <Textarea {...field("description")} rows={3} placeholder="Optional notes about this item" className="min-h-0 resize-none" />
                   </Section>
                 </div>
+
+                {/* ---------- Dealer portal (UI prototype: local state, not in the save payload) ---------- */}
+                <DealerItemFormSection itemId={itemId} sellRate={Number(values.std_Sell_Rate) || null} />
 
                 {/* ---------- BOM ---------- */}
                 {values.is_BOM && (

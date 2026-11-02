@@ -30,6 +30,11 @@ import {
   Database,
   FolderTree,
   BookUser,
+  Store,
+  Bell,
+  BookOpen,
+  Gauge,
+  ListChecks,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -86,6 +91,20 @@ const NAV_MODULES: NavModule[] = [
     activeBg: "bg-indigo-500/20",
     subItems: [
       { href: "/erp/invoices", label: "All Invoices", icon: Receipt },
+    ],
+  },
+  {
+    id: "dealer-portal",
+    label: "Dealer Portal",
+    icon: Store,
+    color: "text-rose-400",
+    activeBg: "bg-rose-500/20",
+    subItems: [
+      { href: "/erp/dealer-portal/overview", label: "Overview", icon: Eye },
+      { href: "/erp/dealer-portal/limit-requests", label: "Limit Requests", icon: Gauge },
+      { href: "/erp/dealer-portal/notifications", label: "Notifications", icon: Bell },
+      { href: "/erp/dealer-portal/catalogues", label: "Catalogues", icon: BookOpen },
+      { href: "/erp/dealer-portal/document-setup", label: "Document Setup", icon: ListChecks },
     ],
   },
   {

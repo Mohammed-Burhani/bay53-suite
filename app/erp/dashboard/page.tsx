@@ -37,6 +37,8 @@ import { auth } from "@/lib/auth";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LedgerSearchInput } from "@/components/reports/LedgerSearchInput";
+import Link from "next/link";
+import { DealerPortalSummary } from "@/components/admin-proto/DealerPortalSummary";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe", "#f5f3ff", "#818cf8"];
 
@@ -468,6 +470,18 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Dealer Portal (admin) — UI prototype data */}
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Dealer Portal</h2>
+          <p className="text-xs text-muted-foreground">Orders, credit and dues from your dealers</p>
+        </div>
+        <Link href="/erp/dealer-portal/overview" className="text-xs font-medium text-primary hover:underline">
+          Open Dealer Portal →
+        </Link>
+      </div>
+      <DealerPortalSummary />
 
       {/* Ledger/Invoice Analytics Selector */}
       <Card className="border shadow-sm">

@@ -24,6 +24,7 @@ import {
   toCopyBase,
 } from "@/lib/ledgers/ledger-form";
 import { GST_TYPE_OPTIONS, PARTY_TYPE_OPTIONS, type LedgerFormValues } from "@/lib/types/ledger.types";
+import { DealerLedgerFormSection } from "@/components/admin-proto/parts";
 
 const nonNegative = (label: string) =>
   Yup.string().test("non-negative", `${label} must be a number ≥ 0`, (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= 0));
@@ -291,7 +292,7 @@ function LedgerFormBody({ raw, isCopy, onSuccess, onCancel }: BodyProps) {
                     </FieldGrid>
                   </Section>
 
-                  {/* ---------- column 3: party extra info + bank ---------- */}
+                    {/* ---------- column 3: party extra info + bank ---------- */}
                   <div className="space-y-3 lg:col-span-2 xl:col-span-1">
                     <Section title="Party Extra Info">
                       <FieldGrid>
@@ -389,6 +390,11 @@ function LedgerFormBody({ raw, isCopy, onSuccess, onCancel }: BodyProps) {
                       </FieldGrid>
                     </Section>
                   </div>
+                </div>
+
+                {/* ---------- dealer portal (UI prototype: local state, not in the save payload) ---------- */}
+                <div className="mt-3">
+                  <DealerLedgerFormSection ledgerId={ledgerId} />
                 </div>
               </CardContent>
             </Card>

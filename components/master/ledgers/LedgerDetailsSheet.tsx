@@ -10,6 +10,7 @@ import { useAllGroups, useLedgerById } from "@/lib/hooks/useLedgerMaster";
 import { rawToFormValues } from "@/lib/ledgers/ledger-form";
 import { GST_TYPE_OPTIONS, PARTY_TYPE_OPTIONS } from "@/lib/types/ledger.types";
 import type { Ledger } from "@/lib/types/reports.types";
+import { DealerLedgerDetails } from "@/components/admin-proto/parts";
 
 interface LedgerDetailsSheetProps {
   /** The list row being viewed; null closes the sheet. */
@@ -101,6 +102,8 @@ export function LedgerDetailsSheet({ ledger, onClose, onEdit }: LedgerDetailsShe
                 <Field label="Credit Limit" value={show(values.credit_Limit)} />
                 <Field label="Credit Days" value={show(values.creditDays)} />
               </Group>
+
+              {ledgerId !== null && <DealerLedgerDetails ledgerId={ledgerId} creditLimit={values.credit_Limit} locked={!!ledger?.lock_Freeze} />}
 
               <Group title="Bank Details">
                 <Field label="Bank Name" value={show(values.ledgerBankName)} />

@@ -32,6 +32,8 @@ import { EMPTY_ITEM_FILTERS, filterItems, itemParticular, type ItemFilters } fro
 import { ITEM_ATTRIBUTES, type ItemListRow } from "@/lib/types/item.types";
 import { ItemFilterPanel } from "./ItemFilterPanel";
 import { ItemDetailsSheet } from "./ItemDetailsSheet";
+import { mockItem } from "@/lib/admin-proto/mock";
+import { StockStatusBadge } from "@/components/admin-proto/parts";
 
 const money = (v: number | null | undefined) =>
   v === null || v === undefined ? "—" : v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -156,7 +158,7 @@ export function ItemListTable() {
       )}
 
       <Card className="gap-0 overflow-hidden py-0">
-        <Table className="min-w-[1700px]">
+        <Table className="min-w-[2150px]">
           <TableHeader className="bg-muted/40">
             <TableRow>
               <TableHead>{getLabel("item_code")}</TableHead>
@@ -165,6 +167,12 @@ export function ItemListTable() {
               <TableHead className="text-right">Tax %</TableHead>
               <TableHead className="text-right">MRP</TableHead>
               <TableHead className="text-right">Sell Rate</TableHead>
+              <TableHead className="text-right">Dealer Rate</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead className="text-right">Avail. Qty</TableHead>
+              <TableHead className="text-right">MOQ</TableHead>
+              <TableHead>Dealer Catalogue</TableHead>
+              <TableHead className="text-right">Purchased</TableHead>
               <TableHead>Std Unit</TableHead>
               <TableHead className="text-right">Discount</TableHead>
               <TableHead>Description</TableHead>
@@ -184,14 +192,14 @@ export function ItemListTable() {
             {isLoading &&
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={21}>
+                  <TableCell colSpan={27}>
                     <Skeleton className="h-6 w-full" />
                   </TableCell>
                 </TableRow>
               ))}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={21} className="py-14 text-center text-muted-foreground">
+                <TableCell colSpan={27} className="py-14 text-center text-muted-foreground">
                   {allItems.length === 0 ? "No items yet. Add your first item." : "No items match these filters."}
                 </TableCell>
               </TableRow>
@@ -204,6 +212,25 @@ export function ItemListTable() {
                 <TableCell className="text-right tabular-nums">{item.vatPer ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{money(item.mrp)}</TableCell>
                 <TableCell className="text-right tabular-nums">{money(item.std_Sell_Rate)}</TableCell>
+                {(() => {
+                  const d = mockItem(item.item_ID, item.std_Sell_Rate);
+                  return (
+                    <>
+                      <TableCell className="text-right tabular-nums">{money(d.dealerRate)}</TableCell>
+                      <TableCell>
+                        <StockStatusBadge status={d.stockStatus} />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{d.availableQty}</TableCell>
+                      <TableCell className="text-right tabular-nums">{d.moq}</TableCell>
+                      <TableCell>
+                        <Badge variant={d.dealerVisible ? "secondary" : "outline"} className={d.dealerVisible ? "bg-emerald-100 text-emerald-700" : "text-muted-foreground"}>
+                          {d.dealerVisible ? "Visible" : "Hidden"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{d.purchaseCount}</TableCell>
+                    </>
+                  );
+                })()}
                 <TableCell>{dash(item.std_Unit)}</TableCell>
                 <TableCell className="text-right tabular-nums">{item.discount ?? "—"}</TableCell>
                 <TableCell className="max-w-48 truncate">{dash(item.description)}</TableCell>

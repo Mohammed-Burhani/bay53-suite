@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/store";
 import { useInvoiceById } from "@/lib/hooks/useInvoices";
+import { OrderAdminPanel } from "@/components/admin-proto/parts";
 import type { InvoiceSearchItem, InvoiceDetail } from "@/lib/types/invoice.types";
 import {
   buildBillViewModel,
@@ -99,6 +100,7 @@ export function InvoicePreviewDialog({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <OrderAdminPanel row={row} />
           <div data-invoice-print className="bg-white text-zinc-900">
             {isLoading ? (
               <BillSkeleton />

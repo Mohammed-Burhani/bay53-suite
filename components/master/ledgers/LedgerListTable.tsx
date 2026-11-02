@@ -35,6 +35,9 @@ import { EMPTY_LEDGER_FILTERS, filterLedgers, rowValue, type LedgerFilters } fro
 import { PARTY_TYPE_OPTIONS } from "@/lib/types/ledger.types";
 import type { Ledger } from "@/lib/types/reports.types";
 import { LedgerDetailsSheet } from "./LedgerDetailsSheet";
+import { mockDealer } from "@/lib/admin-proto/mock";
+import { LimitUsageBar, LockReasonDialog } from "@/components/admin-proto/parts";
+import { formatCurrency } from "@/lib/store";
 
 const dash = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
 
@@ -62,7 +65,18 @@ export function LedgerListTable() {
   const [toDelete, setToDelete] = useState<Ledger | null>(null);
 
   const groupOptions = useMemo(() => groups.map((g) => ({ value: String(g.id), label: g.name })), [groups]);
-  const filtered = useMemo(() => filterLedgers(allLedgers, filters), [allLedgers, filters]);
+  // Dealer-portal prototype state (new fields are mock until the API returns them)
+  const [portalFilter, setPortalFilter] = useState<"all" | "enabled" | "disabled">("all");
+  const [lockTarget, setLockTarget] = useState<Ledger | null>(null);
+  const filtered = useMemo(
+    () =>
+      filterLedgers(allLedgers, filters).filter((l) => {
+        if (portalFilter === "all") return true;
+        const enabled = mockDealer(l.ledger_id).portalEnabled;
+        return portalFilter === "enabled" ? enabled : !enabled;
+      }),
+    [allLedgers, filters, portalFilter]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -73,7 +87,7 @@ export function LedgerListTable() {
     setFilters((f) => ({ ...f, ...patch }));
     setPage(1);
   };
-  const activeFilterCount = [filters.name, filters.area, filters.city, filters.partyType, filters.status].filter(Boolean).length + (groupId ? 1 : 0);
+  const activeFilterCount = [filters.name, filters.area, filters.city, filters.partyType, filters.status].filter(Boolean).length + (groupId ? 1 : 0) + (portalFilter !== "all" ? 1 : 0);
 
   const handleExport = () => {
     exportToExcel(
@@ -131,6 +145,7 @@ export function LedgerListTable() {
   };
 
   const handleToggleLock = (ledger: Ledger) => {
+    setLockTarget(null);
     const lock = !ledger.lock_Freeze;
     lockLedger.mutate(
       { id: ledger.ledger_id, lockLedger: lock },
@@ -166,7 +181,7 @@ export function LedgerListTable() {
 
       <Card className="gap-0 py-0">
         <CardContent className="p-3">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             <div>
               <Label className="mb-1 text-xs text-muted-foreground">Group (includes sub-groups)</Label>
               <Combobox
@@ -225,6 +240,19 @@ export function LedgerListTable() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label className="mb-1 text-xs text-muted-foreground">Dealer portal</Label>
+              <Select value={portalFilter} onValueChange={(v) => { setPortalFilter(v as typeof portalFilter); setPage(1); }}>
+                <SelectTrigger className="h-8 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="enabled">Portal enabled</SelectItem>
+                  <SelectItem value="disabled">Portal disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="mt-2 flex justify-end gap-2">
             <Button
@@ -235,6 +263,7 @@ export function LedgerListTable() {
               disabled={activeFilterCount === 0}
               onClick={() => {
                 setFilters(EMPTY_LEDGER_FILTERS);
+                setPortalFilter("all");
                 setGroupId(null);
                 setPage(1);
               }}
@@ -260,7 +289,7 @@ export function LedgerListTable() {
       )}
 
       <Card className="gap-0 overflow-hidden py-0">
-        <Table className="min-w-[3000px]">
+        <Table className="min-w-[3500px]">
           <TableHeader className="bg-muted/40">
             <TableRow>
               <TableHead className="min-w-56">Name</TableHead>
@@ -284,6 +313,10 @@ export function LedgerListTable() {
               <TableHead>PAN No</TableHead>
               <TableHead>LockFreeze</TableHead>
               <TableHead className="text-right">Credit Limit</TableHead>
+              <TableHead>Business Type</TableHead>
+              <TableHead>Portal</TableHead>
+              <TableHead className="min-w-40">Limit Usage</TableHead>
+              <TableHead className="text-right">Outstanding</TableHead>
               <TableHead>Hsn No</TableHead>
               <TableHead>Hsn Description</TableHead>
               <TableHead className="text-right">Tax %</TableHead>
@@ -295,14 +328,14 @@ export function LedgerListTable() {
             {isLoading &&
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={26}>
+                  <TableCell colSpan={30}>
                     <Skeleton className="h-6 w-full" />
                   </TableCell>
                 </TableRow>
               ))}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={26} className="py-14 text-center text-muted-foreground">
+                <TableCell colSpan={30} className="py-14 text-center text-muted-foreground">
                   {allLedgers.length === 0 ? "No ledgers yet. Add your first ledger." : "No ledgers match these filters."}
                 </TableCell>
               </TableRow>
@@ -336,6 +369,26 @@ export function LedgerListTable() {
                 <TableCell className="font-mono text-xs">{dash(ledger.panNo)}</TableCell>
                 <TableCell>{ledger.lock_Freeze ? <Badge variant="destructive">Yes</Badge> : <span className="text-muted-foreground">No</span>}</TableCell>
                 <TableCell className="text-right tabular-nums">{money(rowValue(ledger, "credit_Limit"))}</TableCell>
+                {(() => {
+                  const d = mockDealer(ledger.ledger_id, rowValue(ledger, "credit_Limit") as string | number | null, ledger.lock_Freeze);
+                  return (
+                    <>
+                      <TableCell>{d.businessType}</TableCell>
+                      <TableCell>
+                        <Badge variant={d.portalEnabled ? "secondary" : "outline"} className={d.portalEnabled ? "bg-emerald-100 text-emerald-700" : "text-muted-foreground"}>
+                          {d.portalEnabled ? "Enabled" : "Disabled"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <LimitUsageBar used={d.usedLimit} limit={d.creditLimit} />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <div>{formatCurrency(d.outstandingAmount)}</div>
+                        {d.overdueAmount > 0 && <div className="text-[10px] text-red-600">{formatCurrency(d.overdueAmount)} overdue</div>}
+                      </TableCell>
+                    </>
+                  );
+                })()}
                 <TableCell>{dash(rowValue(ledger, "hsnNo"))}</TableCell>
                 <TableCell>{dash(rowValue(ledger, "hsnDescription"))}</TableCell>
                 <TableCell className="text-right tabular-nums">{money(rowValue(ledger, "taxPercent"))}</TableCell>
@@ -376,9 +429,9 @@ export function LedgerListTable() {
                           <Copy className="mr-2 h-4 w-4" />
                           Save as copy
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={lockLedger.isPending} onClick={() => handleToggleLock(ledger)}>
+                        <DropdownMenuItem disabled={lockLedger.isPending} onClick={() => setLockTarget(ledger)}>
                           {ledger.lock_Freeze ? <LockOpen className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
-                          {ledger.lock_Freeze ? "Unlock" : "Lock"}
+                          {ledger.lock_Freeze ? "Release hold" : "Put on hold"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -390,6 +443,15 @@ export function LedgerListTable() {
         </Table>
         <TablePagination totalItems={filtered.length} pageSize={pageSize} currentPage={safePage} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </Card>
+
+      <LockReasonDialog
+        key={lockTarget?.ledger_id ?? "none"}
+        open={!!lockTarget}
+        onOpenChange={(open) => !open && setLockTarget(null)}
+        name={lockTarget?.name ?? ""}
+        locking={!lockTarget?.lock_Freeze}
+        onConfirm={() => lockTarget && handleToggleLock(lockTarget)}
+      />
 
       <LedgerDetailsSheet ledger={viewing} onClose={() => setViewing(null)} onEdit={(id) => router.push(`/erp/master/ledgers/${id}/edit`)} />
 
