@@ -1,0 +1,14 @@
+// ==================== CRM Company API ====================
+// Mirrors the "Company" tag of the CRM swagger. Responses are untyped upstream: pass the unwrapped `data` DTO as <T> when integrating.
+
+import { crmHttp } from "../client";
+import type { CrmSchemas as S } from "../types";
+
+export const companyApi = {
+  get: <T = unknown>(id: number) =>
+    crmHttp.post<T>("/Company/Get", id),
+  update: <T = unknown>(payload: S["CompanyCreateViewModel"]) =>
+    crmHttp.post<T>("/Company/Update", payload),
+  add: <T = unknown>(payload: S["CompanyCreateViewModel"]) =>
+    crmHttp.post<T>("/Company/Add", payload),
+};
