@@ -4,3 +4,4 @@ export { crmHttp, CrmApiError } from "./client";
 export { crmAuth } from "./auth";
 export { crmTokenStore } from "./token-store";
 export type * from "./types";
+export type * from "./dto";
