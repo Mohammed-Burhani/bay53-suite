@@ -72,8 +72,8 @@ export default function LoginForm() {
           "bay53_returning_user",
           JSON.stringify({ userName: data.userName, displayName: firstName })
         );
-        toast.success("OTP Sent", {
-          description: "A verification code has been sent to your email",
+        toast.success("Login Successful", {
+          description: "Redirecting to dashboard...",
         });
       },
     });

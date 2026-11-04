@@ -16,12 +16,28 @@ export function useSession(): AuthSession | null {
 }
 
 export function useLogin() {
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: async (data, variables) => {
-      // Login success → auto-call GenerateOtp
+      // TODO: OTP generation temporarily disabled due to API errors
+      // Redirecting directly to dashboard for now
+      
+      // Create session from login response
+      const session: AuthSession = {
+        user: data.user,
+        company: data.company,
+        roles: data.roles || [],
+        rights: data.rights || [],
+      };
+      
+      auth.setSession(session);
+      queryClient.setQueryData(["auth", "session"], session);
+      router.push("/erp/dashboard");
+      
+      /* COMMENTED OUT: OTP flow with API errors
       try {
         const otpResponse = await authService.generateOtp({ userName: variables.userName });
         
@@ -35,6 +51,7 @@ export function useLogin() {
         console.error("Failed to generate OTP:", error);
         throw error;
       }
+      */
     },
   });
 }
