@@ -1,7 +1,8 @@
 // ==================== CRM LeadCommon API ====================
-// Mirrors the "LeadCommon" tag of the CRM swagger. Responses are untyped upstream: pass the unwrapped `data` DTO as <T> when integrating.
+// Mirrors the "LeadCommon" tag of the CRM swagger. Responses are untyped upstream: endpoints seen live default <T> to the DTO in ../dto.ts, the rest to `unknown`.
 
 import { crmHttp } from "../client";
+import type { CrmLeadAttachment, CrmLeadDetailsCount, CrmLeadHistoryEntry } from "../dto";
 import type { CrmSchemas as S } from "../types";
 
 export const leadCommonApi = {
@@ -9,7 +10,7 @@ export const leadCommonApi = {
     crmHttp.post<T>("/LeadCommon/DeleteLeadAttachment", id),
   uploadLeadAttachment: <T = unknown>(form: FormData) =>
     crmHttp.upload<T>("/LeadCommon/UploadLeadAttachment", form),
-  leadAttachmentList: <T = unknown>(payload: S["LeadAttachmentSearchParams"]) =>
+  leadAttachmentList: <T = CrmLeadAttachment[]>(payload: S["LeadAttachmentSearchParams"]) =>
     crmHttp.post<T>("/LeadCommon/LeadAttachmentList", payload),
   downloadAttachmentFile: (query: { filename?: string }) =>
     crmHttp.download("/LeadCommon/DownloadAttachmentFile", query),
@@ -49,9 +50,9 @@ export const leadCommonApi = {
     crmHttp.post<T>("/LeadCommon/GetLeadEmail", id),
   listLeadEmail: <T = unknown>() =>
     crmHttp.post<T>("/LeadCommon/ListLeadEmail"),
-  leadDetailsCount: <T = unknown>(id: number) =>
+  leadDetailsCount: <T = CrmLeadDetailsCount>(id: number) =>
     crmHttp.post<T>("/LeadCommon/LeadDetailsCount", id),
-  listLeadHistory: <T = unknown>(payload: S["LeadChangeSearchParams"]) =>
+  listLeadHistory: <T = CrmLeadHistoryEntry[]>(payload: S["LeadChangeSearchParams"]) =>
     crmHttp.post<T>("/LeadCommon/ListLeadHistory", payload),
   updateLeadEnquiry: <T = unknown>(payload: S["UpdateEnquiryViewModel"]) =>
     crmHttp.post<T>("/LeadCommon/UpdateLeadEnquiry", payload),

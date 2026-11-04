@@ -1,5 +1,5 @@
 // ==================== CRM Customer API ====================
-// Mirrors the "Customer" tag of the CRM swagger. Responses are untyped upstream: pass the unwrapped `data` DTO as <T> when integrating.
+// Mirrors the "Customer" tag of the CRM swagger. Responses are untyped upstream: endpoints seen live default <T> to the DTO in ../dto.ts, the rest to `unknown`.
 
 import { crmHttp } from "../client";
 import type { CrmSchemas as S } from "../types";

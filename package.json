@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "crm:types": "openapi-typescript https://baycrmapi.bay53.in/swagger/v1/swagger.json -o lib/bay53crm/api/schema.d.ts"
   },
   "dependencies": {
@@ -93,7 +94,8 @@
     "eslint-config-next": "16.1.6",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "trustedDependencies": [
     "sharp"
