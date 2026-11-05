@@ -1,10 +1,9 @@
 // ==================== CRM API Client ====================
 // HTTP client for the Bay53 CRM API (https://baycrmapi.bay53.in/swagger).
 // Calls go through the same-origin proxy at app/api/crm/[...path]/route.ts because the upstream sends no CORS headers.
-// Auth is a Bearer JWT; on a 401 the client refreshes it once and retries.
+// Auth is a Bearer JWT (valid ~30 days). On a 401 the token is dropped so the caller can send the user to log in.
 
 import { crmTokenStore } from "./token-store";
-import type { CrmAuthenticateResponse } from "./types";
 
 const BASE_URL = "/api/crm";
 
@@ -69,36 +68,11 @@ const send = (endpoint: string, { method, body, query }: RequestOptions) => {
     payload = JSON.stringify(body);
   }
 
-  return fetch(buildUrl(endpoint, query), { method, headers, body: payload, credentials: "include" });
-};
-
-// One refresh at a time: concurrent 401s share the same request.
-let refreshing: Promise<boolean> | null = null;
-
-const refreshToken = (): Promise<boolean> => {
-  refreshing ??= (async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/Accounts/refresh-token`, { method: "POST", credentials: "include" });
-      if (!response.ok) return false;
-      const user = unwrap(await response.json(), response.status) as CrmAuthenticateResponse | undefined;
-      if (!user?.jwtToken) return false;
-      crmTokenStore.set(user.jwtToken);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      refreshing = null;
-    }
-  })();
-  return refreshing;
+  return fetch(buildUrl(endpoint, query), { method, headers, body: payload });
 };
 
 async function request<T>(endpoint: string, options: RequestOptions): Promise<T> {
-  let response = await send(endpoint, options);
-
-  if (response.status === 401 && crmTokenStore.get() && (await refreshToken())) {
-    response = await send(endpoint, options);
-  }
+  const response = await send(endpoint, options);
 
   if (response.status === 401) crmTokenStore.clear();
 

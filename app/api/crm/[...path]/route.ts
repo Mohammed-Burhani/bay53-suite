@@ -1,19 +1,22 @@
-// /api/crm/* -> ${CRM_API_BASE_URL}/api/*
+// /api/crm/* -> ${CRM_API_BASE_URL_STAGE}/* (the base URL already ends in /api)
 // Same-origin proxy to the Bay53 CRM API (lib/bay53crm/api). The upstream sends no CORS headers, so the browser cannot call it directly.
 // Forwards method, query, body, Authorization and cookies (refresh token); passes Set-Cookie back without its Domain.
 
-const UPSTREAM = process.env.CRM_API_BASE_URL || "https://baycrmapi.bay53.in";
+// Stage only for now. Point this at CRM_API_BASE_URL (prod) when the CRM goes live.
+const UPSTREAM = process.env.CRM_API_BASE_URL_STAGE;
 
 const FORWARD_REQUEST_HEADERS = ["authorization", "content-type", "cookie", "accept"];
 const FORWARD_RESPONSE_HEADERS = ["content-type", "content-disposition"];
 
 async function proxy(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
+  if (!UPSTREAM) return new Response("CRM_API_BASE_URL_STAGE is not set", { status: 500 });
+
   const { path } = await params;
   if (path.some((segment) => !segment || segment === "." || segment === "..")) {
     return new Response("Bad path", { status: 400 });
   }
 
-  const target = new URL(`/api/${path.map(encodeURIComponent).join("/")}`, UPSTREAM);
+  const target = new URL(`${UPSTREAM.replace(/\/$/, "")}/${path.map(encodeURIComponent).join("/")}`);
   target.search = new URL(req.url).search;
 
   const headers = new Headers();
