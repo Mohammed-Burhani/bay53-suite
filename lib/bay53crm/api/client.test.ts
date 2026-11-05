@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { crmHttp, CrmApiError } from "./client";
+import { crmHttp } from "./client";
 import { crmTokenStore } from "./token-store";
 
 const json = (body: unknown, status = 200) =>
@@ -53,28 +53,11 @@ describe("crmHttp", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/crm/Email/Download?id=3&fileName=a+b");
   });
 
-  it("refreshes once on 401, stores the new token and retries", async () => {
+  it("clears the token and throws on 401", async () => {
     crmTokenStore.set("old");
-    fetchMock
-      .mockResolvedValueOnce(json({ message: "Unauthorized" }, 401))
-      .mockResolvedValueOnce(json({ hasError: false, data: { jwtToken: "new" } }))
-      .mockResolvedValueOnce(json({ hasError: false, data: "ok" }));
-    expect(await crmHttp.post("/Notification/List", {})).toBe("ok");
-    expect(crmTokenStore.get()).toBe("new");
-    expect(fetchMock.mock.calls[1][0]).toBe("/api/crm/Accounts/refresh-token");
-    expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe("Bearer new");
-  });
-
-  it("clears the token and throws when the refresh fails", async () => {
-    crmTokenStore.set("old");
-    fetchMock.mockResolvedValue(json({ message: "Unauthorized" }, 401));
-    await expect(crmHttp.post("/Notification/List", {})).rejects.toBeInstanceOf(CrmApiError);
-    expect(crmTokenStore.get()).toBeNull();
-  });
-
-  it("does not try to refresh without a token", async () => {
     fetchMock.mockResolvedValue(json({ message: "Unauthorized" }, 401));
     await expect(crmHttp.post("/Notification/List", {})).rejects.toMatchObject({ status: 401 });
+    expect(crmTokenStore.get()).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

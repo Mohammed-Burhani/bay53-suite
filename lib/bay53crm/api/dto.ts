@@ -121,3 +121,172 @@ export interface CrmCampaignListItem extends CrmCampaign {
   expectedRevenue?: number;
   enddate?: string;
 }
+
+// ---- Lookups and reference lists ----
+
+/** Accounts/ListAllUser, Accounts/UserList */
+export interface CrmUserRef {
+  userName: string;
+  fullName: string;
+}
+
+/** Common/FYList */
+export interface CrmFinancialYear {
+  fromDate: string;
+  toDate: string;
+  /** e.g. "FY 26-27" */
+  title: string;
+}
+
+/** Customer/List */
+export interface CrmCustomerRef {
+  id: string;
+  companyName: string;
+  companyState?: string;
+}
+
+/** Contact/CompanyList */
+export interface CrmCompanyRef {
+  id: string;
+  companyName: string;
+}
+
+/** Contact/ContactEmailList */
+export interface CrmContactEmail {
+  email: string;
+}
+
+/** Common/EnquiryList */
+export interface CrmEnquiryRef {
+  id: string;
+  enquiryNo: string;
+  enquiryDate: string;
+}
+
+/** Common/QuatationList */
+export interface CrmQuotationList {
+  totalCount: number;
+  quotations: {
+    id: number;
+    refno: string;
+    totalValue: number;
+    isLatest: boolean;
+    currency: string;
+  }[];
+}
+
+// ---- Company, dashboard ----
+
+/** Company/Get */
+export interface CrmCompany {
+  id: number;
+  name: string;
+  yearlyTargetRevenue: number;
+}
+
+/** Common/DashboardResult */
+export interface CrmDashboardResult {
+  totalLeads: number;
+  openLeads: number;
+  valueOfOffers: number;
+  valueOfTenders: number;
+  taskAssigned: number;
+  taskCompleted: number;
+  pendingLeads: number;
+  ordersWon: number;
+  ordersLost: number;
+  monthlyTargetRevenue: number;
+  yearlyActualRevenue: number;
+}
+
+// ---- Lead sub-resources ----
+
+/** LeadCommon/ListLeadNote */
+export interface CrmLeadNote {
+  id: number;
+  description: string;
+  createdDate: string;
+}
+
+/** LeadCommon/LeadResult. Follow-ups, activities and emails come back empty on stage, so they stay untyped. */
+export interface CrmLeadResultItem {
+  id: number;
+  type: number;
+  leadType: number;
+  description: string;
+  createdDate: string;
+}
+
+// ---- Notifications ----
+
+/** Notification/List, Notification/ActiveList (a notification rule) */
+export interface CrmNotification {
+  id?: number;
+  currentStatus: boolean;
+  listName: string;
+  fullName: string;
+  description?: string;
+  dNotificationSeverity: number;
+  dSubject?: string;
+  dPriorNotifications: number;
+  dExpirationDays: number;
+  sNotificationSeverity: number;
+  sPriorNotifications: number;
+  sExpirationDays: number;
+  sIfNoResults: boolean;
+  repeatsEvery: number;
+  repeatsType: number;
+  /** A .NET TimeSpan serialised as { value: { ticks, days, hours, ... } }. */
+  repeatsAt?: unknown;
+}
+
+/** Notification/List */
+export interface CrmNotificationList {
+  list: CrmNotification[];
+  totalCount?: number;
+}
+
+/** Notification/UserNotificationList. Empty on stage, so rows stay untyped. */
+export interface CrmUserNotificationList {
+  list: unknown[];
+  totalCount: number;
+}
+
+// ---- Reports ----
+
+/** Report/LeadDetailsReportList */
+export interface CrmLeadDetailsReportRow {
+  particulars: string;
+  customer: string;
+  contactDetails?: string;
+  date: string;
+  status: string;
+  stage: string;
+  source: string;
+  vertical: string;
+  value: number;
+  probability: number;
+  assignedTo: string;
+  createdOn: string;
+  updatedOn: string;
+  leadDate: string;
+  quots?: string;
+  companyRegion?: string;
+  customerState?: string;
+  enquiryId?: number;
+  campaignType?: string;
+  consultantName?: string;
+  contractorDetails?: string;
+}
+
+/** Report/SalesStageStatusReportList */
+export interface CrmSalesStageStatusReportRow {
+  status: number;
+  stage: number;
+  user: string;
+  noofLeads: number;
+  value: number;
+  avgTimeSpent: number;
+  companyRegion?: string;
+  customerState?: string;
+}
