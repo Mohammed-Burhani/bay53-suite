@@ -19,7 +19,8 @@ export const contactQueries = {
     queryOptions({
       queryKey: contactKeys.list(params),
       queryFn: () => contactApi.list(params),
-      staleTime: staleTime.list,
+      // The whole contact book comes back on every call (thousands of rows): keep it cached. Mutations invalidate it.
+      staleTime: staleTime.lookup,
     }),
   detail: (id: number) =>
     queryOptions({ queryKey: contactKeys.detail(id), queryFn: () => contactApi.get(id), staleTime: staleTime.list }),

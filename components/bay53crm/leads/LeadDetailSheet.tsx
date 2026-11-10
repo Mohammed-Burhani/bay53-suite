@@ -19,6 +19,7 @@ import type { CrmLead } from "@/lib/bay53crm/api";
 import { StageBadge } from "@/components/bay53crm/shared/StageBadge";
 import { FollowUpLog } from "@/components/bay53crm/shared/FollowUpLog";
 import { formatCurrency } from "@/lib/bay53crm/constants";
+import { tolerateNotification } from "@/lib/bay53crm/save";
 import { FOLLOW_UP_TYPE, LEAD_STAGES, stageLabel } from "@/lib/bay53crm/leads";
 import type { CRMFollowUp } from "@/lib/bay53crm/types";
 
@@ -105,26 +106,30 @@ export function LeadDetailSheet({ leadId, open, onOpenChange }: LeadDetailSheetP
               onCancel={() => setIsEditing(false)}
               onSave={async (changes) => {
                 try {
-                  await updateFields.mutateAsync({
-                    id: lead.id,
-                    stage: changes.stageId,
-                    status: lead.status,
-                    campaignId: lead.campaign?.id,
-                    title: lead.title,
-                    owner: lead.owner,
-                    vertical: lead.vertical,
-                    valueCurrency: lead.valueCurrency,
-                    companyRegion: changes.companyRegion,
-                    assignTo: changes.assignTo,
-                    customerState: changes.customerState,
-                  });
-                  if (changes.title !== lead.title) {
-                    await updateTitle.mutateAsync({
+                  await tolerateNotification(
+                    updateFields.mutateAsync({
                       id: lead.id,
-                      title: changes.title,
                       stage: changes.stageId,
                       status: lead.status,
-                    });
+                      campaignId: lead.campaign?.id,
+                      title: lead.title,
+                      owner: lead.owner,
+                      vertical: lead.vertical,
+                      valueCurrency: lead.valueCurrency,
+                      companyRegion: changes.companyRegion,
+                      assignTo: changes.assignTo,
+                      customerState: changes.customerState,
+                    })
+                  );
+                  if (changes.title !== lead.title) {
+                    await tolerateNotification(
+                      updateTitle.mutateAsync({
+                        id: lead.id,
+                        title: changes.title,
+                        stage: changes.stageId,
+                        status: lead.status,
+                      })
+                    );
                   }
                   toast.success("Lead updated");
                   setIsEditing(false);

@@ -21,6 +21,7 @@ import { StageBadge } from "@/components/bay53crm/shared/StageBadge";
 import { ContactPicker } from "./ContactPicker";
 import { LeadDetailSheet } from "./LeadDetailSheet";
 import { formatCurrency, formatDate } from "@/lib/bay53crm/constants";
+import { tolerateNotification } from "@/lib/bay53crm/save";
 import {
   DEFAULT_NEW_LEAD_STAGE_ID,
   LEAD_STAGES,
@@ -98,17 +99,19 @@ export function LeadsView() {
   const handleCreateLead = async () => {
     if (!newContact || !canCreate) return;
     try {
-      await addLead.mutateAsync(
-        toLeadCreateModel({
-          title: newTitle.trim(),
-          contact: newContact,
-          assignTo: newAssignedTo,
-          stageId: Number(newStageId),
-          value: Number(newValue) || 0,
-          date: newDate,
-          customerState: newCustomerState.trim(),
-          companyRegion: newRegion.trim(),
-        })
+      await tolerateNotification(
+        addLead.mutateAsync(
+          toLeadCreateModel({
+            title: newTitle.trim(),
+            contact: newContact,
+            assignTo: newAssignedTo,
+            stageId: Number(newStageId),
+            value: Number(newValue) || 0,
+            date: newDate,
+            customerState: newCustomerState.trim(),
+            companyRegion: newRegion.trim(),
+          })
+        )
       );
       toast.success("Lead created");
       setCreateOpen(false);

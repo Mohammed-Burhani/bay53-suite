@@ -6,7 +6,8 @@ import type { CrmMasterValue } from "../dto";
 import type { CrmSchemas as S } from "../types";
 
 export const masterValueApi = {
-  list: <T = unknown>(payload: S["MasterValueSearchParams"]) =>
+  // On stage, ActiveList answers an empty list for every type while List returns the rows (with isPublished).
+  list: <T = CrmMasterValue[]>(payload: S["MasterValueSearchParams"]) =>
     crmHttp.post<T>("/MasterValue/List", payload),
   get: <T = unknown>(id: number) =>
     crmHttp.post<T>("/MasterValue/Get", id),

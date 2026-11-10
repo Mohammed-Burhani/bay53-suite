@@ -11,17 +11,17 @@ import type { CRMLeadsFilters } from "./types";
 // so their names are unknown and they are not offered.
 
 export const LEAD_STAGES = [
-  { id: 1, label: "New", bg: "bg-slate-100", text: "text-slate-700" },
-  { id: 2, label: "Verified", bg: "bg-sky-100", text: "text-sky-700" },
-  { id: 3, label: "Planning To Meet", bg: "bg-indigo-100", text: "text-indigo-700" },
-  { id: 4, label: "Cold Lead", bg: "bg-blue-100", text: "text-blue-700" },
-  { id: 5, label: "Warm Lead", bg: "bg-orange-100", text: "text-orange-700" },
-  { id: 6, label: "Hot Lead", bg: "bg-amber-100", text: "text-amber-700" },
-  { id: 7, label: "Demo Requested", bg: "bg-cyan-100", text: "text-cyan-700" },
-  { id: 8, label: "Quotation Sent", bg: "bg-teal-100", text: "text-teal-700" },
-  { id: 9, label: "In Progress", bg: "bg-lime-100", text: "text-lime-700" },
-  { id: 10, label: "Negotiation", bg: "bg-fuchsia-100", text: "text-fuchsia-700" },
-  { id: 13, label: "Tender", bg: "bg-purple-100", text: "text-purple-700" },
+  { id: 1, label: "New", bg: "bg-slate-100", text: "text-slate-700", chart: "#64748b" },
+  { id: 2, label: "Verified", bg: "bg-sky-100", text: "text-sky-700", chart: "#0ea5e9" },
+  { id: 3, label: "Planning To Meet", bg: "bg-indigo-100", text: "text-indigo-700", chart: "#6366f1" },
+  { id: 4, label: "Cold Lead", bg: "bg-blue-100", text: "text-blue-700", chart: "#3b82f6" },
+  { id: 5, label: "Warm Lead", bg: "bg-orange-100", text: "text-orange-700", chart: "#f97316" },
+  { id: 6, label: "Hot Lead", bg: "bg-amber-100", text: "text-amber-700", chart: "#f59e0b" },
+  { id: 7, label: "Demo Requested", bg: "bg-cyan-100", text: "text-cyan-700", chart: "#06b6d4" },
+  { id: 8, label: "Quotation Sent", bg: "bg-teal-100", text: "text-teal-700", chart: "#14b8a6" },
+  { id: 9, label: "In Progress", bg: "bg-lime-100", text: "text-lime-700", chart: "#84cc16" },
+  { id: 10, label: "Negotiation", bg: "bg-fuchsia-100", text: "text-fuchsia-700", chart: "#d946ef" },
+  { id: 13, label: "Tender", bg: "bg-purple-100", text: "text-purple-700", chart: "#a855f7" },
 ] as const;
 
 export const DEFAULT_NEW_LEAD_STAGE_ID = 4; // Cold Lead
@@ -35,7 +35,10 @@ export const stageLabel = (stageId: number): string =>
 /** Lead/List stage label as shown in the UI. */
 export const listStageLabel = (stage: string): string => (stage === "0" ? NO_STAGE_LABEL : stage);
 
-export const stageColors = (label: string): { bg: string; text: string } | undefined =>
+/** Chart colour for a stage label as shown in lists; grey for "No stage" and unknown labels. */
+export const stageChartColor = (label: string): string => stageColors(label)?.chart ?? "#9ca3af";
+
+export const stageColors = (label: string): { bg: string; text: string; chart: string } | undefined =>
   LEAD_STAGES.find((s) => s.label === label);
 
 // ---- Filters ----

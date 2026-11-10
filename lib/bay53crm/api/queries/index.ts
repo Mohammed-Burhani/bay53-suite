@@ -1,5 +1,5 @@
 // TanStack Query layer for the CRM API: key factories, queryOptions and hooks per module.
-// Not yet used by any screen; the CRM UI still runs on lib/bay53crm/crm.service.ts (mock data).
+// Used by the leads, projects, dashboard and company screens; the rest of the CRM UI still runs on lib/bay53crm/crm.service.ts (mock data).
 // Email, EmailSetting, CustomMessage and Customer have services but no query module yet.
 export { crmKeys, staleTime } from "./keys";
 export { useCrmMutation } from "./mutation";

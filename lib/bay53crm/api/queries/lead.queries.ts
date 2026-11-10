@@ -19,7 +19,8 @@ export const leadQueries = {
     queryOptions({ queryKey: leadKeys.detail(id), queryFn: () => leadApi.get(id), staleTime: staleTime.list }),
 };
 
-export const useLeads = (params: S["LeadSearchParams"]) => useQuery(leadQueries.list(params));
+export const useLeads = (params: S["LeadSearchParams"], { enabled = true }: { enabled?: boolean } = {}) =>
+  useQuery({ ...leadQueries.list(params), enabled });
 
 export const useLead = (id: number | undefined) =>
   useQuery({ ...leadQueries.detail(id as number), enabled: id !== undefined });

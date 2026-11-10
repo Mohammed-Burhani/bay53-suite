@@ -18,6 +18,13 @@ export class CrmApiError extends Error {
   }
 }
 
+/**
+ * Lead saves (Add, UpdateLead, UpdateLeadTitle) store the record, then email the assignee. A bad address makes the call
+ * answer `hasError` ("Invalid domain token at offset 11") although the record is saved.
+ */
+export const isNotificationFailure = (error: unknown): error is CrmApiError =>
+  error instanceof CrmApiError && /invalid domain token|mailbox|smtp/i.test(error.message);
+
 /** Every endpoint answers 200 with `{ hasError, message?, data? }`; failures are in the body, not the status. */
 interface Envelope {
   hasError: boolean;

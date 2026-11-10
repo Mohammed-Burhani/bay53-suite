@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
@@ -10,6 +10,8 @@ import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 
 const MIN_SEARCH_LENGTH = 2;
 const MAX_RESULTS = 8;
+const ALL_CONTACTS = {};
+const NO_CONTACTS: CrmContact[] = [];
 
 interface ContactPickerProps {
   value: CrmContact | null;
@@ -19,9 +21,24 @@ interface ContactPickerProps {
 /** Search CRM contacts by company name and pick one. */
 export function ContactPicker({ value, onChange }: ContactPickerProps) {
   const [search, setSearch] = useState("");
-  const companyName = useDebouncedValue(search.trim());
-  const enabled = companyName.length >= MIN_SEARCH_LENGTH;
-  const { data: contacts = [], isFetching } = useContacts({ companyName }, { enabled });
+  const term = useDebouncedValue(search.trim().toLowerCase());
+  const enabled = term.length >= MIN_SEARCH_LENGTH;
+  // Contact/List ignores companyName and always returns every contact, so the list is fetched once and matched here.
+  const { data: allContacts = NO_CONTACTS, isFetching } = useContacts(ALL_CONTACTS, { enabled });
+  const contacts = useMemo(
+    () =>
+      enabled
+        ? allContacts
+            // Some contacts have no company name (null from the API); they cannot be a lead's customer.
+            .filter(
+              (c) =>
+                !!c.companyName &&
+                (c.companyName.toLowerCase().includes(term) || (c.firstName ?? "").toLowerCase().includes(term))
+            )
+            .slice(0, MAX_RESULTS)
+        : NO_CONTACTS,
+    [allContacts, term, enabled]
+  );
 
   if (value) {
     return (
@@ -46,7 +63,7 @@ export function ContactPicker({ value, onChange }: ContactPickerProps) {
       />
       {enabled && (
         <div className="max-h-48 overflow-y-auto rounded-md border">
-          {contacts.slice(0, MAX_RESULTS).map((contact) => (
+          {contacts.map((contact) => (
             <button
               key={contact.id}
               type="button"

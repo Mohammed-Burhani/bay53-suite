@@ -1,110 +1,84 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Trash2, Search, List } from "lucide-react";
-import { useCRMProjects, useCreateCRMProject, useDeleteCRMProject, useCRMMasterValues } from "@/lib/hooks/useCRM";
+import { Plus, Eye, Trash2, Search } from "lucide-react";
+import { useAddCampaign, useAllCrmUsers, useCampaigns, useDeleteCampaign, useMasterValues } from "@/lib/bay53crm/api/queries";
+import type { CrmCampaignListItem, CrmMasterValue } from "@/lib/bay53crm/api";
 import { useCRMFiltersStore } from "@/lib/stores/crm-filters-store";
-import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { formatDate } from "@/lib/bay53crm/constants";
-import type { CRMProject, BrandApprovalStatus, MakeListAvailability } from "@/lib/bay53crm/types";
+import {
+  APPROVAL_MASTER_VALUE_TYPE,
+  filterProjects,
+  makeListLabel,
+  PROJECT_STATUSES,
+  projectStatusColors,
+  projectStatusLabel,
+  toCampaignModel,
+  toProjectSearchParams,
+} from "@/lib/bay53crm/projects";
+import { tolerateNotification } from "@/lib/bay53crm/save";
+import { emptyProject, ProjectForm } from "./ProjectForm";
+import { ProjectDetailSheet } from "./ProjectDetailSheet";
 
-const STATUS_OPTIONS = ["Awarded", "Not Awarded"];
-const BRAND_DISCIPLINES = ["HVAC", "Plumbing", "Fire Fighting", "Electrical", "BMS", "ELV", "Structural", "Civil"];
+const ALL = "all";
+
+// Stable defaults, so memoised values below do not change on every render while loading.
+const NO_PROJECTS: CrmCampaignListItem[] = [];
+const NO_APPROVALS: CrmMasterValue[] = [];
 
 export function ProjectsView() {
-  const { data: projects = [], isLoading } = useCRMProjects();
-  const { data: regions = [] } = useCRMMasterValues("region");
-  const { data: assignedTos = [] } = useCRMMasterValues("assigned_to");
-  const createMutation = useCreateCRMProject();
-  const deleteMutation = useDeleteCRMProject();
-
   const { projectsFilters, setProjectsFilters, resetProjectsFilters } = useCRMFiltersStore();
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { data: projects = NO_PROJECTS, isLoading, isError, error } = useCampaigns(toProjectSearchParams(projectsFilters));
+  const { data: users = [] } = useAllCrmUsers();
+  const { data: masterValues = NO_APPROVALS } = useMasterValues({ type: APPROVAL_MASTER_VALUE_TYPE });
+  const addProject = useAddCampaign();
+  const deleteProject = useDeleteCampaign();
+
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  // Create form state
-  const [newName, setNewName] = useState("");
-  const [newRegionId, setNewRegionId] = useState("");
-  const [newConsultantName, setNewConsultantName] = useState("");
-  const [newAssignedTo, setNewAssignedTo] = useState("");
-  const [newStatus, setNewStatus] = useState<string>("Not Awarded");
-  const [newMakeListAvailability, setNewMakeListAvailability] = useState<string>("Available");
-  const [newContractorName, setNewContractorName] = useState("");
-  const [newContractorScope, setNewContractorScope] = useState("");
-  const [contractors, setContractors] = useState<{ name: string; scope: string }[]>([]);
-  const [brandApprovals, setBrandApprovals] = useState<{ discipline: string; status: BrandApprovalStatus }[]>([]);
+  const approvals = useMemo(() => masterValues.filter((m) => m.isPublished), [masterValues]);
+  const filteredProjects = useMemo(() => filterProjects(projects, projectsFilters), [projects, projectsFilters]);
+  const pagedProjects = useMemo(
+    () => filteredProjects.slice((page - 1) * pageSize, page * pageSize),
+    [filteredProjects, page, pageSize]
+  );
 
-  const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
-      if (projectsFilters.search && !p.name.toLowerCase().includes(projectsFilters.search.toLowerCase()) && !p.consultantName.toLowerCase().includes(projectsFilters.search.toLowerCase())) return false;
-      if (projectsFilters.assignedTo && p.assignedTo !== projectsFilters.assignedTo) return false;
-      if (projectsFilters.status && p.status !== projectsFilters.status) return false;
-      if (projectsFilters.regionId && p.regionId !== projectsFilters.regionId) return false;
-      if (!projectsFilters.archived && p.archived) return false;
-      return true;
-    });
-  }, [projects, projectsFilters]);
+  // Back to the first page whenever the result set changes.
+  const [shownProjects, setShownProjects] = useState(filteredProjects);
+  if (shownProjects !== filteredProjects) {
+    setShownProjects(filteredProjects);
+    setPage(1);
+  }
 
-  const handleCreate = () => {
-    if (!newName.trim() || !newRegionId) return;
-    createMutation.mutate({
-      regionId: newRegionId,
-      name: newName.trim(),
-      consultantName: newConsultantName.trim(),
-      contractorDetails: contractors,
-      brandApproval: brandApprovals.map((b) => ({ status: b.status, discipline: b.discipline })),
-      status: newStatus as any,
-      makeListAvailability: newMakeListAvailability as MakeListAvailability,
-      assignedTo: newAssignedTo,
-      notes: [],
-      archived: false,
-    });
-    setCreateOpen(false);
-    resetForm();
-  };
+  const userName = (userId?: string) => users.find((u) => u.userName === userId)?.fullName ?? userId ?? "";
 
-  const resetForm = () => {
-    setNewName("");
-    setNewRegionId("");
-    setNewConsultantName("");
-    setNewAssignedTo("");
-    setNewStatus("Not Awarded");
-    setNewMakeListAvailability("Available");
-    setContractors([]);
-    setBrandApprovals([]);
-  };
-
-  const addContractor = () => {
-    if (!newContractorName.trim()) return;
-    setContractors([...contractors, { name: newContractorName.trim(), scope: newContractorScope.trim() }]);
-    setNewContractorName("");
-    setNewContractorScope("");
-  };
-
-  const toggleBrand = (discipline: string) => {
-    if (brandApprovals.find((b) => b.discipline === discipline)) {
-      setBrandApprovals(brandApprovals.filter((b) => b.discipline !== discipline));
-    } else {
-      setBrandApprovals([...brandApprovals, { discipline, status: "Pending" as const }]);
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this project?")) return;
+    try {
+      await deleteProject.mutateAsync(id);
+      toast.success("Project deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete the project");
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this project?")) deleteMutation.mutate(id);
-  };
-
-  const handleView = (id: string) => {
+  const handleView = (id: number) => {
     setSelectedProjectId(id);
     setDetailOpen(true);
   };
@@ -129,42 +103,38 @@ export function ProjectsView() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search projects..."
+                aria-label="Search projects"
+                placeholder="Search by project or consultant"
                 className="pl-8 h-8"
                 value={projectsFilters.search}
                 onChange={(e) => setProjectsFilters({ search: e.target.value })}
               />
             </div>
-            <Select value={projectsFilters.assignedTo} onValueChange={(v) => setProjectsFilters({ assignedTo: v })}>
-              <SelectTrigger className="h-8 w-[150px]">
-                <SelectValue placeholder="Assign To" />
+            <Select
+              value={projectsFilters.assignedTo || ALL}
+              onValueChange={(v) => setProjectsFilters({ assignedTo: v === ALL ? "" : v })}
+            >
+              <SelectTrigger aria-label="Assigned to" className="h-8 w-[160px]">
+                <SelectValue placeholder="Assigned to" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {assignedTos.map((a) => (
-                  <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                <SelectItem value={ALL}>All users</SelectItem>
+                {users.map((u) => (
+                  <SelectItem key={u.userName} value={u.userName}>{u.fullName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={projectsFilters.status} onValueChange={(v) => setProjectsFilters({ status: v })}>
-              <SelectTrigger className="h-8 w-[130px]">
+            <Select
+              value={projectsFilters.status || ALL}
+              onValueChange={(v) => setProjectsFilters({ status: v === ALL ? "" : v })}
+            >
+              <SelectTrigger aria-label="Status" className="h-8 w-[160px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={projectsFilters.regionId} onValueChange={(v) => setProjectsFilters({ regionId: v })}>
-              <SelectTrigger className="h-8 w-[130px]">
-                <SelectValue placeholder="Region" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {regions.map((r) => (
-                  <SelectItem key={r.id} value={r.code || r.name}>{r.name}</SelectItem>
+                <SelectItem value={ALL}>All statuses</SelectItem>
+                {PROJECT_STATUSES.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -172,9 +142,9 @@ export function ProjectsView() {
               <Checkbox
                 id="archived"
                 checked={projectsFilters.archived}
-                onCheckedChange={(v) => setProjectsFilters({ archived: v as boolean })}
+                onCheckedChange={(v) => setProjectsFilters({ archived: v === true })}
               />
-              <Label htmlFor="archived">Archive</Label>
+              <Label htmlFor="archived">Archived</Label>
             </div>
             <Button variant="ghost" size="sm" className="h-8" onClick={resetProjectsFilters}>Clear</Button>
           </div>
@@ -187,77 +157,80 @@ export function ProjectsView() {
           <Table>
             <TableHeader>
               <TableRow className="sticky top-0 bg-background z-10">
-                <TableHead>Region</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Consultant</TableHead>
-                <TableHead>Contractors</TableHead>
                 <TableHead>Brand Approval</TableHead>
+                <TableHead>Contractors</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Make List</TableHead>
                 <TableHead>Assigned To</TableHead>
+                <TableHead>Start</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProjects.map((project) => (
+              {pagedProjects.map((project) => (
                 <TableRow key={project.id}>
-                  <TableCell className="text-xs">{project.regionId}</TableCell>
-                  <TableCell className="font-medium text-xs max-w-[200px] truncate">{project.name}</TableCell>
-                  <TableCell className="text-xs">{project.consultantName}</TableCell>
+                  <TableCell className="font-medium text-xs max-w-[240px] truncate" title={project.name}>{project.name}</TableCell>
+                  <TableCell className="text-xs max-w-[180px] truncate" title={project.description}>{project.description}</TableCell>
                   <TableCell className="text-xs">
-                    {project.contractorDetails.map((c, i) => (
-                      <div key={i} className="truncate max-w-[150px]" title={`${c.name} - ${c.scope}`}>
-                        {c.name}
-                      </div>
-                    ))}
+                    <Badge variant="outline" className="text-[10px]">{project.campaignType.text}</Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {project.brandApproval.map((ba, i) => (
-                        <Badge key={i} variant="outline" className={`text-[10px] ${ba.status === "Approved" ? "border-green-500 text-green-600" : ba.status === "Rejected" ? "border-red-500 text-red-600" : "border-amber-500 text-amber-600"}`}>
-                          {ba.discipline}: {ba.status}
-                        </Badge>
-                      ))}
-                    </div>
+                  <TableCell className="text-xs max-w-[160px] truncate" title={project.contractorDetails}>
+                    {project.contractorDetails}
                   </TableCell>
                   <TableCell className="text-xs">
-                    <Badge variant="outline" className={project.status === "Awarded" ? "border-green-500 text-green-600" : "border-gray-400 text-gray-500"}>
-                      {project.status}
+                    <Badge variant="outline" className={projectStatusColors(project.currentStatus)}>
+                      {projectStatusLabel(project.currentStatus)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs">{project.makeListAvailability}</TableCell>
-                  <TableCell className="text-xs">{project.assignedTo}</TableCell>
+                  <TableCell className="text-xs">{makeListLabel(project.availabilityStatus)}</TableCell>
+                  <TableCell className="text-xs">{userName(project.assignedTo)}</TableCell>
+                  <TableCell className="text-xs">{project.startdate ? formatDate(project.startdate) : ""}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(project.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="View project" onClick={() => handleView(project.id)}>
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(project.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        aria-label="Delete project"
+                        onClick={() => handleDelete(project.id)}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredProjects.length === 0 && (
+              {(isLoading || isError || filteredProjects.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No projects found
+                    {isLoading
+                      ? "Loading projects..."
+                      : isError
+                        ? `Could not load projects: ${error instanceof Error ? error.message : "unknown error"}`
+                        : "No projects found matching the criteria"}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
+        <TablePagination
+          totalItems={filteredProjects.length}
+          pageSize={pageSize}
+          currentPage={page}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
 
       {/* Detail Sheet */}
-      {selectedProjectId && (
-        <ProjectDetailSheet
-          projectId={selectedProjectId}
-          open={detailOpen}
-          onOpenChange={setDetailOpen}
-        />
+      {selectedProjectId !== null && (
+        <ProjectDetailSheet projectId={selectedProjectId} open={detailOpen} onOpenChange={setDetailOpen} />
       )}
 
       {/* Create Dialog */}
@@ -265,112 +238,32 @@ export function ProjectsView() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Project</DialogTitle>
+            <DialogDescription>Track the consultant, the brand approval and who is bidding on the project.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            <div className="space-y-2">
-              <Label>Project Name *</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Project name" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Region *</Label>
-                <Select value={newRegionId} onValueChange={setNewRegionId}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {regions.map((r) => (
-                      <SelectItem key={r.id} value={r.code || r.name}>{r.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Consultant</Label>
-                <Input value={newConsultantName} onChange={(e) => setNewConsultantName(e.target.value)} placeholder="Consultant name" />
-              </div>
-              <div className="space-y-2">
-                <Label>Assigned To</Label>
-                <Select value={newAssignedTo} onValueChange={setNewAssignedTo}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {assignedTos.map((a) => (
-                      <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Make List Availability</Label>
-              <Select value={newMakeListAvailability} onValueChange={setNewMakeListAvailability}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Available">Available</SelectItem>
-                  <SelectItem value="Not Available">Not Available</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Contractor Details */}
-            <div className="space-y-2">
-              <Label>Contractor Details</Label>
-              <div className="flex gap-2">
-                <Input value={newContractorName} onChange={(e) => setNewContractorName(e.target.value)} placeholder="Contractor name" className="flex-1" />
-                <Input value={newContractorScope} onChange={(e) => setNewContractorScope(e.target.value)} placeholder="Scope" className="flex-1" />
-                <Button type="button" variant="outline" size="sm" onClick={addContractor}>Add</Button>
-              </div>
-              {contractors.map((c, i) => (
-                <div key={i} className="flex items-center justify-between rounded border px-3 py-1.5 text-xs">
-                  <span><strong>{c.name}</strong> — {c.scope}</span>
-                  <Button variant="ghost" size="sm" className="h-6 text-destructive" onClick={() => setContractors(contractors.filter((_, j) => j !== i))}>×</Button>
-                </div>
-              ))}
-            </div>
-
-            {/* Brand Approvals */}
-            <div className="space-y-2">
-              <Label>Brand Approvals</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {BRAND_DISCIPLINES.map((d) => {
-                  const selected = brandApprovals.find((b) => b.discipline === d);
-                  return (
-                    <div key={d} className="flex items-center gap-2 text-sm">
-                      <Checkbox checked={!!selected} onCheckedChange={() => toggleBrand(d)} />
-                      <span>{d}</span>
-                      {selected && (
-                        <Select value={selected.status} onValueChange={(v) => setBrandApprovals(brandApprovals.map((b) => b.discipline === d ? { ...b, status: v as BrandApprovalStatus } : b))}>
-                          <SelectTrigger className="h-6 text-xs w-24"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Pending">Pending</SelectItem>
-                            <SelectItem value="Approved">Approved</SelectItem>
-                            <SelectItem value="Rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="max-h-[65vh] overflow-y-auto pr-2">
+            {/* Mounted only while open, so the form starts empty each time. */}
+            {createOpen && (
+              <ProjectForm
+                // Remount once the approval list arrives, so the default approval is picked.
+                key={approvals.length}
+                initial={emptyProject(approvals)}
+                approvals={approvals}
+                users={users}
+                isSaving={addProject.isPending}
+                submitLabel="Create Project"
+                onCancel={() => setCreateOpen(false)}
+                onSubmit={async (input) => {
+                  try {
+                    await tolerateNotification(addProject.mutateAsync(toCampaignModel(input)));
+                    toast.success("Project created");
+                    setCreateOpen(false);
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Could not create the project");
+                  }
+                }}
+              />
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!newName.trim() || !newRegionId || createMutation.isPending}>
-              {createMutation.isPending ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

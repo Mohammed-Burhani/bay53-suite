@@ -119,11 +119,12 @@ export interface CRMLeadsFilters {
 }
 
 export interface CRMProjectsFilters {
+  /** CRM user name. */
   assignedTo: string;
-  name: string;
+  /** Project status id as a string (see lib/bay53crm/projects.ts); empty for all. */
   status: string;
-  regionId: string;
   archived: boolean;
+  /** Matches project name and consultant. */
   search: string;
 }
 

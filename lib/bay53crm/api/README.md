@@ -32,4 +32,18 @@ Browser calls go to `/api/crm/*`, a same-origin proxy (`app/api/crm/[...path]/ro
 ## Integrated screens
 
 - Leads (`components/bay53crm/leads`): Lead/List, Lead/Get, Lead/Add, Lead/UpdateLead, Lead/UpdateLeadTitle, Lead/Delete, LeadCommon/ListLeadFollowUp, LeadCommon/AddLeadFollowUp, Accounts/ListAllUser, Contact/List. Stage names and the filter/request helpers are in `lib/bay53crm/leads.ts`.
-- Temporary CRM login: `components/bay53crm/shared/CrmLoginGate.tsx` wraps the leads page. Delete it (and its use in `app/crm/leads/page.tsx`) once the CRM API accepts the main app login.
+- Projects (`components/bay53crm/projects`): Campaign/List, Campaign/Get, Campaign/Add, Campaign/Update, Campaign/Delete, MasterValue/List (type 4, the brand approval segments). The API calls a project a campaign; the consultant is stored in `description`. Status ids, make list and request builders are in `lib/bay53crm/projects.ts`.
+- Dashboard (`components/bay53crm/dashboard/DashboardView.tsx`): Common/FYList, Common/DashboardResult, Lead/List, Notification/UserNotificationList, Notification/MarkReadNotification. Chart data is built in `lib/bay53crm/dashboard.ts`.
+- Company (`components/bay53crm/company`): Company/Get, Company/Update (a single company, id 1).
+- Temporary CRM login: `components/bay53crm/shared/CrmLoginGate.tsx` wraps every CRM screen from `app/crm/layout.tsx`. Delete it (and its use there) once the CRM API accepts the main app login.
+
+Still on mock data (`lib/bay53crm/crm.service.ts`): CMS master values and notifications, Reports, the user reports screen (`UserReportsView`).
+
+## Stage API quirks (seen live)
+
+- Lead/Add, Lead/UpdateLead and Lead/UpdateLeadTitle save the record, then answer `hasError` ("Invalid domain token at offset 11") when the notification email fails. `tolerateNotification` (`lib/bay53crm/save.ts`) turns that into a warning toast; use it around every lead save.
+- Contact/List ignores `companyName` and returns every contact (about 5.5k rows), some with no `companyName`. The contact picker filters in the browser.
+- MasterValue/ActiveList answers an empty list for every type; use MasterValue/List.
+- Common/PieChartResult answers "The method or operation is not implemented"; the dashboard builds its charts from Lead/List.
+- Common/DashboardResult `yearlyActualRevenue` equals 12 x `monthlyTargetRevenue` (the yearly target), not won revenue. Won and lost values are not in the response.
+- Lead/List has no source or status, so there is no leads-by-source chart.

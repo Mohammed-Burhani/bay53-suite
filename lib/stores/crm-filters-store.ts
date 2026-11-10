@@ -35,9 +35,7 @@ const defaultLeadsFilters: CRMLeadsFilters = (() => {
 
 const defaultProjectsFilters: CRMProjectsFilters = {
   assignedTo: "",
-  name: "",
   status: "",
-  regionId: "",
   archived: false,
   search: "",
 };

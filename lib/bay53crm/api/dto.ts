@@ -121,12 +121,16 @@ export interface CrmCampaign {
   name: string;
   description?: string;
   campaignType: CrmMasterValue;
-  startdate: string;
+  startdate?: string;
+  enddate?: string;
   assignedTo?: string;
+  /** Status id; see PROJECT_STATUSES in lib/bay53crm/projects.ts. */
   currentStatus: number;
   contractorDetails?: string;
   note?: string;
-  availabilityStatus: number;
+  /** Set on only a few projects. */
+  availabilityStatus?: number;
+  /** Never set on the stage data. */
   companyRegion?: string;
 }
 
@@ -135,7 +139,6 @@ export interface CrmCampaignListItem extends CrmCampaign {
   lastActivityDate?: string;
   lastActivityDescription?: string;
   expectedRevenue?: number;
-  enddate?: string;
 }
 
 // ---- Lookups and reference lists ----
@@ -262,9 +265,21 @@ export interface CrmNotificationList {
   totalCount?: number;
 }
 
-/** Notification/UserNotificationList. Empty on stage, so rows stay untyped. */
+/** Notification/UserNotificationList: one message delivered to the logged-in user. */
+export interface CrmUserNotification {
+  id: number;
+  /** The rule that produced it (see CrmNotification). */
+  notificationId: number;
+  /** The message text; may span several lines (first line is a headline). */
+  result: string;
+  date: string;
+  isRead: boolean;
+  severity: number;
+  username: string;
+}
+
 export interface CrmUserNotificationList {
-  list: unknown[];
+  list: CrmUserNotification[];
   totalCount: number;
 }
 
