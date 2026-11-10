@@ -2,7 +2,7 @@
 // Mirrors the "LeadCommon" tag of the CRM swagger. Responses are untyped upstream: endpoints seen live default <T> to the DTO in ../dto.ts, the rest to `unknown`.
 
 import { crmHttp } from "../client";
-import type { CrmLeadAttachment, CrmLeadDetailsCount, CrmLeadHistoryEntry, CrmLeadNote, CrmLeadResultItem } from "../dto";
+import type { CrmLeadAttachment, CrmLeadDetailsCount, CrmLeadFollowUp, CrmLeadHistoryEntry, CrmLeadNote, CrmLeadResultItem } from "../dto";
 import type { CrmSchemas as S } from "../types";
 
 export const leadCommonApi = {
@@ -14,9 +14,9 @@ export const leadCommonApi = {
     crmHttp.post<T>("/LeadCommon/LeadAttachmentList", payload),
   downloadAttachmentFile: (query: { filename?: string }) =>
     crmHttp.download("/LeadCommon/DownloadAttachmentFile", query),
-  listLeadFollowUp: <T = unknown>(payload: S["LeadFollowUpSearchParams"]) =>
+  listLeadFollowUp: <T = CrmLeadFollowUp[]>(payload: S["LeadFollowUpSearchParams"]) =>
     crmHttp.post<T>("/LeadCommon/ListLeadFollowUp", payload),
-  getLeadFollowUp: <T = unknown>(id: number) =>
+  getLeadFollowUp: <T = CrmLeadFollowUp>(id: number) =>
     crmHttp.post<T>("/LeadCommon/GetLeadFollowUp", id),
   addLeadFollowUp: <T = unknown>(payload: S["LeadFollowUpCreateViewModel"]) =>
     crmHttp.post<T>("/LeadCommon/AddLeadFollowUp", payload),

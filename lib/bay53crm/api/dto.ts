@@ -54,6 +54,8 @@ export interface CrmLead {
   assignTo?: string;
   receivedBy?: string;
   leadDate: string;
+  /** The campaign (project) the lead belongs to, when it has one. */
+  campaign?: { id: number; name: string; description?: string; campaignTypeId: number; assignedTo?: string; currentStatus: number };
   contact: CrmContact;
   customer: string;
   customerState?: string;
@@ -63,6 +65,20 @@ export interface CrmLead {
   owner?: string;
   vertical: number;
   companyRegion?: string;
+  valueCurrency?: string;
+}
+
+/** LeadCommon/ListLeadFollowUp, AddLeadFollowUp. `type` is a numeric enum with no lookup endpoint. */
+export interface CrmLeadFollowUp {
+  id: number;
+  type: number;
+  title?: string;
+  description?: string;
+  assignTo?: string;
+  dueDate: string;
+  date: string;
+  isCompleted: boolean;
+  createdDate?: string;
 }
 
 /** LeadCommon/LeadDetailsCount */

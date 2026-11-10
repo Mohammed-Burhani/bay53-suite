@@ -29,7 +29,8 @@ export const contactQueries = {
     queryOptions({ queryKey: contactKeys.emails, queryFn: () => contactApi.contactEmailList(), staleTime: staleTime.lookup }),
 };
 
-export const useContacts = (params: S["ContactSearchParams"]) => useQuery(contactQueries.list(params));
+export const useContacts = (params: S["ContactSearchParams"], { enabled = true }: { enabled?: boolean } = {}) =>
+  useQuery({ ...contactQueries.list(params), enabled });
 export const useContact = (id: number | undefined) =>
   useQuery({ ...contactQueries.detail(id as number), enabled: id !== undefined });
 export const useContactCompanies = () => useQuery(contactQueries.companies());

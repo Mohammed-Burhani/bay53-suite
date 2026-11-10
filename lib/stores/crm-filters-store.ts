@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CRMLeadsFilters, CRMProjectsFilters, LeadStage } from "../bay53crm/types";
+import type { CRMLeadsFilters, CRMProjectsFilters } from "../bay53crm/types";
 import { getCurrentFY, getFinancialYears } from "../bay53crm/constants";
 
 interface CRMFiltersState {
@@ -24,12 +24,10 @@ const defaultLeadsFilters: CRMLeadsFilters = (() => {
   return {
     fromDate: fy?.startDate || "",
     toDate: fy?.endDate || "",
-    regionIds: [],
-    verticals: [],
     stages: [],
+    regions: [],
+    customerStates: [],
     assignedTos: [],
-    sources: [],
-    status: "all",
     valueMin: "",
     valueMax: "",
   };
@@ -66,6 +64,9 @@ export const useCRMFiltersStore = create<CRMFiltersState>()(
     }),
     {
       name: "crm-filters-storage",
+      // v2: the leads filter shape changed with the API integration; older saved filters are dropped.
+      version: 2,
+      migrate: (persisted) => ({ ...(persisted as object), leadsFilters: defaultLeadsFilters }) as CRMFiltersState,
     }
   )
 );

@@ -3,5 +3,6 @@ export * from "./services";
 export { crmHttp, CrmApiError } from "./client";
 export { crmAuth } from "./auth";
 export { crmTokenStore } from "./token-store";
+export { useCrmSession } from "./use-crm-session";
 export type * from "./types";
 export type * from "./dto";

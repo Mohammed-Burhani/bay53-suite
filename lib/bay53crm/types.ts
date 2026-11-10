@@ -108,12 +108,12 @@ export interface CRMCompanyConfig {
 export interface CRMLeadsFilters {
   fromDate: string;
   toDate: string;
-  regionIds: string[];
-  verticals: string[];
-  stages: LeadStage[];
+  /** Stage labels as shown in the list (see lib/bay53crm/leads.ts). */
+  stages: string[];
+  regions: string[];
+  customerStates: string[];
+  /** CRM user names. */
   assignedTos: string[];
-  sources: string[];
-  status: LeadStatus | "all";
   valueMin: string;
   valueMax: string;
 }

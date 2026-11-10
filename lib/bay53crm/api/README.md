@@ -28,3 +28,8 @@ Browser calls go to `/api/crm/*`, a same-origin proxy (`app/api/crm/[...path]/ro
 - No token refresh: `Accounts/refresh-token` answers "Invalid token" to a Bearer-only call and login sets no cookie. The JWT lasts ~30 days; a 401 clears it and the caller re-logs in.
 - Some endpoints answer without a token, others 401 (`{ message }`). Do not rely on that: always log in first.
 - Tests: `npm test` (client behaviour: envelope, query string, 401 handling).
+
+## Integrated screens
+
+- Leads (`components/bay53crm/leads`): Lead/List, Lead/Get, Lead/Add, Lead/UpdateLead, Lead/UpdateLeadTitle, Lead/Delete, LeadCommon/ListLeadFollowUp, LeadCommon/AddLeadFollowUp, Accounts/ListAllUser, Contact/List. Stage names and the filter/request helpers are in `lib/bay53crm/leads.ts`.
+- Temporary CRM login: `components/bay53crm/shared/CrmLoginGate.tsx` wraps the leads page. Delete it (and its use in `app/crm/leads/page.tsx`) once the CRM API accepts the main app login.
