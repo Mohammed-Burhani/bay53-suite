@@ -4,7 +4,7 @@
 // on the server, so those charts are computed here from Lead/List.
 
 import type { CrmFinancialYear, CrmLeadListItem } from "./api/dto";
-import { LEAD_STAGES, listStageLabel, stageChartColor } from "./leads";
+import { ALL_STAGES, listStageLabel, stageChartColor } from "./leads";
 
 // ---- Financial year ----
 
@@ -41,8 +41,8 @@ export const leadsByStage = (leads: CrmLeadListItem[]): StageTotal[] => {
     totals.set(stage, total);
   }
   const order = (stage: string) => {
-    const index = LEAD_STAGES.findIndex((s) => s.label === stage);
-    return index === -1 ? LEAD_STAGES.length : index;
+    const index = ALL_STAGES.findIndex((s) => s.label === stage);
+    return index === -1 ? ALL_STAGES.length : index;
   };
   return [...totals.entries()]
     .map(([stage, total]) => ({ stage, ...total, color: stageChartColor(stage) }))
@@ -86,6 +86,62 @@ export const topOwners = (leads: CrmLeadListItem[], limit = 5): OwnerTotal[] => 
     totals.set(assignTo, total);
   }
   return [...totals.values()].sort((a, b) => b.value - a.value || b.leads - a.leads).slice(0, limit);
+};
+
+// ---- Pipeline analytics (the user reports screen) ----
+
+/** Empty string means "all". `month` is a MONTH_LABELS entry. */
+export interface PipelineFilters {
+  region: string;
+  state: string;
+  assignTo: string;
+  stage: string;
+  month: string;
+}
+
+export const NO_PIPELINE_FILTERS: PipelineFilters = { region: "", state: "", assignTo: "", stage: "", month: "" };
+
+export const pipelineFiltersActive = (filters: PipelineFilters): boolean => Object.values(filters).some(Boolean);
+
+export const filterPipeline = (leads: CrmLeadListItem[], filters: PipelineFilters): CrmLeadListItem[] =>
+  leads.filter(
+    (lead) =>
+      (!filters.region || lead.companyRegion === filters.region) &&
+      (!filters.state || lead.customerState === filters.state) &&
+      (!filters.assignTo || lead.assignTo === filters.assignTo) &&
+      (!filters.stage || listStageLabel(lead.stage) === filters.stage) &&
+      (!filters.month || MONTH_LABELS[(Number(lead.leadDate.slice(5, 7)) + 8) % 12] === filters.month)
+  );
+
+export interface GroupTotal {
+  name: string;
+  count: number;
+  value: number;
+  /** Share of the value of all the leads, in percent with one decimal. */
+  pct: number;
+}
+
+export const NOT_SET_LABEL = "Not set";
+
+/** The groups (by the picked field) with the biggest value; leads without the field go to "Not set". */
+export const groupTotals = (
+  leads: CrmLeadListItem[],
+  pick: (lead: CrmLeadListItem) => string | undefined,
+  limit = 6
+): GroupTotal[] => {
+  const groups = new Map<string, { count: number; value: number }>();
+  for (const lead of leads) {
+    const name = pick(lead) || NOT_SET_LABEL;
+    const group = groups.get(name) ?? { count: 0, value: 0 };
+    group.count += 1;
+    group.value += lead.value;
+    groups.set(name, group);
+  }
+  const total = sumValue(leads);
+  return [...groups.entries()]
+    .map(([name, g]) => ({ name, ...g, pct: total > 0 ? Math.round((g.value / total) * 1000) / 10 : 0 }))
+    .sort((a, b) => b.value - a.value || b.count - a.count)
+    .slice(0, limit);
 };
 
 // ---- Notifications ----

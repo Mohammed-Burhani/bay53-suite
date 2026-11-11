@@ -30,7 +30,9 @@ describe("stage labels", () => {
     expect(stageLabel(6)).toBe("Hot Lead");
     expect(stageLabel(13)).toBe("Tender");
     expect(stageLabel(0)).toBe("No stage");
-    expect(stageLabel(12)).toBe("Stage 12");
+    expect(stageLabel(12)).toBe("Lost");
+    expect(stageLabel(15)).toBe("Tender Lost");
+    expect(stageLabel(99)).toBe("Stage 99");
   });
 
   it("shows the API's '0' list label as no stage", () => {

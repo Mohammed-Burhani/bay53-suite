@@ -1,177 +1,129 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SlidersHorizontal, FileDown, FileText, Printer, List } from "lucide-react";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { MultiSelectCheckbox } from "@/components/bay53crm/shared/MultiSelectCheckbox";
-import { StageBadge } from "@/components/bay53crm/shared/StageBadge";
-import { useCRMLeads, useCRMMasterValues } from "@/lib/hooks/useCRM";
-import { formatDateTime } from "@/lib/bay53crm/constants";
+import { useLeadActivityReport } from "@/lib/bay53crm/api/queries";
+import type { CrmLeadActivityReportRow } from "@/lib/bay53crm/api";
+import { formatDate } from "@/lib/bay53crm/constants";
+import {
+  contactNameOf,
+  EMPTY_LEAD_ACTIVITY_CRITERIA,
+  toLeadActivityParams,
+  type LeadActivityCriteria,
+} from "@/lib/bay53crm/reports";
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
+import { ReportFrame, ReportStateRow, type ReportTab } from "./ReportFrame";
+import { useReportOptions } from "./useReportOptions";
+import { usePagedRows } from "./usePagedRows";
+
+const NO_ROWS: CrmLeadActivityReportRow[] = [];
 
 export function LeadActivityReport() {
-  const { data: leads = [] } = useCRMLeads();
-  const { data: assignedTos = [] } = useCRMMasterValues("assigned_to");
+  const { users } = useReportOptions();
 
-  const [activeTab, setActiveTab] = useState("criteria");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [assignedTosFilter, setAssignedTosFilter] = useState<string[]>([]);
+  const [tab, setTab] = useState<ReportTab>("criteria");
+  const [criteria, setCriteria] = useState<LeadActivityCriteria>(EMPTY_LEAD_ACTIVITY_CRITERIA);
+  // The criteria the report was last run with; null until "View Report" is clicked.
+  const [applied, setApplied] = useState<LeadActivityCriteria | null>(null);
 
-  const activities = useMemo(() => {
-    return leads
-      .filter((l) => {
-        if (assignedTosFilter.length > 0 && !assignedTosFilter.includes(l.assignedTo)) return false;
-        return true;
-      })
-      .filter((l) => l.lastFollowUpDate)
-      .filter((l) => {
-        if (fromDate && l.lastFollowUpDate < fromDate) return false;
-        if (toDate && l.lastFollowUpDate > toDate) return false;
-        return true;
-      })
-      .map((l) => ({
-        date: formatDateTime(l.lastFollowUpDate),
-        leadTitle: l.title,
-        stage: l.stage,
-        notes: l.lastFollowUp,
-        createdBy: l.assignedTo,
-        rawDate: l.lastFollowUpDate,
-      }))
-      .sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
-  }, [leads, assignedTosFilter, fromDate, toDate]);
+  const params = useMemo(() => toLeadActivityParams(applied ?? EMPTY_LEAD_ACTIVITY_CRITERIA), [applied]);
+  const { data, isFetching, error } = useLeadActivityReport(params, { enabled: applied !== null });
+  // Newest first.
+  const rows = useMemo(() => [...(data ?? NO_ROWS)].sort((a, b) => b.date.localeCompare(a.date)), [data]);
+  const { paged, pagination } = usePagedRows(rows);
 
-  const handleExportCSV = () => {
-    exportToExcel(
-      activities.map((a) => ({ ...a, stage: a.stage })),
-      [
-        { key: "date", label: "Date" },
-        { key: "leadTitle", label: "Lead Title" },
-        { key: "stage", label: "Stage" },
-        { key: "notes", label: "Notes" },
-        { key: "createdBy", label: "Created By" },
-      ],
-      "lead-activity-report"
-    );
+  const set = (patch: Partial<LeadActivityCriteria>) => setCriteria((c) => ({ ...c, ...patch }));
+  const run = () => {
+    setApplied(criteria);
+    setTab("report");
   };
 
-  const handleExportPDF = () => {
-    exportToPDF(
-      activities.map((a) => ({ ...a, stage: a.stage })),
-      [
-        { key: "date", label: "Date" },
-        { key: "leadTitle", label: "Lead Title" },
-        { key: "stage", label: "Stage" },
-        { key: "notes", label: "Notes" },
-        { key: "createdBy", label: "Created By" },
-      ],
-      "Lead Activity Report",
-      "lead-activity-report"
-    );
-  };
-
-  const handlePrint = () => {
-    printTable(
-      activities.map((a) => ({ date: a.date, leadTitle: a.leadTitle, notes: a.notes, createdBy: a.createdBy })),
-      [
-        { key: "date", label: "Date" },
-        { key: "leadTitle", label: "Lead Title" },
-        { key: "notes", label: "Notes" },
-        { key: "createdBy", label: "Created By" },
-      ],
-      "Lead Activity Report"
-    );
-  };
+  const userName = (userId?: string | null) => users.find((u) => u.value === userId)?.label ?? userId ?? "";
+  const exportRows = rows.map((r) => ({
+    date: formatDate(r.date),
+    lead: r.title,
+    contact: contactNameOf(r.contactName),
+    discussion: r.discussion ?? "",
+    doneBy: userName(r.doneBy),
+  }));
+  const headers = [
+    { key: "date", label: "Date" },
+    { key: "lead", label: "Lead Title" },
+    { key: "contact", label: "Contact" },
+    { key: "discussion", label: "Notes" },
+    { key: "doneBy", label: "Done By" },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lead Activity Report</h1>
-          <p className="text-sm text-muted-foreground">{activities.length} activities</p>
+    <ReportFrame
+      title="Lead Activity Report"
+      subtitle={applied ? `${rows.length} activities` : "Choose the criteria to run the report"}
+      tab={tab}
+      onTabChange={setTab}
+      count={applied ? rows.length : null}
+      isRunning={isFetching}
+      onRun={run}
+      onCsv={() => exportToExcel(exportRows, headers, "lead-activity-report")}
+      onPdf={() => exportToPDF(exportRows, headers, "Lead Activity Report", "lead-activity-report")}
+      onPrint={() => printTable(exportRows, headers, "Lead Activity Report")}
+      criteria={
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="la-from">Date From</Label>
+            <Input id="la-from" type="date" value={criteria.fromDate} onChange={(e) => set({ fromDate: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="la-to">Date To</Label>
+            <Input id="la-to" type="date" value={criteria.toDate} onChange={(e) => set({ toDate: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Assigned To</Label>
+            <MultiSelectCheckbox options={users} selected={criteria.assignedTos} onChange={(assignedTos) => set({ assignedTos })} />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV}><FileDown className="h-4 w-4 mr-1" />CSV</Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF}><FileText className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" />Print</Button>
+      }
+    >
+      <Card>
+        <div className="overflow-auto max-h-[65vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="sticky top-0 bg-background z-10">
+                <TableHead>Date</TableHead>
+                <TableHead>Lead Title</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Notes</TableHead>
+                <TableHead>Done By</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paged.map((r, i) => (
+                <TableRow key={i}>
+                  <TableCell className="text-xs whitespace-nowrap">{formatDate(r.date)}</TableCell>
+                  <TableCell className="font-medium text-xs max-w-[240px]">{r.title}</TableCell>
+                  <TableCell className="text-xs max-w-[160px]">{contactNameOf(r.contactName)}</TableCell>
+                  <TableCell className="text-xs max-w-[360px] whitespace-pre-wrap break-words">{r.discussion}</TableCell>
+                  <TableCell className="text-xs">{userName(r.doneBy)}</TableCell>
+                </TableRow>
+              ))}
+              {rows.length === 0 && (
+                <ReportStateRow
+                  colSpan={5}
+                  isIdle={applied === null}
+                  isLoading={isFetching}
+                  error={error}
+                  emptyMessage="No activities match the criteria"
+                />
+              )}
+            </TableBody>
+          </Table>
         </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="criteria"><SlidersHorizontal className="h-4 w-4 mr-1" />Criteria</TabsTrigger>
-          <TabsTrigger value="report"><List className="h-4 w-4 mr-1" />Report ({activities.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="criteria">
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>Date From</Label>
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Date To</Label>
-                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Assigned To</Label>
-                  <MultiSelectCheckbox
-                    options={assignedTos.map((a) => ({ label: a.name, value: a.name }))}
-                    selected={assignedTosFilter}
-                    onChange={setAssignedTosFilter}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => setActiveTab("report")}>View Report</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="report">
-          <Card>
-            <div className="overflow-auto max-h-[65vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="sticky top-0 bg-background z-10">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Lead Title</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Created By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activities.map((a, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs">{a.date}</TableCell>
-                      <TableCell className="font-medium text-xs">{a.leadTitle}</TableCell>
-                      <TableCell><StageBadge stage={a.stage} /></TableCell>
-                      <TableCell className="text-xs max-w-[300px]">{a.notes}</TableCell>
-                      <TableCell className="text-xs">{a.createdBy}</TableCell>
-                    </TableRow>
-                  ))}
-                  {activities.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No activities match the criteria
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+        {rows.length > 0 && <TablePagination {...pagination} />}
+      </Card>
+    </ReportFrame>
   );
 }

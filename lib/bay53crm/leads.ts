@@ -7,8 +7,8 @@ import type { CRMLeadsFilters } from "./types";
 
 // ---- Stages ----
 // The API sends stage as a numeric id on a single lead and as a label in lists; there is no lookup endpoint.
-// Ids 1-10 and 13 were read off the stage API (Lead/List filtered by leadStage). Ids 11, 12 and 14+ had no leads,
-// so their names are unknown and they are not offered.
+// Ids 1-10 and 13 were read off the stage API (Lead/List filtered by leadStage); those are the open stages below.
+// Ids 11, 12, 14 and 15 are the closed stages further down. Ids above 15 are not known.
 
 export const LEAD_STAGES = [
   { id: 1, label: "New", bg: "bg-slate-100", text: "text-slate-700", chart: "#64748b" },
@@ -24,13 +24,26 @@ export const LEAD_STAGES = [
   { id: 13, label: "Tender", bg: "bg-purple-100", text: "text-purple-700", chart: "#a855f7" },
 ] as const;
 
+// Closed stages: the leads in them are archived, so Lead/List (isArchive false) never returns them. Their names were read off
+// the archived leads (Lead/List with isArchive true, then Lead/Get for the numeric id). They are not offered for new or
+// edited leads, but reports and labels know them.
+export const CLOSED_STAGES = [
+  { id: 11, label: "Won", bg: "bg-green-100", text: "text-green-700", chart: "#16a34a" },
+  { id: 12, label: "Lost", bg: "bg-red-100", text: "text-red-700", chart: "#dc2626" },
+  { id: 14, label: "Tender Won", bg: "bg-emerald-100", text: "text-emerald-700", chart: "#059669" },
+  { id: 15, label: "Tender Lost", bg: "bg-rose-100", text: "text-rose-700", chart: "#e11d48" },
+] as const;
+
+/** Open stages first (pipeline order), then the closed ones. */
+export const ALL_STAGES = [...LEAD_STAGES, ...CLOSED_STAGES];
+
 export const DEFAULT_NEW_LEAD_STAGE_ID = 4; // Cold Lead
 
 /** Lead/List sends stage "0" when no stage is set. */
 export const NO_STAGE_LABEL = "No stage";
 
 export const stageLabel = (stageId: number): string =>
-  LEAD_STAGES.find((s) => s.id === stageId)?.label ?? (stageId === 0 ? NO_STAGE_LABEL : `Stage ${stageId}`);
+  ALL_STAGES.find((s) => s.id === stageId)?.label ?? (stageId === 0 ? NO_STAGE_LABEL : `Stage ${stageId}`);
 
 /** Lead/List stage label as shown in the UI. */
 export const listStageLabel = (stage: string): string => (stage === "0" ? NO_STAGE_LABEL : stage);
@@ -39,7 +52,7 @@ export const listStageLabel = (stage: string): string => (stage === "0" ? NO_STA
 export const stageChartColor = (label: string): string => stageColors(label)?.chart ?? "#9ca3af";
 
 export const stageColors = (label: string): { bg: string; text: string; chart: string } | undefined =>
-  LEAD_STAGES.find((s) => s.label === label);
+  ALL_STAGES.find((s) => s.label === label);
 
 // ---- Filters ----
 

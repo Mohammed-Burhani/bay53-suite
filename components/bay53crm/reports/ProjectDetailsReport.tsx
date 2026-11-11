@@ -1,194 +1,222 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal, FileDown, FileText, Printer, List } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MultiSelectCheckbox } from "@/components/bay53crm/shared/MultiSelectCheckbox";
-import { useCRMProjects, useCRMMasterValues } from "@/lib/hooks/useCRM";
+import { useCampaignDetailsReport, useMasterValues } from "@/lib/bay53crm/api/queries";
+import type { CrmCampaignDetailsReportRow, CrmMasterValue } from "@/lib/bay53crm/api";
 import { formatDate } from "@/lib/bay53crm/constants";
+import { APPROVAL_MASTER_VALUE_TYPE, PROJECT_STATUSES } from "@/lib/bay53crm/projects";
+import {
+  consultantOf,
+  EMPTY_PROJECT_REPORT_CRITERIA,
+  filterProjectReportRows,
+  reportStatusColors,
+  reportText,
+  toProjectReportParams,
+  type ProjectReportCriteria,
+} from "@/lib/bay53crm/reports";
 import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
+import { ReportFrame, ReportStateRow, type ReportTab } from "./ReportFrame";
+import { useReportOptions } from "./useReportOptions";
+import { usePagedRows } from "./usePagedRows";
+import { TablePagination } from "@/components/ui/table-pagination";
+
+const NO_ROWS: CrmCampaignDetailsReportRow[] = [];
+const NO_APPROVALS: CrmMasterValue[] = [];
+const ALL = "all";
+const STATUS_OPTIONS = PROJECT_STATUSES.map((s) => ({ label: s.label, value: String(s.id) }));
 
 export function ProjectDetailsReport() {
-  const { data: projects = [] } = useCRMProjects();
-  const { data: regions = [] } = useCRMMasterValues("region");
-  const { data: assignedTos = [] } = useCRMMasterValues("assigned_to");
+  const { users } = useReportOptions();
+  const { data: masterValues = NO_APPROVALS } = useMasterValues({ type: APPROVAL_MASTER_VALUE_TYPE });
+  const approvals = useMemo(() => masterValues.filter((m) => m.isPublished), [masterValues]);
 
-  const [activeTab, setActiveTab] = useState("criteria");
-  const [regionIds, setRegionIds] = useState<string[]>([]);
-  const [statuses, setStatuses] = useState<string[]>([]);
-  const [assignedTosFilter, setAssignedTosFilter] = useState<string[]>([]);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [tab, setTab] = useState<ReportTab>("criteria");
+  const [criteria, setCriteria] = useState<ProjectReportCriteria>(EMPTY_PROJECT_REPORT_CRITERIA);
+  // The criteria the report was last run with; null until "View Report" is clicked.
+  const [applied, setApplied] = useState<ProjectReportCriteria | null>(null);
 
-  const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
-      if (regionIds.length > 0 && !regionIds.includes(p.regionId)) return false;
-      if (statuses.length > 0 && !statuses.includes(p.status)) return false;
-      if (assignedTosFilter.length > 0 && !assignedTosFilter.includes(p.assignedTo)) return false;
-      if (fromDate && p.createdAt < fromDate) return false;
-      if (toDate && p.createdAt > toDate) return false;
-      return true;
-    });
-  }, [projects, regionIds, statuses, assignedTosFilter, fromDate, toDate]);
+  const params = useMemo(() => toProjectReportParams(applied ?? EMPTY_PROJECT_REPORT_CRITERIA), [applied]);
+  const { data: rows = NO_ROWS, isFetching, error } = useCampaignDetailsReport(params, { enabled: applied !== null });
+  // The report cannot filter by assignee, so that part of the criteria is applied here.
+  const shown = useMemo(() => filterProjectReportRows(rows, applied?.assignedTos ?? []), [rows, applied]);
+  const { paged, pagination } = usePagedRows(shown);
 
-  const handleExportCSV = () => {
+  const set = (patch: Partial<ProjectReportCriteria>) => setCriteria((c) => ({ ...c, ...patch }));
+  const run = () => {
+    setApplied(criteria);
+    setTab("report");
+  };
+
+  const userName = (userId?: string) => users.find((u) => u.value === userId)?.label ?? userId ?? "";
+  const exportRows = shown.map((r) => ({
+    name: r.campaignName,
+    consultant: consultantOf(r.campaignDescription),
+    brandApproval: r.campaignType,
+    contractors: r.contractorDetails ?? "",
+    status: reportText(r.status),
+    assignedTo: userName(r.assignTo),
+    start: r.startDate ? formatDate(r.startDate) : "",
+    end: r.endDate ? formatDate(r.endDate) : "",
+    leads: r.total,
+    won: r.won,
+    lost: r.lost,
+  }));
+
+  const handleCsv = () =>
     exportToExcel(
-      filteredProjects.map((p) => ({
-        regionId: p.regionId,
-        name: p.name,
-        consultantName: p.consultantName,
-        contractors: p.contractorDetails.map((c) => `${c.name} (${c.scope})`).join("; "),
-        brandApprovals: p.brandApproval.map((ba) => `${ba.discipline}:${ba.status}`).join("; "),
-        status: p.status,
-        makeListAvailability: p.makeListAvailability,
-        assignedTo: p.assignedTo,
-      })),
+      exportRows,
       [
-        { key: "regionId", label: "Region" },
         { key: "name", label: "Name" },
-        { key: "consultantName", label: "Consultant" },
+        { key: "consultant", label: "Consultant" },
+        { key: "brandApproval", label: "Brand Approval" },
         { key: "contractors", label: "Contractors" },
         { key: "status", label: "Status" },
         { key: "assignedTo", label: "Assigned To" },
+        { key: "start", label: "Start" },
+        { key: "end", label: "End" },
+        { key: "leads", label: "Leads" },
+        { key: "won", label: "Won" },
+        { key: "lost", label: "Lost" },
       ],
       "project-details-report"
     );
-  };
-
-  const handleExportPDF = () => {
+  const handlePdf = () =>
     exportToPDF(
-      filteredProjects.map((p) => ({
-        regionId: p.regionId,
-        name: p.name,
-        consultantName: p.consultantName,
-        status: p.status,
-        assignedTo: p.assignedTo,
-      })),
+      exportRows,
       [
-        { key: "regionId", label: "Region" },
         { key: "name", label: "Name" },
-        { key: "consultantName", label: "Consultant" },
+        { key: "consultant", label: "Consultant" },
+        { key: "brandApproval", label: "Brand Approval" },
         { key: "status", label: "Status" },
         { key: "assignedTo", label: "Assigned To" },
+        { key: "leads", label: "Leads" },
       ],
       "Project Details Report",
       "project-details-report"
     );
-  };
+  const handlePrint = () =>
+    printTable(
+      exportRows,
+      [
+        { key: "name", label: "Name" },
+        { key: "consultant", label: "Consultant" },
+        { key: "status", label: "Status" },
+        { key: "assignedTo", label: "Assigned To" },
+      ],
+      "Project Details Report"
+    );
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Project Details Report</h1>
-          <p className="text-sm text-muted-foreground">{filteredProjects.length} projects</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV}><FileDown className="h-4 w-4 mr-1" />CSV</Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF}><FileText className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" size="sm" onClick={() => printTable(filteredProjects as any, [{ key: "name", label: "Name" }, { key: "regionId", label: "Region" }, { key: "status", label: "Status" }], "Project Details Report")}><Printer className="h-4 w-4 mr-1" />Print</Button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="criteria"><SlidersHorizontal className="h-4 w-4 mr-1" />Criteria</TabsTrigger>
-          <TabsTrigger value="report"><List className="h-4 w-4 mr-1" />Report ({filteredProjects.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="criteria">
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2">
-                  <Label>Region</Label>
-                  <MultiSelectCheckbox options={regions.map((r) => ({ label: r.name, value: r.code || r.name }))} selected={regionIds} onChange={setRegionIds} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <MultiSelectCheckbox options={[{ label: "Awarded", value: "Awarded" }, { label: "Not Awarded", value: "Not Awarded" }]} selected={statuses} onChange={setStatuses} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Assigned To</Label>
-                  <MultiSelectCheckbox options={assignedTos.map((a) => ({ label: a.name, value: a.name }))} selected={assignedTosFilter} onChange={setAssignedTosFilter} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Date From</Label>
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => setActiveTab("report")}>View Report</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="report">
-          <Card>
-            <div className="overflow-auto max-h-[65vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="sticky top-0 bg-background z-10">
-                    <TableHead>Region</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Consultant</TableHead>
-                    <TableHead>Contractors</TableHead>
-                    <TableHead>Brand Approval</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Make List</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProjects.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="text-xs">{p.regionId}</TableCell>
-                      <TableCell className="font-medium text-xs max-w-[180px] truncate">{p.name}</TableCell>
-                      <TableCell className="text-xs">{p.consultantName}</TableCell>
-                      <TableCell className="text-xs max-w-[150px]">
-                        {p.contractorDetails.map((c, i) => (
-                          <div key={i} className="truncate" title={`${c.name} - ${c.scope}`}>{c.name}</div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 flex-wrap">
-                          {p.brandApproval.map((ba, i) => (
-                            <Badge key={i} variant="outline" className={`text-[10px] ${ba.status === "Approved" ? "border-green-500 text-green-600" : ba.status === "Rejected" ? "border-red-500 text-red-600" : "border-amber-500 text-amber-600"}`}>
-                              {ba.discipline}: {ba.status}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className={p.status === "Awarded" ? "border-green-500 text-green-600" : "border-gray-400 text-gray-500"}>
-                          {p.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">{p.makeListAvailability}</TableCell>
-                      <TableCell className="text-xs">{p.assignedTo}</TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredProjects.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No projects match the criteria
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+    <ReportFrame
+      title="Project Details Report"
+      subtitle={applied ? `${shown.length} projects` : "Choose the criteria to run the report"}
+      tab={tab}
+      onTabChange={setTab}
+      count={applied ? shown.length : null}
+      isRunning={isFetching}
+      onRun={run}
+      onCsv={handleCsv}
+      onPdf={handlePdf}
+      onPrint={handlePrint}
+      criteria={
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <MultiSelectCheckbox options={STATUS_OPTIONS} selected={criteria.statusIds} onChange={(statusIds) => set({ statusIds })} />
             </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+            <div className="space-y-2">
+              <Label>Brand Approval</Label>
+              <Select value={criteria.campaignTypeId || ALL} onValueChange={(v) => set({ campaignTypeId: v === ALL ? "" : v })}>
+                <SelectTrigger aria-label="Brand approval"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  {approvals.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.text}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Assigned To</Label>
+              <MultiSelectCheckbox options={users} selected={criteria.assignedTos} onChange={(assignedTos) => set({ assignedTos })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pd-consultant">Consultant</Label>
+              <Input
+                id="pd-consultant"
+                value={criteria.consultant}
+                onChange={(e) => set({ consultant: e.target.value })}
+                placeholder="Search consultant..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pd-from">Start Date From</Label>
+              <Input id="pd-from" type="date" value={criteria.fromDate} onChange={(e) => set({ fromDate: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pd-to">Start Date To</Label>
+              <Input id="pd-to" type="date" value={criteria.toDate} onChange={(e) => set({ toDate: e.target.value })} />
+            </div>
+          </div>
+        </>
+      }
+    >
+      <Card>
+        <div className="overflow-auto max-h-[65vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="sticky top-0 bg-background z-10">
+                <TableHead>Name</TableHead>
+                <TableHead>Consultant</TableHead>
+                <TableHead>Brand Approval</TableHead>
+                <TableHead>Contractors</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Assigned To</TableHead>
+                <TableHead>Start</TableHead>
+                <TableHead>End</TableHead>
+                <TableHead className="text-right">Leads</TableHead>
+                <TableHead className="text-right">Won</TableHead>
+                <TableHead className="text-right">Lost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paged.map((r, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium text-xs max-w-[220px] truncate" title={r.campaignName}>{r.campaignName}</TableCell>
+                  <TableCell className="text-xs max-w-[180px] truncate" title={r.campaignDescription}>{consultantOf(r.campaignDescription)}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px]">{r.campaignType}</Badge></TableCell>
+                  <TableCell className="text-xs max-w-[160px] truncate" title={r.contractorDetails}>{r.contractorDetails}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={reportStatusColors(r.status)}>{reportText(r.status)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs">{userName(r.assignTo)}</TableCell>
+                  <TableCell className="text-xs">{r.startDate ? formatDate(r.startDate) : ""}</TableCell>
+                  <TableCell className="text-xs">{r.endDate ? formatDate(r.endDate) : ""}</TableCell>
+                  <TableCell className="text-right text-xs">{r.total}</TableCell>
+                  <TableCell className="text-right text-xs">{r.won}</TableCell>
+                  <TableCell className="text-right text-xs">{r.lost}</TableCell>
+                </TableRow>
+              ))}
+              {shown.length === 0 && (
+                <ReportStateRow
+                  colSpan={11}
+                  isIdle={applied === null}
+                  isLoading={isFetching}
+                  error={error}
+                  emptyMessage="No projects match the criteria"
+                />
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        {shown.length > 0 && <TablePagination {...pagination} />}
+      </Card>
+    </ReportFrame>
   );
 }

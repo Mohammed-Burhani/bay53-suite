@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { CrmFinancialYear, CrmLeadListItem } from "./api/dto";
 import {
+  filterPipeline,
   findFinancialYear,
   fyValue,
+  groupTotals,
   leadsByStage,
   monthlyTotals,
+  NO_PIPELINE_FILTERS,
+  pipelineFiltersActive,
   splitNotification,
   sumValue,
   topOwners,
@@ -114,5 +118,41 @@ describe("splitNotification", () => {
 
   it("copes with an empty message", () => {
     expect(splitNotification("")).toEqual({ headline: "", body: "" });
+  });
+});
+
+describe("pipeline analytics", () => {
+  const leads = [
+    lead({ id: 1, stage: "Hot Lead", value: 600, companyRegion: "South", customerState: "Tamil Nadu", leadDate: "2026-04-10T00:00:00" }),
+    lead({ id: 2, stage: "Tender", value: 300, companyRegion: "North", customerState: "Delhi", assignTo: "rani", leadDate: "2026-01-05T00:00:00" }),
+    lead({ id: 3, stage: "0", value: 100, leadDate: "2026-04-20T00:00:00" }),
+  ];
+
+  it("keeps every lead when no filter is set", () => {
+    expect(pipelineFiltersActive(NO_PIPELINE_FILTERS)).toBe(false);
+    expect(filterPipeline(leads, NO_PIPELINE_FILTERS)).toHaveLength(3);
+  });
+
+  it("combines the filters; month is a financial-year month label and stage the label as listed", () => {
+    expect(filterPipeline(leads, { ...NO_PIPELINE_FILTERS, month: "Apr" }).map((l) => l.id)).toEqual([1, 3]);
+    expect(filterPipeline(leads, { ...NO_PIPELINE_FILTERS, month: "Jan" }).map((l) => l.id)).toEqual([2]);
+    expect(filterPipeline(leads, { ...NO_PIPELINE_FILTERS, stage: "No stage" }).map((l) => l.id)).toEqual([3]);
+    expect(filterPipeline(leads, { ...NO_PIPELINE_FILTERS, region: "South", assignTo: "adnan" }).map((l) => l.id)).toEqual([1]);
+    expect(filterPipeline(leads, { ...NO_PIPELINE_FILTERS, state: "Delhi", region: "South" })).toEqual([]);
+    expect(pipelineFiltersActive({ ...NO_PIPELINE_FILTERS, state: "Delhi" })).toBe(true);
+  });
+
+  it("groups by a field with the share of the total value, biggest first, with a Not set group", () => {
+    const groups = groupTotals(leads, (l) => l.companyRegion);
+    expect(groups).toEqual([
+      { name: "South", count: 1, value: 600, pct: 60 },
+      { name: "North", count: 1, value: 300, pct: 30 },
+      { name: "Not set", count: 1, value: 100, pct: 10 },
+    ]);
+    expect(groupTotals(leads, (l) => l.companyRegion, 1)).toHaveLength(1);
+  });
+
+  it("reports 0 percent when there is no value at all", () => {
+    expect(groupTotals([lead({ value: 0 })], (l) => l.customerState)[0].pct).toBe(0);
   });
 });

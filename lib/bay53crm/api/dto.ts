@@ -255,8 +255,11 @@ export interface CrmNotification {
   sIfNoResults: boolean;
   repeatsEvery: number;
   repeatsType: number;
-  /** A .NET TimeSpan serialised as { value: { ticks, days, hours, ... } }. */
-  repeatsAt?: unknown;
+  /** A .NET TimeSpan serialised as { value: { ticks, days, hours, minutes, ... }, hasValue }. */
+  repeatsAt?: { value?: { hours?: number; minutes?: number }; hasValue?: boolean };
+  repeatsFrom?: string;
+  /** Built-in rules cannot be removed. */
+  isSystem?: boolean;
 }
 
 /** Notification/List */
@@ -308,6 +311,41 @@ export interface CrmLeadDetailsReportRow {
   campaignType?: string;
   consultantName?: string;
   contractorDetails?: string;
+}
+
+/** Report/LeadActivityReportList: one row per recorded activity. */
+export interface CrmLeadActivityReportRow {
+  date: string;
+  /** The lead's title. */
+  title: string;
+  /** Several lines: the name, then "(Mobile 1) - ...", "(Email) - ...". */
+  contactName?: string;
+  /** "1" to "7" as text. The codes are not documented and do not line up with the wording of the notes, so they are not shown. */
+  type: string;
+  discussion?: string;
+  dateDone?: string;
+  /** A user name; sometimes empty or null. */
+  doneBy?: string | null;
+}
+
+/** Report/CampaignDetailsReportList: one row per project (campaign) with its lead counts. */
+export interface CrmCampaignDetailsReportRow {
+  campaignName: string;
+  /** "Consultant Name : ..." followed by free text such as "Make List NA". */
+  campaignDescription?: string;
+  campaignNote?: string;
+  /** Brand approval segment text, e.g. "Not Approved". */
+  campaignType: string;
+  contractorDetails?: string;
+  assignTo?: string;
+  /** Status as text without spaces: "Active", "Awarded", "NotAwarded", "PartiallyAwarded", "UnderFinalization", "Closed". */
+  status: string;
+  startDate?: string;
+  endDate?: string;
+  total: number;
+  open: number;
+  won: number;
+  lost: number;
 }
 
 /** Report/SalesStageStatusReportList */

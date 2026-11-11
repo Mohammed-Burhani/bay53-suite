@@ -52,7 +52,7 @@ function CompanyForm({ company }: { company: CrmCompany }) {
   };
 
   return (
-    <Card className="max-w-xl">
+    <Card className="max-w-xl py-4">
       <CardHeader>
         <CardTitle>Company Configuration</CardTitle>
       </CardHeader>

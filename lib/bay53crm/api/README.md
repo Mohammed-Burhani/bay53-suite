@@ -37,13 +37,22 @@ Browser calls go to `/api/crm/*`, a same-origin proxy (`app/api/crm/[...path]/ro
 - Company (`components/bay53crm/company`): Company/Get, Company/Update (a single company, id 1).
 - Temporary CRM login: `components/bay53crm/shared/CrmLoginGate.tsx` wraps every CRM screen from `app/crm/layout.tsx`. Delete it (and its use there) once the CRM API accepts the main app login.
 
-Still on mock data (`lib/bay53crm/crm.service.ts`): CMS master values and notifications, Reports, the user reports screen (`UserReportsView`).
+- Reports (`components/bay53crm/reports`): Report/LeadDetailsReportList, LeadActivityReportList, CampaignDetailsReportList, SalesStageStatusReportList. A report runs when "View Report" is clicked (`enabled` on the hooks). Criteria builders and row summaries are in `lib/bay53crm/reports.ts`; `ReportFrame` holds the shared layout.
+- User reports (`components/bay53crm/dashboard/UserReportsView.tsx`): Common/FYList, Lead/List, Accounts/ListAllUser. Filters and groupings are in `lib/bay53crm/dashboard.ts`.
+- CMS master values (`components/bay53crm/cms/MasterValuesView.tsx`): MasterValue/List, Add, Update, Delete for type 4 (brand approval). The lead stage, project status and make list tabs are fixed lists in the code, shown read-only.
+- CMS notification master (`components/bay53crm/cms/NotificationMasterView.tsx`): Notification/List, read-only (see the quirks below).
+
+`lib/bay53crm/crm.service.ts`, `data.ts` and `lib/hooks/useCRM.ts` are the old mock layer. No screen uses them any more.
 
 ## Stage API quirks (seen live)
 
 - Lead/Add, Lead/UpdateLead and Lead/UpdateLeadTitle save the record, then answer `hasError` ("Invalid domain token at offset 11") when the notification email fails. `tolerateNotification` (`lib/bay53crm/save.ts`) turns that into a warning toast; use it around every lead save.
 - Contact/List ignores `companyName` and returns every contact (about 5.5k rows), some with no `companyName`. The contact picker filters in the browser.
-- MasterValue/ActiveList answers an empty list for every type; use MasterValue/List.
+- MasterValue/ActiveList answers an empty list for every type; use MasterValue/List. MasterValue/List needs a `type`: without one it answers an empty list. Only type 4 (brand approval) has rows on stage; types 1-3 and 5-10 are empty.
+- Notification/Get does not return a rule's `sqlText`, recipients or suppressions, and sends `repeatsAt` as "11:00:00" where Notification/List sends a time object. A rule cannot be saved back safely from what the API returns, so the notification screen is read-only. All four rules on stage are system rules.
+- Report/LeadActivityReportList rows have a text `type` ("1" to "7") whose meaning does not match the notes, so the report does not show it. It returns every activity (about 2,000 rows) when no criteria are set, so the screen pages the rows.
+- Report/SalesStageStatusReportList has stage ids 0-15. 11 Won, 12 Lost, 14 Tender Won and 15 Tender Lost belong to archived leads, which Lead/List only returns with `isArchive: true` (their names were read from those leads). `avgTimeSpent` has no documented unit (values 113 to 38,275), so it is not shown.
+- Report/CampaignDetailsReportList has no assignee filter and `companyRegion` is never set on projects, so the project report filters by assignee in the browser and offers no region.
 - Common/PieChartResult answers "The method or operation is not implemented"; the dashboard builds its charts from Lead/List.
 - Common/DashboardResult `yearlyActualRevenue` equals 12 x `monthlyTargetRevenue` (the yearly target), not won revenue. Won and lost values are not in the response.
 - Lead/List has no source or status, so there is no leads-by-source chart.

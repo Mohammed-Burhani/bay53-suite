@@ -56,6 +56,8 @@ export const useAddNotification = () =>
   useCrmMutation((rule: S["NotificationCreateViewModel"]) => notificationApi.add(rule), SELF);
 export const useUpdateNotification = () =>
   useCrmMutation((rule: S["NotificationCreateViewModel"]) => notificationApi.update(rule), SELF);
+// There is no "change some fields of a rule" mutation on purpose: Notification/Get leaves out a rule's sqlText and
+// recipients, so an update built from it would erase them. Send a full NotificationCreateViewModel to useUpdateNotification.
 export const useDeleteNotification = () => useCrmMutation((id: number) => notificationApi.delete(id), SELF);
 
 export const useAddNotificationStaticUsers = () =>

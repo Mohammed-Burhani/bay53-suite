@@ -39,7 +39,7 @@ export function CrmLoginGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex justify-center p-6">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm py-4">
         <CardHeader>
           <CardTitle>CRM sign in</CardTitle>
           <p className="text-sm text-muted-foreground">The CRM service needs its own login for now.</p>

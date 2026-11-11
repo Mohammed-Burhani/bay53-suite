@@ -1,167 +1,177 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { SlidersHorizontal, FileDown, FileText, Printer, List } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { MultiSelectCheckbox } from "@/components/bay53crm/shared/MultiSelectCheckbox";
-import { useCRMLeads, useCRMMasterValues } from "@/lib/hooks/useCRM";
-import { formatCurrency, formatDate, STAGE_COLORS } from "@/lib/bay53crm/constants";
-import { exportToExcel, exportToPDF, printTable } from "@/lib/utils/report-export";
-import type { LeadStage, CRMLead } from "@/lib/bay53crm/types";
+import { useSalesStageStatusReport } from "@/lib/bay53crm/api/queries";
+import type { CrmSalesStageStatusReportRow } from "@/lib/bay53crm/api";
+import { formatCurrency } from "@/lib/bay53crm/constants";
+import {
+  EMPTY_SALES_STAGE_CRITERIA,
+  summariseByStage,
+  summariseByUser,
+  toSalesStageParams,
+  type SalesStageCriteria,
+} from "@/lib/bay53crm/reports";
+import { exportToExcel, exportToPDF } from "@/lib/utils/report-export";
+import { ReportFrame, ReportStateRow, type ReportTab } from "./ReportFrame";
+import { useReportOptions } from "./useReportOptions";
 
-const ALL_STAGES: LeadStage[] = ["Cold Lead", "Hot Lead", "Tender", "Tender Won", "Tender Lost", "Won", "Lost"];
+const NO_ROWS: CrmSalesStageStatusReportRow[] = [];
 
 export function SalesStageReport() {
-  const { data: leads = [] } = useCRMLeads();
-  const { data: regions = [] } = useCRMMasterValues("region");
-  const { data: assignedTos = [] } = useCRMMasterValues("assigned_to");
+  const { regions, users } = useReportOptions();
 
-  const [activeTab, setActiveTab] = useState("criteria");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [regionIds, setRegionIds] = useState<string[]>([]);
-  const [assignedTosFilter, setAssignedTosFilter] = useState<string[]>([]);
+  const [tab, setTab] = useState<ReportTab>("criteria");
+  const [criteria, setCriteria] = useState<SalesStageCriteria>(EMPTY_SALES_STAGE_CRITERIA);
+  // The criteria the report was last run with; null until "View Report" is clicked.
+  const [applied, setApplied] = useState<SalesStageCriteria | null>(null);
 
-  const filteredLeads = useMemo(() => {
-    return leads.filter((l) => {
-      if (fromDate && l.date < fromDate) return false;
-      if (toDate && l.date > toDate) return false;
-      if (regionIds.length > 0 && !regionIds.includes(l.regionId)) return false;
-      if (assignedTosFilter.length > 0 && !assignedTosFilter.includes(l.assignedTo)) return false;
-      return true;
-    });
-  }, [leads, fromDate, toDate, regionIds, assignedTosFilter]);
+  const params = useMemo(() => toSalesStageParams(applied ?? EMPTY_SALES_STAGE_CRITERIA), [applied]);
+  const { data: rows = NO_ROWS, isFetching, error } = useSalesStageStatusReport(params, { enabled: applied !== null });
 
-  const pivotData = useMemo(() => {
-    return ALL_STAGES.map((stage) => {
-      const stageLeads = filteredLeads.filter((l) => l.stage === stage);
-      return {
-        stage,
-        count: stageLeads.length,
-        totalValue: stageLeads.reduce((sum, l) => sum + l.value, 0),
-        color: STAGE_COLORS[stage]?.chart || "#9ca3af",
-      };
-    });
-  }, [filteredLeads]);
+  const byStage = useMemo(() => summariseByStage(rows), [rows]);
+  const byUser = useMemo(() => summariseByUser(rows), [rows]);
+  const totalLeads = byStage.reduce((sum, s) => sum + s.leads, 0);
+  const totalValue = byStage.reduce((sum, s) => sum + s.value, 0);
 
-  const totalCount = pivotData.reduce((sum, d) => sum + d.count, 0);
-  const totalValue = pivotData.reduce((sum, d) => sum + d.totalValue, 0);
+  const set = (patch: Partial<SalesStageCriteria>) => setCriteria((c) => ({ ...c, ...patch }));
+  const run = () => {
+    setApplied(criteria);
+    setTab("report");
+  };
 
-  const chartData = pivotData.map((d) => ({
-    stage: d.stage,
-    count: d.count,
-    value: d.totalValue,
-  }));
+  const userName = (userId: string) => users.find((u) => u.value === userId)?.label ?? userId;
+  const exportRows = byStage.map((s) => ({ stage: s.label, leads: s.leads, value: s.value }));
+  const exportHeaders = [
+    { key: "stage", label: "Stage" },
+    { key: "leads", label: "Leads" },
+    { key: "value", label: "Total Value" },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sales Stage Status Report</h1>
-          <p className="text-sm text-muted-foreground">{filteredLeads.length} total leads</p>
+    <ReportFrame
+      title="Sales Stage Status Report"
+      subtitle={applied ? `${totalLeads} leads · ${formatCurrency(totalValue)}` : "Choose the criteria to run the report"}
+      tab={tab}
+      onTabChange={setTab}
+      count={applied ? totalLeads : null}
+      isRunning={isFetching}
+      onRun={run}
+      onCsv={() => exportToExcel(exportRows, exportHeaders, "sales-stage-report")}
+      onPdf={() => exportToPDF(exportRows, exportHeaders, "Sales Stage Report", "sales-stage-report")}
+      criteria={
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label htmlFor="ss-from">Date From</Label>
+            <Input id="ss-from" type="date" value={criteria.fromDate} onChange={(e) => set({ fromDate: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ss-to">Date To</Label>
+            <Input id="ss-to" type="date" value={criteria.toDate} onChange={(e) => set({ toDate: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Region</Label>
+            <MultiSelectCheckbox options={regions} selected={criteria.regions} onChange={(regions) => set({ regions })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Sales Manager</Label>
+            <MultiSelectCheckbox options={users} selected={criteria.assignedTos} onChange={(assignedTos) => set({ assignedTos })} />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportToExcel(pivotData, [{ key: "stage", label: "Stage" }, { key: "count", label: "Count" }, { key: "totalValue", label: "Total Value" }], "sales-stage-report")}>
-            <FileDown className="h-4 w-4 mr-1" />CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => exportToPDF(pivotData, [{ key: "stage", label: "Stage" }, { key: "count", label: "Count" }, { key: "totalValue", label: "Total Value" }], "Sales Stage Report", "sales-stage-report")}>
-            <FileText className="h-4 w-4 mr-1" />PDF
-          </Button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="criteria"><SlidersHorizontal className="h-4 w-4 mr-1" />Criteria</TabsTrigger>
-          <TabsTrigger value="report"><List className="h-4 w-4 mr-1" />Report ({filteredLeads.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="criteria">
+      }
+    >
+      <div className="space-y-6">
+        {byStage.length > 0 && (
           <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2">
-                  <Label>Date From</Label>
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Date To</Label>
-                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Region</Label>
-                  <MultiSelectCheckbox options={regions.map((r) => ({ label: r.name, value: r.code || r.name }))} selected={regionIds} onChange={setRegionIds} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Assigned To</Label>
-                  <MultiSelectCheckbox options={assignedTos.map((a) => ({ label: a.name, value: a.name }))} selected={assignedTosFilter} onChange={setAssignedTosFilter} />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => setActiveTab("report")}>View Report</Button>
-              </div>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-semibold mb-3">Stage Distribution</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={byStage}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="leads" name="Leads" radius={[4, 4, 0, 0]}>
+                    {byStage.map((s) => (
+                      <Cell key={s.stageId} fill={s.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="report">
-          <div className="space-y-6">
-            {/* Bar Chart */}
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-3">Stage Distribution</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="stage" tick={{ fontSize: 11 }} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Stage</TableHead>
+                <TableHead className="text-right">Leads</TableHead>
+                <TableHead className="text-right">Total Value</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {byStage.map((row) => (
+                <TableRow key={row.stageId}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: row.color }} />
+                      <span className="font-medium">{row.label}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">{row.leads}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.value)}</TableCell>
+                </TableRow>
+              ))}
+              {byStage.length === 0 && (
+                <ReportStateRow
+                  colSpan={3}
+                  isIdle={applied === null}
+                  isLoading={isFetching}
+                  error={error}
+                  emptyMessage="No leads match the criteria"
+                />
+              )}
+              {byStage.length > 0 && (
+                <TableRow className="font-bold border-t-2">
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-right">{totalLeads}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(totalValue)}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
 
-            {/* Pivot Table */}
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Stage</TableHead>
-                    <TableHead className="text-right">Count</TableHead>
-                    <TableHead className="text-right">Total Value</TableHead>
+        {byUser.length > 0 && (
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sales Manager</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead className="text-right">Total Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {byUser.map((u) => (
+                  <TableRow key={u.user}>
+                    <TableCell className="font-medium">{userName(u.user)}</TableCell>
+                    <TableCell className="text-right">{u.leads}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(u.value)}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pivotData.map((row) => (
-                    <TableRow key={row.stage}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: STAGE_COLORS[row.stage]?.chart }} />
-                          <span className="font-medium">{row.stage}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{row.count}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.totalValue)}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right">{totalCount}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totalValue)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        )}
+      </div>
+    </ReportFrame>
   );
 }

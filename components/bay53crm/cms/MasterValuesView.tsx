@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,95 +9,139 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
-  useCRMMasterValues,
-  useAddCRMMasterValue,
-  useUpdateCRMMasterValue,
-  useDeleteCRMMasterValue,
-} from "@/lib/hooks/useCRM";
-import type { MasterLookupType } from "@/lib/bay53crm/types";
+  useAddMasterValue,
+  useDeleteMasterValue,
+  useMasterValues,
+  useUpdateMasterValue,
+} from "@/lib/bay53crm/api/queries";
+import type { CrmMasterValue } from "@/lib/bay53crm/api";
+import { ALL_STAGES } from "@/lib/bay53crm/leads";
+import { APPROVAL_MASTER_VALUE_TYPE, MAKE_LIST_OPTIONS, PROJECT_STATUSES } from "@/lib/bay53crm/projects";
 
-const TAB_TYPES: { value: MasterLookupType; label: string }[] = [
-  { value: "region", label: "Region" },
-  { value: "vertical", label: "Vertical" },
-  { value: "lead_source", label: "Source" },
-  { value: "lead_stage", label: "Stage" },
-  { value: "project_status", label: "Project Status" },
-  { value: "brand_approval_discipline", label: "Brand Approval" },
-  { value: "customer_state", label: "State" },
-  { value: "assigned_to", label: "Assigned To" },
+const NO_VALUES: CrmMasterValue[] = [];
+
+type Tab = "approval" | "stages" | "statuses" | "makeList";
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: "approval", label: "Brand Approval" },
+  { value: "stages", label: "Lead Stage" },
+  { value: "statuses", label: "Project Status" },
+  { value: "makeList", label: "Make List" },
 ];
 
+/** Lists the CRM fixes itself: they have no API, so they are shown but not edited here. */
+function FixedList({ title, rows }: { title: string; rows: { id: number; label: string }[] }) {
+  return (
+    <div>
+      <div className="px-4 py-3 border-b">
+        <span className="text-sm font-medium">{rows.length} values</span>
+        <p className="text-xs text-muted-foreground">{title} are fixed by the CRM and cannot be changed here.</p>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-20">Id</TableHead>
+            <TableHead>Name</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell className="text-muted-foreground text-xs">{row.id}</TableCell>
+              <TableCell className="font-medium">{row.label}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function MasterValuesView() {
-  const [activeTab, setActiveTab] = useState<MasterLookupType>("region");
+  const [activeTab, setActiveTab] = useState<Tab>("approval");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<CrmMasterValue | null>(null);
 
-  const { data: masterValues = [] } = useCRMMasterValues();
-  const addMutation = useAddCRMMasterValue();
-  const updateMutation = useUpdateCRMMasterValue();
-  const deleteMutation = useDeleteCRMMasterValue();
+  const { data: approvals = NO_VALUES, isLoading, isError, error } = useMasterValues({ type: APPROVAL_MASTER_VALUE_TYPE });
+  const addMutation = useAddMasterValue();
+  const updateMutation = useUpdateMasterValue();
+  const deleteMutation = useDeleteMasterValue();
 
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [color, setColor] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [sortOrder, setSortOrder] = useState(0);
-
-  const filteredValues = masterValues.filter((m) => m.type === activeTab);
+  const [text, setText] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPublished, setIsPublished] = useState(true);
 
   const openAddDialog = () => {
-    setEditingId(null);
-    setName("");
-    setCode("");
-    setColor("");
-    setIsActive(true);
-    setSortOrder(filteredValues.length + 1);
+    setEditing(null);
+    setText("");
+    setDescription("");
+    setIsPublished(true);
     setDialogOpen(true);
   };
 
-  const openEditDialog = (item: typeof filteredValues[0]) => {
-    setEditingId(item.id);
-    setName(item.name);
-    setCode(item.code || "");
-    setColor(item.color || "");
-    setIsActive(item.isActive);
-    setSortOrder(item.sortOrder);
+  const openEditDialog = (item: CrmMasterValue) => {
+    setEditing(item);
+    setText(item.text);
+    setDescription(item.description ?? "");
+    setIsPublished(item.isPublished);
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+  const toModel = (item: CrmMasterValue, changes: Partial<CrmMasterValue> = {}) => ({
+    id: item.id,
+    text: item.text,
+    description: item.description ?? "",
+    type: item.type,
+    isPublished: item.isPublished,
+    ...changes,
+  });
 
-    const data = {
-      type: activeTab,
-      name: name.trim(),
-      code: code.trim() || undefined,
-      color: color.trim() || undefined,
-      isActive,
-      sortOrder,
-    };
-
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data });
-    } else {
-      addMutation.mutate(data);
+  const handleSave = async () => {
+    const name = text.trim();
+    if (!name) return;
+    try {
+      if (editing) {
+        await updateMutation.mutateAsync(toModel(editing, { text: name, description: description.trim(), isPublished }));
+        toast.success("Value updated");
+      } else {
+        await addMutation.mutateAsync({
+          id: 0,
+          text: name,
+          description: description.trim(),
+          type: APPROVAL_MASTER_VALUE_TYPE,
+          isPublished,
+        });
+        toast.success("Value added");
+      }
+      setDialogOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the value");
     }
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this value?")) {
-      deleteMutation.mutate(id);
+  const handleDelete = async (item: CrmMasterValue) => {
+    if (!confirm(`Delete "${item.text}"? A value that projects already use may not be deletable; unpublish it instead.`)) return;
+    try {
+      await deleteMutation.mutateAsync(item.id);
+      toast.success("Value deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete the value");
     }
   };
 
-  const toggleActive = (id: string, current: boolean) => {
-    updateMutation.mutate({ id, data: { isActive: !current } });
+  const togglePublished = async (item: CrmMasterValue) => {
+    try {
+      await updateMutation.mutateAsync(toModel(item, { isPublished: !item.isPublished }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update the value");
+    }
   };
+
+  const isSaving = addMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -107,10 +152,10 @@ export function MasterValuesView() {
 
       <Card>
         <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MasterLookupType)}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
             <div className="border-b px-4">
               <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0 py-2">
-                {TAB_TYPES.map((tab) => (
+                {TABS.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
                     {tab.label}
                   </TabsTrigger>
@@ -118,11 +163,9 @@ export function MasterValuesView() {
               </TabsList>
             </div>
 
-            <TabsContent value={activeTab} className="m-0">
+            <TabsContent value="approval" className="m-0">
               <div className="flex items-center justify-between px-4 py-3 border-b">
-                <span className="text-sm font-medium">
-                  {filteredValues.length} values
-                </span>
+                <span className="text-sm font-medium">{approvals.length} values</span>
                 <Button size="sm" onClick={openAddDialog}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add Value
@@ -133,58 +176,72 @@ export function MasterValuesView() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">Sort</TableHead>
+                      <TableHead className="w-16">Id</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Code</TableHead>
-                      {(activeTab === "lead_stage") && <TableHead>Color</TableHead>}
-                      <TableHead className="w-20">Active</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="w-24">Published</TableHead>
                       <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredValues.map((item) => (
+                    {approvals.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="text-muted-foreground text-xs">{item.sortOrder}</TableCell>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{item.code || "—"}</TableCell>
-                        {activeTab === "lead_stage" && (
-                          <TableCell>
-                            {item.color && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: item.color }} />
-                                <span className="text-xs text-muted-foreground">{item.color}</span>
-                              </div>
-                            )}
-                          </TableCell>
-                        )}
+                        <TableCell className="text-muted-foreground text-xs">{item.id}</TableCell>
+                        <TableCell className="font-medium">
+                          {item.text}
+                          {!item.isPublished && <Badge variant="outline" className="ml-2 text-[10px]">Hidden</Badge>}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{item.description || "—"}</TableCell>
                         <TableCell>
                           <Switch
-                            checked={item.isActive}
-                            onCheckedChange={() => toggleActive(item.id, item.isActive)}
+                            aria-label={`Publish ${item.text}`}
+                            checked={item.isPublished}
+                            disabled={updateMutation.isPending}
+                            onCheckedChange={() => togglePublished(item)}
                           />
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(item)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Edit ${item.text}`} onClick={() => openEditDialog(item)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              aria-label={`Delete ${item.text}`}
+                              onClick={() => handleDelete(item)}
+                            >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredValues.length === 0 && (
+                    {(isLoading || isError || approvals.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No values found. Click "Add Value" to create one.
+                        <TableCell colSpan={5} className={`text-center py-8 ${isError ? "text-destructive" : "text-muted-foreground"}`}>
+                          {isLoading
+                            ? "Loading values..."
+                            : isError
+                              ? `Could not load the values: ${error instanceof Error ? error.message : "unknown error"}`
+                              : 'No values found. Click "Add Value" to create one.'}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
+            </TabsContent>
+
+            <TabsContent value="stages" className="m-0">
+              <FixedList title="Lead stages" rows={ALL_STAGES.map((s) => ({ id: s.id, label: s.label }))} />
+            </TabsContent>
+            <TabsContent value="statuses" className="m-0">
+              <FixedList title="Project statuses" rows={PROJECT_STATUSES.map((s) => ({ id: s.id, label: s.label }))} />
+            </TabsContent>
+            <TabsContent value="makeList" className="m-0">
+              <FixedList title="Make list options" rows={MAKE_LIST_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -194,39 +251,27 @@ export function MasterValuesView() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Value" : "Add Value"}</DialogTitle>
+            <DialogTitle>{editing ? "Edit Value" : "Add Value"}</DialogTitle>
+            <DialogDescription>A brand approval segment that projects can be tagged with.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
+              <Label htmlFor="mv-name">Name *</Label>
+              <Input id="mv-name" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Approved - PHE" />
             </div>
             <div className="space-y-2">
-              <Label>Code</Label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Optional code" />
-            </div>
-            {activeTab === "lead_stage" && (
-              <div className="space-y-2">
-                <Label>Color (hex)</Label>
-                <div className="flex gap-2">
-                  <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#3b82f6" />
-                  {color && <div className="w-9 h-9 rounded border" style={{ backgroundColor: color }} />}
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label>Sort Order</Label>
-              <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
+              <Label htmlFor="mv-description">Description</Label>
+              <Input id="mv-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <Label>Active</Label>
+              <Switch id="mv-published" checked={isPublished} onCheckedChange={setIsPublished} />
+              <Label htmlFor="mv-published">Published</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!name.trim() || addMutation.isPending || updateMutation.isPending}>
-              {editingId ? "Update" : "Add"}
+            <Button onClick={handleSave} disabled={!text.trim() || isSaving}>
+              {editing ? "Update" : "Add"}
             </Button>
           </DialogFooter>
         </DialogContent>

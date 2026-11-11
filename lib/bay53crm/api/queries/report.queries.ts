@@ -42,11 +42,20 @@ export const reportQueries = {
     }),
 };
 
-export const useLeadActivityReport = (params: S["LeadActivityReportViewModel"]) =>
-  useQuery(reportQueries.leadActivity(params));
-export const useLeadDetailsReport = (params: S["LeadDetailsReportViewModel"]) =>
-  useQuery(reportQueries.leadDetails(params));
-export const useSalesStageStatusReport = (params: S["SalesStageStatusReportViewModel"]) =>
-  useQuery(reportQueries.salesStageStatus(params));
-export const useCampaignDetailsReport = (params: S["CampaignDetailsReportViewModel"]) =>
-  useQuery(reportQueries.campaignDetails(params));
+// Reports run on demand: the screens pass `enabled: false` until the user clicks "View Report".
+interface ReportOptions {
+  enabled?: boolean;
+}
+
+export const useLeadActivityReport = (params: S["LeadActivityReportViewModel"], { enabled = true }: ReportOptions = {}) =>
+  useQuery({ ...reportQueries.leadActivity(params), enabled });
+export const useLeadDetailsReport = (params: S["LeadDetailsReportViewModel"], { enabled = true }: ReportOptions = {}) =>
+  useQuery({ ...reportQueries.leadDetails(params), enabled });
+export const useSalesStageStatusReport = (
+  params: S["SalesStageStatusReportViewModel"],
+  { enabled = true }: ReportOptions = {}
+) => useQuery({ ...reportQueries.salesStageStatus(params), enabled });
+export const useCampaignDetailsReport = (
+  params: S["CampaignDetailsReportViewModel"],
+  { enabled = true }: ReportOptions = {}
+) => useQuery({ ...reportQueries.campaignDetails(params), enabled });

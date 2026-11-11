@@ -76,11 +76,19 @@ export interface FilterSelectProps {
 }
 
 export function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
+  // A filter that is not "all" is marked, so it is clear at a glance what is narrowing the numbers.
+  const active = value !== "all";
   return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+    <div className="space-y-1.5 min-w-0">
+      <label className="text-[11px] font-medium text-muted-foreground">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger
+          aria-label={label}
+          className={cn(
+            "h-9 w-full min-w-0 justify-between text-sm",
+            active && "border-primary/60 bg-primary/5 font-medium text-foreground"
+          )}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
