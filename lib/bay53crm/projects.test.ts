@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CrmCampaignListItem } from "./api/dto";
 import {
+  consultantSuggestions,
   filterProjects,
   makeListLabel,
   projectStatusLabel,
@@ -101,5 +102,21 @@ describe("request builders", () => {
   it("cuts an API date-time to a date input value", () => {
     expect(toDateInput("2024-06-10T00:00:00")).toBe("2024-06-10");
     expect(toDateInput(undefined)).toBe("");
+  });
+});
+
+describe("consultantSuggestions", () => {
+  it("keeps short single-line names once, sorted, and drops placeholders and notes", () => {
+    const names = [
+      "-",
+      "  Kausi consultants ",
+      "Hyderabad consulting Engineers",
+      "Kausi consultants",
+      "Location: Karnataka\nConsultant: Kausi consultants\n",
+      "x".repeat(80),
+      "",
+    ];
+    expect(consultantSuggestions(names)).toEqual(["Hyderabad consulting Engineers", "Kausi consultants"]);
+    expect(consultantSuggestions(undefined)).toEqual([]);
   });
 });

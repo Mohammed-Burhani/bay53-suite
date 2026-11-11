@@ -19,6 +19,7 @@ import {
 } from "@/lib/bay53crm/projects";
 import { tolerateNotification } from "@/lib/bay53crm/save";
 import { ProjectForm } from "./ProjectForm";
+import { ProjectRecords } from "./ProjectRecords";
 
 const NO_APPROVALS: CrmMasterValue[] = [];
 
@@ -62,7 +63,7 @@ export function ProjectDetailSheet({ projectId, open, onOpenChange }: ProjectDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{project ? (isEditing ? "Edit Project" : project.name) : isError ? "Project" : "Loading..."}</SheetTitle>
           <SheetDescription className="sr-only">Project details</SheetDescription>
@@ -117,7 +118,9 @@ export function ProjectDetailSheet({ projectId, open, onOpenChange }: ProjectDet
                 <Field label="End date">{project.enddate ? formatDate(project.enddate) : ""}</Field>
               </div>
               <Field label="Contractor details">{project.contractorDetails}</Field>
-              <Field label="Notes">{project.note}</Field>
+              <div className="border-t pt-4">
+                <ProjectRecords project={project} users={users} />
+              </div>
             </div>
           )}
         </div>

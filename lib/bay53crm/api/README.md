@@ -42,7 +42,14 @@ Browser calls go to `/api/crm/*`, a same-origin proxy (`app/api/crm/[...path]/ro
 - CMS master values (`components/bay53crm/cms/MasterValuesView.tsx`): MasterValue/List, Add, Update, Delete for type 4 (brand approval). The lead stage, project status and make list tabs are fixed lists in the code, shown read-only.
 - CMS notification master (`components/bay53crm/cms/NotificationMasterView.tsx`): Notification/List, read-only (see the quirks below).
 
-`lib/bay53crm/crm.service.ts`, `data.ts` and `lib/hooks/useCRM.ts` are the old mock layer. No screen uses them any more.
+- Lead tabs (`components/bay53crm/leads/LeadRecords.tsx`): LeadCommon follow-ups (add, edit, mark done, delete), activities, notes, attachments, LeadDetailsCount (tab counts), ListLeadHistory (stage history), Common/EnquiryList + QuatationList + LeadCommon/UpdateLeadEnquiry (`LeadEnquiry.tsx`). Request builders and file helpers are in `lib/bay53crm/records.ts`.
+- Project tabs (`components/bay53crm/projects/ProjectRecords.tsx`): Campaign activities, attachments, UpdateNote; Campaign/ConsultantNameList feeds the consultant suggestions in `ProjectForm`.
+- Contacts and customers (`components/bay53crm/contacts`): Contact/List, Add, Update, Delete, CompanyList (the company picker) and Customer/List (read-only). Helpers in `lib/bay53crm/contacts.ts`.
+- Message templates and email settings (`components/bay53crm/cms`): CustomMessage and EmailSetting CRUD. Helpers in `lib/bay53crm/settings.ts`.
+- Email (`components/bay53crm/email`): GetEmail, Important, Bookmark, Trash, the mark/flag/bookmark/delete actions, SendEmail, AddEmailAsLead, Download. Helpers in `lib/bay53crm/email.ts`. NOT verified live: see the quirks.
+- Not built: Company/Add (the CRM has one company, edited in Company Settings), Email/GetEmailThread, Email/GetContacts, Email/GetEmailLeads, Common/ExternalSiteLink, LeadCommon/GetLeadEmail and ListLeadEmail, the Get-by-id calls that the list already covers.
+
+`lib/bay53crm/crm.service.ts`, `data.ts` and `lib/hooks/useCRM.ts` are the old mock layer. No screen uses them any more (`FollowUpLog.tsx` is also unused now).
 
 ## Stage API quirks (seen live)
 
@@ -53,6 +60,13 @@ Browser calls go to `/api/crm/*`, a same-origin proxy (`app/api/crm/[...path]/ro
 - Report/LeadActivityReportList rows have a text `type` ("1" to "7") whose meaning does not match the notes, so the report does not show it. It returns every activity (about 2,000 rows) when no criteria are set, so the screen pages the rows.
 - Report/SalesStageStatusReportList has stage ids 0-15. 11 Won, 12 Lost, 14 Tender Won and 15 Tender Lost belong to archived leads, which Lead/List only returns with `isArchive: true` (their names were read from those leads). `avgTimeSpent` has no documented unit (values 113 to 38,275), so it is not shown.
 - Report/CampaignDetailsReportList has no assignee filter and `companyRegion` is never set on projects, so the project report filters by assignee in the browser and offers no region.
+- LeadCommon/DownloadAttachmentFile and Campaign/DownloadAttachmentFile answer 200 with `{"hasError":true,"message":"Index was outside the bounds of the array."}` for every file name format tried (the stored `filePath`, the full `path`, with a folder or id in front, with `|` or `_`), even for a file uploaded a minute earlier. Uploads, listings and deletes work. The attachment panels show the server's message when a download fails (`requireFile` in `lib/bay53crm/records.ts`). Needs a fix on the backend.
+- Upload endpoints take multipart `files` (the file), `id` (the lead or campaign id) and `name` (the label shown in the list).
+- LeadCommon add/update/delete of an activity store the record but answer "Invalid domain token at offset 11" (the notification email fails), like Lead/Add. Follow-ups, notes and the campaign calls do not. `tolerateNotification` is used around all of them.
+- Common/QuatationList filters by the enquiry NUMBER as text (`{ enquiry: "97064" }`); the enquiry reference text ("LIV-PUNE/HL/IN-ENQ/97064/2026-27") and a `token` are ignored and return all 28,028 quotations. Common/EnquiryList takes `clientDetailId` (the lead's `customerRef`).
+- Contact/Get and Contact/List only return name, company, phones, email and companyRef; the add/update model has more fields (address, city, birth date, ...) that are never read back, so the contact form only edits those it can show. Whether Contact/Update clears the others is not known.
+- Campaign/ConsultantNameList returns every description ever typed, including "-" and multi-line notes; `consultantSuggestions` keeps the short single-line names.
+- Email/* answers "Authentication failed" (GetEmail) or "The LOGIN command is disabled." on stage and EmailSetting/List is empty, so the mailbox screen has not been run against real mail. Common/ExternalSiteLink returns "http://localhost:5051/".
 - Common/PieChartResult answers "The method or operation is not implemented"; the dashboard builds its charts from Lead/List.
 - Common/DashboardResult `yearlyActualRevenue` equals 12 x `monthlyTargetRevenue` (the yearly target), not won revenue. Won and lost values are not in the response.
 - Lead/List has no source or status, so there is no leads-by-source chart.

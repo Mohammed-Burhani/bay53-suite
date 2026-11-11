@@ -16,6 +16,8 @@ import {
   Bell,
   Building2,
   Contact,
+  Mail,
+  MessageSquare,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -69,6 +71,27 @@ const NAV_MODULES: NavModule[] = [
     ],
   },
   {
+    id: "crm-contacts",
+    label: "Contacts",
+    icon: Contact,
+    color: "text-lime-400",
+    activeBg: "bg-lime-500/20",
+    subItems: [
+      { href: "/crm/contacts", label: "All Contacts", icon: Contact },
+      { href: "/crm/customers", label: "Customers", icon: Building2 },
+    ],
+  },
+  {
+    id: "crm-email",
+    label: "Email",
+    icon: Mail,
+    color: "text-lime-400",
+    activeBg: "bg-lime-500/20",
+    subItems: [
+      { href: "/crm/email", label: "Mailbox", icon: Mail },
+    ],
+  },
+  {
     id: "crm-projects",
     label: "Projects",
     icon: FolderKanban,
@@ -102,6 +125,8 @@ const NAV_MODULES: NavModule[] = [
       { href: "", label: "CMS", icon: Settings, isGroupLabel: true },
       { href: "/crm/cms/master-values", label: "Master Values", icon: Database },
       { href: "/crm/cms/notification-master", label: "Notification Master", icon: Bell },
+      { href: "/crm/cms/message-templates", label: "Message Templates", icon: MessageSquare },
+      { href: "/crm/cms/email-settings", label: "Email Settings", icon: Mail },
     ],
   },
   {

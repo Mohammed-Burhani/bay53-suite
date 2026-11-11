@@ -2,7 +2,7 @@
 // Mirrors the "LeadCommon" tag of the CRM swagger. Responses are untyped upstream: endpoints seen live default <T> to the DTO in ../dto.ts, the rest to `unknown`.
 
 import { crmHttp } from "../client";
-import type { CrmLeadAttachment, CrmLeadDetailsCount, CrmLeadFollowUp, CrmLeadHistoryEntry, CrmLeadNote, CrmLeadResultItem } from "../dto";
+import type { CrmActivity, CrmLeadAttachment, CrmLeadDetailsCount, CrmLeadFollowUp, CrmLeadHistoryEntry, CrmLeadNote, CrmLeadResultItem } from "../dto";
 import type { CrmSchemas as S } from "../types";
 
 export const leadCommonApi = {
@@ -24,7 +24,7 @@ export const leadCommonApi = {
     crmHttp.post<T>("/LeadCommon/UpdateLeadFollowUp", payload),
   deleteLeadFollowUp: <T = unknown>(id: number) =>
     crmHttp.post<T>("/LeadCommon/DeleteLeadFollowUp", id),
-  listLeadActivity: <T = unknown>(payload: S["LeadActivitySearchParams"]) =>
+  listLeadActivity: <T = CrmActivity[]>(payload: S["LeadActivitySearchParams"]) =>
     crmHttp.post<T>("/LeadCommon/ListLeadActivity", payload),
   getLeadActivity: <T = unknown>(id: number) =>
     crmHttp.post<T>("/LeadCommon/GetLeadActivity", id),

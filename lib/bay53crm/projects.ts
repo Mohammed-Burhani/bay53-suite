@@ -96,6 +96,20 @@ export interface ProjectInput {
 
 const isoStart = (date: string) => (date ? `${date}T00:00:00` : null);
 
+/**
+ * The consultants worth suggesting. Campaign/ConsultantNameList returns every description ever typed, including
+ * placeholders ("-") and multi-line notes, so only short single-line names are kept, once each.
+ */
+export const consultantSuggestions = (names: string[] | undefined, maxLength = 60): string[] => {
+  const seen = new Set<string>();
+  for (const raw of names ?? []) {
+    const name = raw.trim();
+    if (name.length < 2 || name.length > maxLength || /[\r\n]/.test(name)) continue;
+    seen.add(name);
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b));
+};
+
 /** yyyy-mm-dd part of an API date-time, for date inputs. */
 export const toDateInput = (value?: string | null): string => (value ? value.slice(0, 10) : "");
 

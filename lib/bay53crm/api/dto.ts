@@ -77,6 +77,7 @@ export interface CrmLeadFollowUp {
   assignTo?: string;
   dueDate: string;
   date: string;
+  contactNo?: string;
   isCompleted: boolean;
   createdDate?: string;
 }
@@ -100,10 +101,33 @@ export interface CrmLeadDetailsCount {
 /** LeadCommon/LeadAttachmentList */
 export interface CrmLeadAttachment {
   id: number;
+  /** The label given at upload, not the file name. */
   name: string;
+  /** Where the server keeps the file, e.g. "Uploads\LeadFiles\6620\<guid>.xlsx". */
   path: string;
   leadId: number;
+  /** "<guid>.<ext>": the stored file name. */
   filePath: string;
+}
+
+/** Campaign/AttachmentList: the same record as a lead attachment, keyed by the campaign. */
+export interface CrmCampaignAttachment extends Omit<CrmLeadAttachment, "leadId"> {
+  campaignId: number;
+}
+
+/** LeadCommon/ListLeadActivity and Campaign/ListCampaignActivity (no campaign has an activity on stage; same shape). */
+export interface CrmActivity {
+  id: number;
+  /** A number with no lookup endpoint; the report's wording for the codes does not match, so it is not shown. */
+  type: number;
+  title?: string;
+  description?: string;
+  /** A user name. */
+  doneBy?: string;
+  completedOn: string;
+  date: string;
+  contactNo?: string;
+  createdDate?: string;
 }
 
 /** LeadCommon/ListLeadHistory */
@@ -234,6 +258,73 @@ export interface CrmLeadResultItem {
   leadType: number;
   description: string;
   createdDate: string;
+}
+
+// ---- Message templates, email settings, mail ----
+// None of these has a row on stage, so the shapes follow the swagger request/response models and are unverified live.
+
+/** CustomMessage/List */
+export interface CrmCustomMessage {
+  id: number;
+  /** A number with no lookup endpoint. */
+  type: number;
+  shortName?: string;
+  heading?: string;
+  text?: string;
+  isPublished: boolean;
+}
+
+/** EmailSetting/List, Get: a mailbox the CRM sends and reads mail through. */
+export interface CrmEmailSetting {
+  id: number;
+  accountId?: number;
+  smtpServer?: string;
+  smtpPort: number;
+  userName?: string;
+  emailAddress?: string;
+  outgoingMailServer?: string;
+  /** Not known whether the API returns it; the screen never shows it. */
+  password?: string;
+  senderName?: string;
+  popServer?: string;
+  popPort?: string;
+  imapServer?: string;
+  imapPort?: string;
+  enableSsl: boolean;
+}
+
+/** One side of an email: a display name and an address. */
+export interface CrmEmailAddress {
+  name?: string;
+  address?: string;
+}
+
+/** Identifies a message on the mail server; the mail endpoints take this back as their argument. */
+export interface CrmMailId {
+  id: number;
+  validity: number;
+}
+
+/** Email/GetEmail, GetImportantEmail, GetBookmarkEmail, GetTrashEmail */
+export interface CrmMessage {
+  messageId: CrmMailId;
+  mailKitMessage?: CrmMailId;
+  threadId?: CrmMailId;
+  isRead: boolean;
+  isFlagged: boolean;
+  isBookMark: boolean;
+  subject?: string;
+  htmlBody?: string;
+  textBody?: string;
+  fromAddress?: CrmEmailAddress;
+  toAddresses?: CrmEmailAddress[];
+  ccAddresses?: CrmEmailAddress[];
+  date: string;
+  attachments?: { attachmentId?: string; fileName?: string; contentType?: string; size?: number; mailKitMessage?: CrmMailId }[];
+  /** Replies in the same thread. */
+  children?: CrmMessage[];
+  /** Messages in the thread. */
+  count?: number;
 }
 
 // ---- Notifications ----

@@ -51,5 +51,8 @@ export const useFinancialYears = () => useQuery(commonQueries.financialYears());
 export const useDashboardResult = (params: S["DashboardResultParams"], { enabled = true }: { enabled?: boolean } = {}) =>
   useQuery({ ...commonQueries.dashboard(params), enabled });
 export const usePieChartResult = (params: S["PieChartSearchParams"]) => useQuery(commonQueries.pie(params));
-export const useEnquiries = (params: S["EnquiryListRequestViewModel"]) => useQuery(commonQueries.enquiries(params));
-export const useQuotations = (params: S["QuatationSearchParams"]) => useQuery(commonQueries.quotations(params));
+type Enabled = { enabled?: boolean };
+export const useEnquiries = (params: S["EnquiryListRequestViewModel"], { enabled = true }: Enabled = {}) =>
+  useQuery({ ...commonQueries.enquiries(params), enabled });
+export const useQuotations = (params: S["QuatationSearchParams"], { enabled = true }: Enabled = {}) =>
+  useQuery({ ...commonQueries.quotations(params), enabled });

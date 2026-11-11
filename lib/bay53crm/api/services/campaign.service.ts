@@ -2,7 +2,7 @@
 // Mirrors the "Campaign" tag of the CRM swagger. Responses are untyped upstream: endpoints seen live default <T> to the DTO in ../dto.ts, the rest to `unknown`.
 
 import { crmHttp } from "../client";
-import type { CrmCampaign, CrmCampaignListItem } from "../dto";
+import type { CrmActivity, CrmCampaign, CrmCampaignAttachment, CrmCampaignListItem } from "../dto";
 import type { CrmSchemas as S } from "../types";
 
 export const campaignApi = {
@@ -22,13 +22,13 @@ export const campaignApi = {
     crmHttp.post<T>("/Campaign/DeleteAttachment", id),
   uploadAttachment: <T = unknown>(form: FormData) =>
     crmHttp.upload<T>("/Campaign/UploadAttachment", form),
-  attachmentList: <T = unknown>(payload: S["CampaignAttachmentSearchParams"]) =>
+  attachmentList: <T = CrmCampaignAttachment[]>(payload: S["CampaignAttachmentSearchParams"]) =>
     crmHttp.post<T>("/Campaign/AttachmentList", payload),
   downloadAttachmentFile: (query: { filename?: string }) =>
     crmHttp.download("/Campaign/DownloadAttachmentFile", query),
   consultantNameList: <T = string[]>() =>
     crmHttp.post<T>("/Campaign/ConsultantNameList"),
-  listCampaignActivity: <T = unknown>(payload: S["CampaignActivitySearchParams"]) =>
+  listCampaignActivity: <T = CrmActivity[]>(payload: S["CampaignActivitySearchParams"]) =>
     crmHttp.post<T>("/Campaign/ListCampaignActivity", payload),
   getCampaignActivity: <T = unknown>(id: number) =>
     crmHttp.post<T>("/Campaign/GetCampaignActivity", id),

@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CrmMasterValue, CrmUserRef } from "@/lib/bay53crm/api";
-import { DEFAULT_NEW_PROJECT_STATUS_ID, MAKE_LIST_OPTIONS, PROJECT_STATUSES, type ProjectInput } from "@/lib/bay53crm/projects";
+import { useConsultantNames } from "@/lib/bay53crm/api/queries";
+import {
+  consultantSuggestions,
+  DEFAULT_NEW_PROJECT_STATUS_ID,
+  MAKE_LIST_OPTIONS,
+  PROJECT_STATUSES,
+  type ProjectInput,
+} from "@/lib/bay53crm/projects";
 
 const MAKE_LIST_NOT_SET = "0";
 
@@ -38,6 +45,8 @@ interface ProjectFormProps {
 /** Fields of a project, for both the create dialog and the edit sheet. */
 export function ProjectForm({ initial, approvals, users, isSaving, submitLabel, onSubmit, onCancel }: ProjectFormProps) {
   const [value, setValue] = useState(initial);
+  const { data: consultantNames } = useConsultantNames();
+  const consultants = useMemo(() => consultantSuggestions(consultantNames), [consultantNames]);
   const set = <K extends keyof ProjectInput>(key: K, next: ProjectInput[K]) => setValue((v) => ({ ...v, [key]: next }));
 
   const canSubmit = !!value.name.trim() && value.campaignTypeId > 0 && !!value.assignedTo;
@@ -52,10 +61,15 @@ export function ProjectForm({ initial, approvals, users, isSaving, submitLabel, 
         <Label htmlFor="project-consultant">Consultant</Label>
         <Input
           id="project-consultant"
+          list="project-consultants"
           value={value.consultant}
           onChange={(e) => set("consultant", e.target.value)}
-          placeholder="Consultant name"
+          placeholder="Pick a consultant or type a new one"
+          autoComplete="off"
         />
+        <datalist id="project-consultants">
+          {consultants.map((name) => <option key={name} value={name} />)}
+        </datalist>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

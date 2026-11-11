@@ -7,21 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  useAddLeadFollowUp,
-  useAllCrmUsers,
-  useLead,
-  useLeadFollowUps,
-  useUpdateLeadFields,
-  useUpdateLeadTitle,
-} from "@/lib/bay53crm/api/queries";
+import { useAllCrmUsers, useLead, useUpdateLeadFields, useUpdateLeadTitle } from "@/lib/bay53crm/api/queries";
 import type { CrmLead } from "@/lib/bay53crm/api";
 import { StageBadge } from "@/components/bay53crm/shared/StageBadge";
-import { FollowUpLog } from "@/components/bay53crm/shared/FollowUpLog";
 import { formatCurrency } from "@/lib/bay53crm/constants";
 import { tolerateNotification } from "@/lib/bay53crm/save";
-import { FOLLOW_UP_TYPE, LEAD_STAGES, stageLabel } from "@/lib/bay53crm/leads";
-import type { CRMFollowUp } from "@/lib/bay53crm/types";
+import { LEAD_STAGES, stageLabel } from "@/lib/bay53crm/leads";
+import { LeadRecords } from "./LeadRecords";
 
 interface LeadDetailSheetProps {
   leadId: number;
@@ -31,45 +23,13 @@ interface LeadDetailSheetProps {
 
 export function LeadDetailSheet({ leadId, open, onOpenChange }: LeadDetailSheetProps) {
   const { data: lead, isLoading } = useLead(leadId);
-  const { data: followUps = [] } = useLeadFollowUps(leadId);
   const { data: users = [] } = useAllCrmUsers();
   const updateFields = useUpdateLeadFields();
   const updateTitle = useUpdateLeadTitle();
-  const addFollowUp = useAddLeadFollowUp();
 
   const [isEditing, setIsEditing] = useState(false);
 
   const userName = (userId?: string) => users.find((u) => u.userName === userId)?.fullName ?? userId ?? "";
-
-  const followUpLog: CRMFollowUp[] = [...followUps]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .map((f) => ({
-      id: String(f.id),
-      leadId: String(leadId),
-      date: f.date,
-      notes: f.description || f.title || "",
-      createdBy: userName(f.assignTo),
-    }));
-
-  const handleAddFollowUp = async (data: { notes: string; date: string }) => {
-    if (!lead) return;
-    try {
-      await addFollowUp.mutateAsync({
-        id: 0,
-        leadId: lead.id,
-        type: FOLLOW_UP_TYPE,
-        title: "Follow up",
-        description: data.notes,
-        assignTo: lead.assignTo,
-        dueDate: data.date,
-        date: data.date,
-        isCompleted: false,
-      });
-      toast.success("Follow-up added");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not add the follow-up");
-    }
-  };
 
   if (isLoading || !lead) {
     return (
@@ -85,7 +45,7 @@ export function LeadDetailSheet({ leadId, open, onOpenChange }: LeadDetailSheetP
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{isEditing ? "Edit Lead" : lead.title}</SheetTitle>
         </SheetHeader>
@@ -185,12 +145,7 @@ export function LeadDetailSheet({ leadId, open, onOpenChange }: LeadDetailSheetP
           )}
 
           <div className="border-t pt-4">
-            <FollowUpLog
-              followUps={followUpLog}
-              onAdd={handleAddFollowUp}
-              showStage={false}
-              isAdding={addFollowUp.isPending}
-            />
+            <LeadRecords lead={lead} users={users} />
           </div>
         </div>
       </SheetContent>
