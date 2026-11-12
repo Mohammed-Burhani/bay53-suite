@@ -9,10 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyRecords, RecordHeader } from "@/components/bay53crm/shared/RecordParts";
 import { useEnquiries, useQuotations, useUpdateLeadEnquiry } from "@/lib/bay53crm/api/queries";
 import type { CrmLead } from "@/lib/bay53crm/api";
+import { quoteAmount } from "@/lib/bay53crm/enquiries";
 import { tolerateNotification } from "@/lib/bay53crm/save";
-
-const money = (value: number, currency: string) =>
-  `${currency === "INR" ? "₹" : `${currency} `}${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)}`;
 
 /** The enquiry a lead is linked to, the quotations raised for it, and a picker to link another of the customer's. */
 export function LeadEnquiry({ lead }: { lead: CrmLead }) {
@@ -79,7 +77,7 @@ export function LeadEnquiry({ lead }: { lead: CrmLead }) {
             <div key={q.id} className="flex items-center justify-between gap-2 rounded-lg border p-2.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium" title={q.refno}>{q.refno}</p>
-                <p className="text-xs text-muted-foreground">{money(q.totalValue, q.currency)}</p>
+                <p className="text-xs text-muted-foreground">{quoteAmount(q.totalValue, q.currency)}</p>
               </div>
               {q.isLatest && <Badge variant="outline" className="border-green-200 bg-green-50 text-[10px] text-green-700">Latest</Badge>}
             </div>

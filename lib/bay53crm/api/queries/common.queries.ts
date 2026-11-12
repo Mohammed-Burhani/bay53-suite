@@ -37,7 +37,8 @@ export const commonQueries = {
     queryOptions({
       queryKey: commonKeys.enquiries(params),
       queryFn: () => commonApi.enquiryList(params),
-      staleTime: staleTime.list,
+      // With no customer the list is every enquiry (about 24,000 rows), so it is kept for a few minutes.
+      staleTime: staleTime.report,
     }),
   quotations: (params: S["QuatationSearchParams"]) =>
     queryOptions({
