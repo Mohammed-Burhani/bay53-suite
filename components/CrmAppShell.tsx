@@ -30,7 +30,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { TabBar } from "@/components/TabBar";
-import { PlatformSwitcherHeader, PlatformSwitcherFooter } from "@/components/bay53-platform-switcher";
+import { PlatformSwitcherHeader } from "@/components/bay53-platform-switcher";
+import { CrmUserMenu } from "@/components/bay53crm/shared/CrmUserMenu";
 
 interface SubMenuItem {
   href: string;
@@ -313,7 +314,7 @@ export default function CrmAppShell({ children }: { children: React.ReactNode })
       </nav>
 
       <div className="relative border-t border-sidebar-border p-2 space-y-1">
-        <PlatformSwitcherFooter collapsed={collapsed} />
+        <CrmUserMenu collapsed={collapsed} />
 
         {!isMobile && (
           <Button
